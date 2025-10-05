@@ -6,7 +6,7 @@
 
 
 # eclipse 프로젝트 properties 세팅 저장폴더
-# .settings/
+.settings/
 
 
 #maven 및 gradle 사용시 주석처리 필요
