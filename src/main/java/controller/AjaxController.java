@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 // 비동기 통신 컨트롤러
-@WebServlet("/*.async")
+@WebServlet("*.async")
 public class AjaxController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
