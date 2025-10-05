@@ -5,8 +5,8 @@
 # Typically, this file would be tracked if it contains build/dependency configurations:
 
 
-# eclipse 프로젝트 properties 세팅 저장폴더 facets 및 서버 target runtime 세팅
-# .settings/
+# eclipse 프로젝트 properties 세팅 저장폴더 facets 및 서버 target runtime 세팅값 등
+.settings/
 
 
 #maven 및 gradle 사용시 주석처리 필요
