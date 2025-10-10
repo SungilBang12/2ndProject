@@ -1,3 +1,7 @@
 [submodule "src/main/webapp/META-INF/keys"]
 	path = src/main/webapp/META-INF/keys
 	url = https://github.com/SuranS2/KOSA2025-2ndProject-Sunset-submodule.git
+
+[submodule "keys"]
+	path = keys
+	url = https://github.com/SuranS2/KOSA2025-2ndProject-Sunset-submodule.git
