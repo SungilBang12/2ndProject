@@ -1,0 +1,190 @@
+/* ───────── 변수 ───────── */
+:root{
+  --sidebar-w: 250px;
+  --home-btn-size: 28px;
+  --site-header-h: 50px;  /* 고정 헤더 높이 */
+  --site-footer-h: 50px;  /* 고정 푸터 높이 */
+}
+
+/* ───────── 리셋 ───────── */
+*{ box-sizing:border-box; }
+html, body{ margin:0; height:100%; }
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Apple SD Gothic Neo, sans-serif;
+  color:#111; background: #fff; line-height:1.5;
+}
+a{ color:inherit; text-decoration:none; }
+
+/* ───────── 홈 버튼(동그라미 그라데이션) ───────── */
+.home-btn{
+  width:var(--home-btn-size); height:var(--home-btn-size);
+  border-radius:9999px; display:inline-flex; align-items:center; justify-content:center;
+  background:linear-gradient(to right,#a82833,#faff7c);
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
+  outline:none; border:none;
+}
+.home-btn:hover{ filter:brightness(1.03); }
+.home-btn:active{ transform:translateY(1px); }
+.home-btn:focus-visible{ box-shadow:0 0 0 3px rgba(168,40,51,.35); }
+.home-btn--top{ margin:0 8px 0 6px; }
+.home-btn svg, .home-btn span{ display:none !important; }
+
+/* ───────── 항상 존재하는 고정 헤더/푸터 ───────── */
+.site-header{
+  position:fixed; top:0; left:0; right:0;
+  height:var(--site-header-h);
+  background:#A58855; color:#fff;
+  display:flex; align-items:center; gap:8px; padding:0 12px;
+  z-index:1400;
+}
+.site-header .spacer{ flex:1; }
+
+.site-footer{
+  position:fixed; left:0; right:0; bottom:0;
+  height:var(--site-footer-h);
+  background:transparent; color:#333;
+  display:flex; align-items:center; justify-content:center;
+  z-index:900;
+}
+
+/* 헤더/푸터 높이만큼 문서 흐름에 자리 예약 */
+body::before{
+  content:""; display:block; height:var(--site-header-h);
+}
+body::after{
+  content:""; display:block; height:var(--site-footer-h);
+}
+
+/* (선택) 앵커 스크롤 보정 */
+html{ scroll-padding-top: var(--site-header-h); }
+
+/* iOS 안전영역 */
+@supports (padding: env(safe-area-inset-top)){
+  .site-header{
+    padding-top:env(safe-area-inset-top);
+    height:calc(var(--site-header-h) + env(safe-area-inset-top));
+  }
+  .site-footer{
+    padding-bottom:env(safe-area-inset-bottom);
+    height:calc(var(--site-footer-h) + env(safe-area-inset-bottom));
+  }
+  body::before{ height: calc(var(--site-header-h) + env(safe-area-inset-top)); }
+  body::after{  height: calc(var(--site-footer-h) + env(safe-area-inset-bottom)); }
+}
+
+/* ───────── 사이드바(기본: 고정형) ───────── */
+.sidebar{
+  position: fixed; left:0; top:var(--site-header-h);
+  width:var(--sidebar-w);
+  height:calc(100vh - var(--site-header-h) - var(--site-footer-h));
+  background:#fff; border-right:1px solid #e5e7eb; overflow:auto; z-index:1100;
+}
+.logo{ padding:16px 20px; border-bottom:1px solid #f0f0f0; font-weight:700; letter-spacing:.08em; }
+.menu{ padding:24px 0; }
+.menu a, .menu button{
+  display:block; width:100%; padding:10px 20px; border:0; background:none;
+  text-align:left; color:inherit; font-size:16px; cursor:pointer;
+}
+.menu a:hover, .menu button:hover{ background:#f7f7f7; }
+
+.accordion .panel{ display:none; padding:8px 20px 8px 28px; background:#fafafa; border-top:1px dashed #eee; }
+.accordion.open .panel{ display:block; }
+.accordion .caret{ float:right; transition:.2s transform; }
+.accordion.open .caret{ transform:rotate(180deg); }
+
+/* 메인(고정형 기본) */
+.main{ margin-left:var(--sidebar-w); padding:24px; min-height:100vh; }
+
+/* 오버레이(헤더/푸터 제외 영역만 어둡게) */
+.overlay{
+  position:fixed; left:0; right:0;
+  top:var(--site-header-h);
+  bottom:var(--site-footer-h);
+  display:none; background:rgba(0,0,0,.45); z-index:1000; cursor:pointer;
+}
+
+/* ───────── 햄버거: 헤더 오른쪽(모바일만 표시) ───────── */
+.hamburger14{ position:relative; width:40px; height:40px; display:none; margin-left:auto; }
+.hamburger14 input{ display:none; }
+.hamburger14-container{ position:relative; width:40px; height:40px; cursor:pointer; display:inline-block; }
+.hamburger14 .circle{ position:absolute; inset:0; border-radius:50%; background:transparent; border:2px solid #fff; transition:.3s; transform-origin:center; }
+.hamburger14 .line{ position:absolute; width:24px; height:2px; background:#fff; left:50%; top:50%; transform:translate(-50%, var(--dy)); transition:.3s; transform-origin:center; }
+.hamburger14 .line1{ --dy:-6px; } .hamburger14 .line2{ --dy:0; } .hamburger14 .line3{ --dy:6px; }
+.hamburger14:hover .circle{ border-color:#ddd; } .hamburger14:hover .line{ background:#ddd; }
+#hamburger14-input:checked + label .circle{ transform:rotate(45deg); border-color:#ccc; }
+#hamburger14-input:checked + label .line1{ transform:translate(-50%,0) rotate(45deg); background:#ccc; }
+#hamburger14-input:checked + label .line2{ opacity:0; }
+#hamburger14-input:checked + label .line3{ transform:translate(-50%,0) rotate(-45deg); background:#ccc; }
+
+/* ───────── 그리드 페이지(14×5) ───────── */
+.main.grid-14x5{ margin-left:0 !important; padding:16px; }
+.grid-14x5{
+  display:grid;
+  grid-template-columns:repeat(14,1fr);
+  grid-template-rows:repeat(5,1fr);
+  gap:12px; min-height:100vh;
+}
+.slot-nav{   grid-column:1 / 3;  grid-row:1 / 6; }
+.slot-board{ grid-column:3 / 13; grid-row:1 / 6; }
+.slot-extra{ grid-column:13 / 15;grid-row:1 / 6; }
+
+/* 데스크톱(그리드에 사이드바 임베드) */
+@media (min-width: 992px){
+  .grid-14x5 .slot-nav > nav.sidebar{
+    position:static !important; top:auto; left:auto; width:100%; height:100%;
+    z-index:auto; overflow:auto; min-height:0; border-right:1px solid #e5e7eb;
+  }
+}
+
+/* ───────── 모바일(<=991px) ───────── */
+@media (max-width: 991px){
+  /* 헤더에 햄버거 노출 */
+  .hamburger14{ display:inline-block; }
+  
+  /* 그리드는 유지하되, slot-nav는 레이아웃 자리만 비우고(자식은 고정패널로 동작),
+     slot-extra는 완전히 숨김, board가 전체를 차지하도록 */
+  .grid-14x5 .slot-nav{ display: contents; }
+  .grid-14x5 .slot-extra{ display: none; }
+  .grid-14x5 .slot-board{
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+
+  }
+  
+
+  /* 고정형 기본 페이지에서 사이드바는 오버레이 패널로 */
+  .sidebar{
+    display:none;
+    position:fixed !important;
+    top:var(--site-header-h);
+    height:calc(100dvh - var(--site-header-h) - var(--site-footer-h));
+    width:min(86vw, var(--sidebar-w));
+  }
+
+  /* 그리드 페이지에서도 동일하게 패널로 띄움 */
+  .grid-14x5 .slot-nav > nav.sidebar{
+    position:fixed !important;
+    top:var(--site-header-h);
+    left:0;
+    height:calc(100dvh - var(--site-header-h) - var(--site-footer-h));
+    width:min(86vw, var(--sidebar-w));
+    display:none;
+  }
+
+  /* 햄버거 체크 → 사이드바/오버레이 표시 */
+  body:has(#hamburger14-input:checked) .sidebar{ display:block; }
+  body:has(#hamburger14-input:checked) .grid-14x5 .slot-nav > nav.sidebar{ display:block; }
+  body:has(#hamburger14-input:checked) .overlay{ display:block; }
+
+  /* 모바일에서는 메인 왼쪽 마진 제거 */
+  .main{ margin-left:0; }
+}
+
+/* :has() 미지원 폴백 (기존 JS에서 body.sidebar-open 토글) */
+@supports not selector(:has(*)){
+  @media (max-width: 991px){
+    body.sidebar-open .sidebar{ display:block; }
+    body.sidebar-open .grid-14x5 .slot-nav > nav.sidebar{ display:block; }
+    body.sidebar-open .overlay{ display:block; }
+  }
+}
