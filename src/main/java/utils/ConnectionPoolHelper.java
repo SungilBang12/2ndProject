@@ -4,27 +4,30 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.sql.DataSource;
+
+import jakarta.servlet.ServletContext;
 
 public class ConnectionPoolHelper {
 	private static DataSource ds;
-	static {
-		try {
-			Context context = new InitialContext();
-			ds = (DataSource)context.lookup("java:comp/env/jdbc/oracle");
-		}catch(Exception e) {
-			//예외 꼭 봐야함 => DB 커넥션 체크
-			System.out.println(e.getMessage());
-		}
-	}
 	
-	public static Connection getConnection() throws SQLException{
-		Connection c = ds.getConnection();
-		c.setAutoCommit(false);
-		return c;
-	}
+	// ServletContext에서 DataSource 가져오기
+    public static void init(ServletContext context) {
+        ds = (DataSource) context.getAttribute("datasource");
+        if (ds == null) {
+            throw new RuntimeException("DataSource가 ServletContext에 설정되지 않았습니다.");
+        }
+    }
+
+    public static Connection getConnection() throws SQLException {
+        if (ds == null) {
+            throw new RuntimeException("DataSource가 초기화되지 않았습니다. init() 호출 필요.");
+        }
+        Connection c = ds.getConnection();
+        c.setAutoCommit(false);
+        return c;
+    }
+    
 	public static void close(ResultSet rs) {
 		if(rs != null) {
 			try {
