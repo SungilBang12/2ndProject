@@ -48,9 +48,6 @@ public class EncodingFilter implements Filter {
 
 		System.out.println("웹 접근시 urlPatterns = /* , 통과");
 
-		chain.doFilter(req, res);
-		
-		//인코딩 chain 
 		
 		HttpServletRequest httpRequest = (HttpServletRequest) req;
         HttpServletResponse httpResponse = (HttpServletResponse) res;
@@ -69,8 +66,7 @@ public class EncodingFilter implements Filter {
         HttpSession session = httpRequest.getSession(false);
         boolean authorized = false;
         
-        
-     // TODO Main에 릴리즈용 권한 변경된 내용 올려두기
+        // TODO Main에 릴리즈용 권한 변경된 내용 올려두기
         /* 세션체크
         if (session != null) {
             MemberDTO user = (MemberDTO) session.getAttribute("user");
@@ -95,7 +91,6 @@ public class EncodingFilter implements Filter {
             httpResponse.setContentType("text/html; charset=UTF-8");
             httpResponse.getWriter().println("<script>alert('접근 권한이 없습니다.'); location.href='/index.jsp';</script>");
         }
-		
 	}
 	
 	@Override
