@@ -10,7 +10,7 @@
 html, body{ margin:0; height:100%; }
 body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Apple SD Gothic Neo, sans-serif;
-  color:#111; background:#fff; line-height:1.5;
+  color:#111; background:#fafafa; line-height:1.5;
 }
 a{ color:inherit; text-decoration:none; }
 
@@ -150,7 +150,7 @@ html{ scroll-padding-top: var(--site-header-h); }
 .accordion.open .caret{ transform:rotate(180deg); }
 
 /* 메인(고정형 기본) */
-.main{ margin-left:var(--sidebar-w); padding:24px; min-height:100vh; }
+.main{ margin-left:var(--sidebar-w); min-height:100vh; }
 
 /* 오버레이(헤더 아래부터 화면 하단까지 어둡게) */
 .overlay{
@@ -174,7 +174,7 @@ html{ scroll-padding-top: var(--site-header-h); }
 #hamburger14-input:checked + label .line3{ transform:translate(-50%,0) rotate(-45deg); background:#ccc; }
 
 /* ───────── 그리드 페이지(14×5) ───────── */
-.main.grid-14x5{ margin-left:0 !important; padding:16px; }
+.main.grid-14x5{ margin-left:0 !important;}
 .grid-14x5{
   display:grid;
   grid-template-columns:repeat(14,1fr);
@@ -182,7 +182,7 @@ html{ scroll-padding-top: var(--site-header-h); }
   gap:12px; min-height:100vh;
 }
 .slot-nav{   grid-column:1 / 3;  grid-row:1 / 6; }
-.slot-board{ grid-column:3 / 13; grid-row:1 / 6; }
+.slot-board{ padding: 30px; grid-column:3 / 13; grid-row:1 / 6; }
 .slot-extra{ grid-column:13 / 15;grid-row:1 / 6; }
 
 /* ✅ 데스크톱: 그리드 유지 + nav(2칸) 안에서만 꽉 차도록 */
