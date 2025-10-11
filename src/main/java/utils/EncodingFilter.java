@@ -40,13 +40,15 @@ public class EncodingFilter implements Filter {
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
 		if (req.getCharacterEncoding() == null) {
+			System.out.println("req 인코딩 추가");
 			req.setCharacterEncoding(this.encoding);
 		}
 		if (res.getCharacterEncoding() == null) {
+			System.out.println("res 인코딩 추가");
 			res.setCharacterEncoding(this.encoding);
 		}
 
-		System.out.println("웹 접근시 urlPatterns = /* , 통과");
+//		System.out.println("웹 접근시 urlPatterns = /* , 통과");
 
 		
 		HttpServletRequest httpRequest = (HttpServletRequest) req;
