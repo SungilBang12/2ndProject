@@ -6,8 +6,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>노을 맛집 - 홈</title>
-  <link rel="stylesheet" href="<c:url value='/css/style.css'/>?v=5" />
-  <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
 </head>
 <body>
 

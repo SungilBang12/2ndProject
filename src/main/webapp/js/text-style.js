@@ -120,11 +120,10 @@ export function openTextStyleModal(editor) {
         <label style="display: block; margin-bottom: 8px; font-weight: 500;">글자 크기</label>
         <div style="display: flex; gap: 8px;" id="fontSizeOptions">
           <button class="size-btn" data-size="12px">12px</button>
-          <button class="size-btn" data-size="14px">14px</button>
-          <button class="size-btn" data-size="16px">16px</button>
+          <button class="size-btn" data-size="14px">16px</button>
           <button class="size-btn" data-size="18px">18px</button>
           <button class="size-btn" data-size="24px">24px</button>
-          <button class="size-btn" data-size="32px">32px</button>
+          <button class="size-btn reset-btn" data-size="reset">초기화</button>
         </div>
       </div>
 
@@ -202,7 +201,11 @@ export function openTextStyleModal(editor) {
   // 글자 크기 변경
   modal.querySelectorAll("#fontSizeOptions .size-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const size = btn.dataset.size;
+      let size = btn.dataset.size;
+	  if(size==="reset"){
+		editor.chain().focus().unsetMark('textStyle').run();
+		return;
+	  }
       editor.chain().focus().setMark('textStyle', { fontSize: size }).run();
     });
   });

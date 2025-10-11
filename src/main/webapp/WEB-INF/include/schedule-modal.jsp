@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
+<button data-cmd="schedule">🗓️ 일정</button>
 <div id="scheduleModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="scheduleModalClose">&times;</span>
@@ -13,3 +14,8 @@
     <button id="scheduleConfirmBtn">삽입</button>
   </div>
 </div>
+
+<script type="module">
+import * as ScheduleModal from "./js/schedule-modal.js";
+window.openScheduleModal = ScheduleModal.openModal;
+</script>
