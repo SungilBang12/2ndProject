@@ -5,15 +5,15 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>노을 맛집 - 장소추천 게시판 작성</title>
+    <title>노을 맛집 - '해'쳐 모여 게시판 작성</title>
     
     <!-- 공통 CSS -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=5">
     <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
     
     <!-- 카카오맵 API -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_APP_KEY&libraries=services"></script>
-    
+ <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e&libraries=services"></script>
+ 
     <!-- 작성 페이지 전용 CSS -->
     <style>
         /* 기본 레이아웃 */
@@ -247,16 +247,17 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <div class="write-container">
+    <div class="slot-board">
+        <div class="write-container">
         <!-- 페이지 헤더 -->
         <div class="page-header">
             <h1 class="page-title">게시글 작성</h1>
-            <a href="${pageContext.request.contextPath}/meeting-recoList.jsp" class="btn">목록으로</a>
+            <a href="${pageContext.request.contextPath}/meeting-reco.jsp" class="btn">목록으로</a>
         </div>
         
         <!-- 안내 메시지 -->
         <div class="info-message">
-            <p>📍 노을 촬영 명소를 지도에서 검색하고 선택해주세요!</p>
+            <p>📍 우리가 모일 장소를 지도에서 검색하고 선택해주세요!</p>
         </div>
         
         <!-- 작성 폼 -->
@@ -335,10 +336,11 @@
             
             <!-- 버튼 그룹 -->
             <div class="button-group">
-                <a href="${pageContext.request.contextPath}/meeting-recoList.jsp" class="btn btn-secondary">취소</a>
+                <a href="${pageContext.request.contextPath}/meeting-reco.jsp" class="btn btn-secondary">취소</a>
                 <button type="submit" class="btn btn-primary">등록하기</button>
             </div>
         </form>
+        </div>
     </div>
 </main>
 
@@ -348,6 +350,9 @@
          * localStorage를 사용한 클라이언트 사이드 데이터 관리
          * TODO: 추후 서버 사이드 API로 전환 필요
          */
+        
+        // JSP contextPath를 JavaScript 변수로 전달
+        var contextPath = '${pageContext.request.contextPath}';
         
         // ============================================
         // 전역 변수
@@ -371,6 +376,12 @@
             // 데이터 로드
             loadPostsFromStorage();
             
+            // 디버깅: 현재 저장된 게시글 확인
+            console.log('=== 페이지 로드 시 저장된 게시글 ===');
+            console.log('게시글 개수:', posts.length);
+            console.log('게시글 목록:', posts);
+            console.log('localStorage raw data:', localStorage.getItem('posts'));
+            
             // 카카오맵 초기화
             initKakaoMap();
             
@@ -387,20 +398,39 @@
          * 카카오맵 초기화
          */
         function initKakaoMap() {
-            const mapContainer = document.getElementById('map');
-            const mapOption = {
-                center: new kakao.maps.LatLng(37.566826, 126.9786567), // 서울 중심
-                level: 5
-            };
+            // 카카오맵 API가 로드되지 않았을 때 안전하게 처리
+            if (typeof kakao === 'undefined' || !kakao.maps) {
+                console.warn('⚠️ 카카오맵 API가 로드되지 않았습니다.');
+                var mapContainer = document.getElementById('map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = '<div style="padding:40px;text-align:center;color:#666;background:#f8f9fa;border-radius:8px;">' +
+                        '📍 카카오맵을 사용하려면 API 키가 필요합니다.<br>' +
+                        '<small style="color:#999;margin-top:8px;display:block;">장소 선택 없이도 게시글 작성은 가능합니다.</small>' +
+                        '</div>';
+                }
+                return;
+            }
             
-            // 지도 생성
-            map = new kakao.maps.Map(mapContainer, mapOption);
-            
-            // 장소 검색 객체 생성
-            ps = new kakao.maps.services.Places();
-            
-            // 인포윈도우 생성
-            infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+            try {
+                const mapContainer = document.getElementById('map');
+                const mapOption = {
+                    center: new kakao.maps.LatLng(37.566826, 126.9786567), // 서울 중심
+                    level: 5
+                };
+                
+                // 지도 생성
+                map = new kakao.maps.Map(mapContainer, mapOption);
+                
+                // 장소 검색 객체 생성
+                ps = new kakao.maps.services.Places();
+                
+                // 인포윈도우 생성
+                infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+                
+                console.log('✅ 카카오맵 초기화 완료');
+            } catch (error) {
+                console.error('카카오맵 초기화 실패:', error);
+            }
         }
         
         /**
@@ -412,6 +442,12 @@
             if (!keyword) {
                 alert('검색할 장소를 입력해주세요!');
                 document.getElementById('keyword').focus();
+                return;
+            }
+            
+            // 카카오맵 API가 로드되지 않았을 때
+            if (typeof kakao === 'undefined' || !kakao.maps || !ps) {
+                alert('카카오맵 API가 로드되지 않아 장소 검색을 사용할 수 없습니다.\n장소 없이 게시글을 작성하거나, API 키를 설정해주세요.');
                 return;
             }
             
@@ -501,24 +537,32 @@
          * @param {Object} place - 장소 정보
          */
         function showPlaceInfo(marker, place) {
-            const content = `
-                <div style="padding: 10px; min-width: 200px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">${place.place_name}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
-                        ${place.road_address_name || place.address_name}
-                    </div>
-                    ${place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : ''}
-                    <button onclick="selectPlace('${place.place_name}', ${place.y}, ${place.x}, 
-                        '${place.road_address_name || place.address_name}', '${place.phone || ''}')" 
-                        style="width: 100%; padding: 6px; background: #007bff; color: white; 
-                        border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
-                        선택하기
-                    </button>
-                </div>
-            `;
+            // 템플릿 리터럴 대신 문자열 연결 사용
+            var phoneHtml = place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : '';
+            
+            var content = '<div style="padding: 10px; min-width: 200px;">' +
+                '<div style="font-weight: bold; margin-bottom: 5px;">' + place.place_name + '</div>' +
+                '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' +
+                    (place.road_address_name || place.address_name) +
+                '</div>' +
+                phoneHtml +
+                '<button onclick="selectPlace(\'' + escapeQuotes(place.place_name) + '\', ' + place.y + ', ' + place.x + ', ' +
+                    '\'' + escapeQuotes(place.road_address_name || place.address_name) + '\', \'' + escapeQuotes(place.phone || '') + '\')" ' +
+                    'style="width: 100%; padding: 6px; background: #007bff; color: white; ' +
+                    'border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">' +
+                    '선택하기' +
+                '</button>' +
+            '</div>';
             
             infowindow.setContent(content);
             infowindow.open(map, marker);
+        }
+        
+        /**
+         * 따옴표 이스케이프 처리
+         */
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
         
         /**
@@ -543,7 +587,7 @@
             // 선택된 장소 표시
             document.getElementById('selected-place').style.display = 'block';
             document.getElementById('selected-place-name').textContent = 
-                `${name} (${address})`;
+                name + ' (' + address + ')';
             
             // 인포윈도우 닫기
             infowindow.close();
@@ -566,7 +610,7 @@
          * localStorage에서 게시글 목록 불러오기
          */
         function loadPostsFromStorage() {
-            const storedPosts = localStorage.getItem('posts');
+            const storedPosts = localStorage.getItem('postsreco');
             posts = storedPosts ? JSON.parse(storedPosts) : [];
         }
         
@@ -574,7 +618,7 @@
          * localStorage에 게시글 저장
          */
         function savePostsToStorage() {
-            localStorage.setItem('posts', JSON.stringify(posts));
+            localStorage.setItem('postsreco', JSON.stringify(posts));
         }
         
         
@@ -641,10 +685,13 @@
                 return false;
             }
             
+            // 장소는 선택사항으로 변경 (카카오맵 API 없을 때 대비)
             if (!selectedPlace) {
-                alert('노을 촬영 장소를 선택해주세요.');
-                document.getElementById('keyword').focus();
-                return false;
+                var confirmResult = confirm('장소를 선택하지 않았습니다.\n장소 없이 게시글을 등록하시겠습니까?');
+                if (!confirmResult) {
+                    document.getElementById('keyword').focus();
+                    return false;
+                }
             }
             
             return true;
@@ -672,16 +719,22 @@
                 date: new Date().toLocaleString()
             };
             
+            console.log('새 게시글 생성:', post);
+            
             // 게시글 목록에 추가
             posts.push(post);
             
             // localStorage에 저장
             savePostsToStorage();
             
+            // 저장 확인
+            console.log('저장된 전체 게시글:', posts);
+            console.log('localStorage 확인:', localStorage.getItem('postsreco'));
+            
             alert('게시글이 등록되었습니다.');
             
             // 목록 페이지로 이동
-            location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+            location.href = contextPath + '/meeting-reco.jsp';
         }
         
         

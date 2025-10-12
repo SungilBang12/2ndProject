@@ -12,8 +12,8 @@
     <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
     
     <!-- 카카오맵 API -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_APP_KEY&libraries=services"></script>
-    
+ <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=&libraries=services"></script>
+ 
     <!-- 작성 페이지 전용 CSS -->
     <style>
         /* 기본 레이아웃 */
@@ -398,20 +398,39 @@
          * 카카오맵 초기화
          */
         function initKakaoMap() {
-            const mapContainer = document.getElementById('map');
-            const mapOption = {
-                center: new kakao.maps.LatLng(37.566826, 126.9786567), // 서울 중심
-                level: 5
-            };
+            // 카카오맵 API가 로드되지 않았을 때 안전하게 처리
+            if (typeof kakao === 'undefined' || !kakao.maps) {
+                console.warn('⚠️ 카카오맵 API가 로드되지 않았습니다.');
+                var mapContainer = document.getElementById('map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = '<div style="padding:40px;text-align:center;color:#666;background:#f8f9fa;border-radius:8px;">' +
+                        '📍 카카오맵을 사용하려면 API 키가 필요합니다.<br>' +
+                        '<small style="color:#999;margin-top:8px;display:block;">장소 선택 없이도 게시글 작성은 가능합니다.</small>' +
+                        '</div>';
+                }
+                return;
+            }
             
-            // 지도 생성
-            map = new kakao.maps.Map(mapContainer, mapOption);
-            
-            // 장소 검색 객체 생성
-            ps = new kakao.maps.services.Places();
-            
-            // 인포윈도우 생성
-            infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+            try {
+                const mapContainer = document.getElementById('map');
+                const mapOption = {
+                    center: new kakao.maps.LatLng(37.566826, 126.9786567), // 서울 중심
+                    level: 5
+                };
+                
+                // 지도 생성
+                map = new kakao.maps.Map(mapContainer, mapOption);
+                
+                // 장소 검색 객체 생성
+                ps = new kakao.maps.services.Places();
+                
+                // 인포윈도우 생성
+                infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+                
+                console.log('✅ 카카오맵 초기화 완료');
+            } catch (error) {
+                console.error('카카오맵 초기화 실패:', error);
+            }
         }
         
         /**
@@ -423,6 +442,12 @@
             if (!keyword) {
                 alert('검색할 장소를 입력해주세요!');
                 document.getElementById('keyword').focus();
+                return;
+            }
+            
+            // 카카오맵 API가 로드되지 않았을 때
+            if (typeof kakao === 'undefined' || !kakao.maps || !ps) {
+                alert('카카오맵 API가 로드되지 않아 장소 검색을 사용할 수 없습니다.\n장소 없이 게시글을 작성하거나, API 키를 설정해주세요.');
                 return;
             }
             
@@ -660,10 +685,13 @@
                 return false;
             }
             
+            // 장소는 선택사항으로 변경 (카카오맵 API 없을 때 대비)
             if (!selectedPlace) {
-                alert('노을 촬영 장소를 선택해주세요.');
-                document.getElementById('keyword').focus();
-                return false;
+                var confirmResult = confirm('장소를 선택하지 않았습니다.\n장소 없이 게시글을 등록하시겠습니까?');
+                if (!confirmResult) {
+                    document.getElementById('keyword').focus();
+                    return false;
+                }
             }
             
             return true;

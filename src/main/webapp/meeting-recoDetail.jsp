@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>노을 맛집 - 장소추천 게시판 상세보기</title>
+    <title>노을 맛집 - '해'쳐 모여 게시판 상세보기</title>
     
     <!-- 공통 CSS -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=5">
@@ -307,10 +307,11 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
+    <div class="slot-board">
     <div class="detail-container">
         <!-- 목록으로 돌아가기 버튼 -->
         <div class="header-actions">
-            <a href="${pageContext.request.contextPath}/meeting-recoList.jsp" class="btn">← 목록으로</a>
+            <a href="${pageContext.request.contextPath}/meeting-reco.jsp" class="btn">← 목록으로</a>
         </div>
         
         <!-- 게시글 상세 정보 -->
@@ -356,7 +357,7 @@
         <!-- 액션 버튼 -->
         <div class="action-buttons">
             <div class="btn-group">
-                <a href="${pageContext.request.contextPath}/meeting-recoList.jsp" class="btn">목록</a>
+                <a href="${pageContext.request.contextPath}/meeting-reco.jsp" class="btn">목록</a>
                 <button onclick="editPost()" class="btn btn-primary">수정</button>
             </div>
             <div class="btn-group">
@@ -390,6 +391,7 @@
             </div>
         </div>
     </div>
+    </div>
 </main>
 
     <script>
@@ -398,6 +400,9 @@
          * localStorage를 사용한 클라이언트 사이드 데이터 관리
          * TODO: 추후 서버 사이드 API로 전환 필요
          */
+        
+        // JSP contextPath를 JavaScript 변수로 전달
+        var contextPath = '${pageContext.request.contextPath}';
         
         // ============================================
         // 전역 변수
@@ -421,7 +426,7 @@
             
             if (!currentPostId) {
                 alert('잘못된 접근입니다.');
-                location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+                location.href = contextPath + '/meeting-reco.jsp';
                 return;
             }
             
@@ -478,9 +483,9 @@
                 map: placeMap
             });
             
-            // 인포윈도우 생성 및 표시
+            // 인포윈도우 생성 및 표시 (템플릿 리터럴 대신 문자열 연결 사용)
             const infowindow = new kakao.maps.InfoWindow({
-                content: `<div style="padding: 10px; font-size: 14px; font-weight: bold;">${place.name}</div>`
+                content: '<div style="padding: 10px; font-size: 14px; font-weight: bold;">' + place.name + '</div>'
             });
             
             infowindow.open(placeMap, marker);
@@ -495,7 +500,7 @@
          * localStorage에서 게시글 목록 불러오기
          */
         function loadPostsFromStorage() {
-            const storedPosts = localStorage.getItem('posts');
+            const storedPosts = localStorage.getItem('postsreco');
             posts = storedPosts ? JSON.parse(storedPosts) : [];
         }
         
@@ -503,7 +508,7 @@
          * localStorage에서 댓글 목록 불러오기
          */
         function loadCommentsFromStorage() {
-            const storedComments = localStorage.getItem('comments');
+            const storedComments = localStorage.getItem('commentsreco');
             comments = storedComments ? JSON.parse(storedComments) : [];
         }
         
@@ -511,14 +516,14 @@
          * localStorage에 게시글 저장
          */
         function savePostsToStorage() {
-            localStorage.setItem('posts', JSON.stringify(posts));
+            localStorage.setItem('postsreco', JSON.stringify(posts));
         }
         
         /**
          * localStorage에 댓글 저장
          */
         function saveCommentsToStorage() {
-            localStorage.setItem('comments', JSON.stringify(comments));
+            localStorage.setItem('commentsreco', JSON.stringify(comments));
         }
         
         
@@ -534,7 +539,7 @@
             
             if (!post) {
                 alert('게시글을 찾을 수 없습니다.');
-                location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+                location.href = contextPath + '/meeting-reco.jsp';
                 return;
             }
             
@@ -560,37 +565,31 @@
             const postComments = comments.filter(c => c.postId === currentPostId);
             
             // 댓글 수 업데이트
-            document.getElementById('comment-count').textContent = `(${postComments.length})`;
+            document.getElementById('comment-count').textContent = '(' + postComments.length + ')';
             
             // 댓글이 없는 경우
             if (postComments.length === 0) {
-                commentList.innerHTML = `
-                    <div class="empty-comments">
-                        첫 댓글을 작성해보세요!
-                    </div>
-                `;
+                commentList.innerHTML = '<div class="empty-comments">첫 댓글을 작성해보세요!</div>';
                 return;
             }
             
-            // 댓글 목록 렌더링 (최신순)
+            // 댓글 목록 렌더링 (최신순) - 템플릿 리터럴 대신 문자열 연결 사용
             let html = '';
             postComments
                 .sort((a, b) => b.id - a.id)
                 .forEach(comment => {
-                    html += `
-                        <div class="comment-item">
-                            <div class="comment-header">
-                                <span class="comment-author">${escapeHtml(comment.author)}</span>
-                                <span class="comment-date">${comment.date}</span>
-                            </div>
-                            <div class="comment-content">
-                                ${escapeHtml(comment.content).replace(/\n/g, '<br>')}
-                            </div>
-                            <div class="comment-actions">
-                                <button onclick="deleteComment(${comment.id})" class="btn btn-danger">삭제</button>
-                            </div>
-                        </div>
-                    `;
+                    html += '<div class="comment-item">' +
+                        '<div class="comment-header">' +
+                            '<span class="comment-author">' + escapeHtml(comment.author) + '</span>' +
+                            '<span class="comment-date">' + comment.date + '</span>' +
+                        '</div>' +
+                        '<div class="comment-content">' +
+                            escapeHtml(comment.content).replace(/\n/g, '<br>') +
+                        '</div>' +
+                        '<div class="comment-actions">' +
+                            '<button onclick="deleteComment(' + comment.id + ')" class="btn btn-danger">삭제</button>' +
+                        '</div>' +
+                    '</div>';
                 });
             
             commentList.innerHTML = html;
@@ -605,7 +604,7 @@
          * 게시글 수정 페이지로 이동
          */
         function editPost() {
-            location.href = '${pageContext.request.contextPath}/meeting-gatherEdit.jsp?id=' + currentPostId;
+            location.href = contextPath + '/meeting-recoEdit.jsp?id=' + currentPostId;
         }
         
         /**
@@ -625,7 +624,7 @@
             saveCommentsToStorage();
             
             alert('게시글이 삭제되었습니다.');
-            location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+            location.href = contextPath + '/meeting-reco.jsp';
         }
         
         

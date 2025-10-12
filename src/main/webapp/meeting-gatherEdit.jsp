@@ -252,6 +252,7 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
+    <div class="slot-board">
     <div class="edit-container">
         <!-- 페이지 헤더 -->
         <div class="page-header">
@@ -351,6 +352,7 @@
                 <button type="submit" class="btn btn-primary">수정 완료</button>
             </div>
         </form>
+    </div>
     </div>
 </main>
 

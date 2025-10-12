@@ -307,6 +307,7 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
+    <div class="slot-board">
     <div class="detail-container">
         <!-- 목록으로 돌아가기 버튼 -->
         <div class="header-actions">
@@ -389,6 +390,7 @@
                 </form>
             </div>
         </div>
+    </div>
     </div>
 </main>
 
