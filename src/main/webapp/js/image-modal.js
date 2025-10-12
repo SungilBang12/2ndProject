@@ -100,7 +100,7 @@ export function openModal(editor) {
 	    img.src = src;
 	  });
 	}
-
+	
 	modal.querySelector("#confirmImage").onclick = async () => {
 	  const selectedSize = Number(modal.querySelector('input[name="imgSize"]:checked').value);
 	  if (files.length === 0) {
