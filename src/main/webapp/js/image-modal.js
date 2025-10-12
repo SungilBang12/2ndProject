@@ -86,33 +86,35 @@ export function openModal(editor) {
 	}
 	modal.querySelector(".modal-close").onclick = () => modal.remove();
 	
-	// 이미지 삽입 시 비율 맞춰 리사이즈
-		function resizeImage(src, scale, callback) {
-		  const img = new Image();
-		  img.onload = () => {
-		    const canvas = document.createElement('canvas');
-		    canvas.width = img.width * (scale / 100);
-		    canvas.height = img.height * (scale / 100);
-		    const ctx = canvas.getContext('2d');
-		    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-		    callback(canvas.toDataURL('image/png'));
-		  };
-		  img.src = src;
-		}
+	function resizeImagePromise(src, scale) {
+	  return new Promise(resolve => {
+	    const img = new Image();
+	    img.onload = () => {
+	      const canvas = document.createElement('canvas');
+	      canvas.width = img.width * (scale / 100);
+	      canvas.height = img.height * (scale / 100);
+	      const ctx = canvas.getContext('2d');
+	      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+	      resolve(canvas.toDataURL('image/png'));
+	    };
+	    img.src = src;
+	  });
+	}
 
-	modal.querySelector("#confirmImage").onclick = () => {
-		const selectedSize = Number(modal.querySelector('input[name="imgSize"]:checked').value);
-		if (files.length === 0) {
-			alert("이미지를 선택해주세요.");
-			return;
-		}
+	modal.querySelector("#confirmImage").onclick = async () => {
+	  const selectedSize = Number(modal.querySelector('input[name="imgSize"]:checked').value);
+	  if (files.length === 0) {
+	    alert("이미지를 선택해주세요.");
+	    return;
+	  }
+	  const resizedImages = await Promise.all(files.map(src => resizeImagePromise(src, selectedSize)));
 
-		files.forEach(src => {
-		  resizeImage(src, selectedSize, resizedSrc => {
-		    chain = chain.setImage({ src: resizedSrc });
-		  });
-		});
+	  let chain = editor.chain().focus();
+	  resizedImages.forEach(resizedSrc => {
+	    chain = chain.setImage({ src: resizedSrc });
+	  });
+	  chain.run();
 
-		modal.remove();
+	  modal.remove();
 	};
 }
