@@ -158,6 +158,7 @@ public class PostDao {
             pstmt.setDouble(4, attrs.get("lat").getAsDouble());
             pstmt.setDouble(5, attrs.get("lng").getAsDouble());
             pstmt.executeUpdate();
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -172,8 +173,12 @@ public class PostDao {
             pstmt.setString(3, attrs.get("date").getAsString());
             pstmt.setString(4, attrs.get("time").getAsString());
             pstmt.setString(5, attrs.get("location").getAsString());
-            pstmt.setString(6, attrs.get("people").getAsString());
+            String peopleValue = attrs.get("people").isJsonPrimitive()
+            	    ? attrs.get("people").getAsJsonPrimitive().getAsString()
+            	    : String.valueOf(attrs.get("people"));
+            pstmt.setString(6, peopleValue); // attrs.get("people").getAsString()❌  people이 number일 경우 예외
             pstmt.executeUpdate();
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
