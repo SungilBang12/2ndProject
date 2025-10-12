@@ -256,7 +256,7 @@
         <!-- 페이지 헤더 -->
         <div class="page-header">
             <h1 class="page-title">게시글 수정</h1>
-            <a href="${pageContext.request.contextPath}/meeting-gatherList.jsp" class="btn">목록으로</a>
+            <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn">목록으로</a>
         </div>
         
         <!-- 안내 메시지 -->
@@ -347,7 +347,7 @@
             
             <!-- 버튼 그룹 -->
             <div class="button-group">
-                <a href="${pageContext.request.contextPath}/meeting-gatherList.jsp" class="btn btn-secondary">취소</a>
+                <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn btn-secondary">취소</a>
                 <button type="submit" class="btn btn-primary">수정 완료</button>
             </div>
         </form>
@@ -360,6 +360,9 @@
          * localStorage를 사용한 클라이언트 사이드 데이터 관리
          * TODO: 추후 서버 사이드 API로 전환 필요
          */
+        
+        // JSP contextPath를 JavaScript 변수로 전달
+        var contextPath = '${pageContext.request.contextPath}';
         
         // ============================================
         // 전역 변수
@@ -386,7 +389,7 @@
             
             if (!currentPostId) {
                 alert('잘못된 접근입니다.');
-                location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+                location.href = contextPath + '/meeting-gather.jsp';
                 return;
             }
             
@@ -445,8 +448,8 @@
             
             markers.push(marker);
             
-            // 인포윈도우 표시
-            const content = `<div style="padding: 10px; font-weight: bold;">${place.name}</div>`;
+            // 인포윈도우 표시 (템플릿 리터럴 대신 문자열 연결 사용)
+            const content = '<div style="padding: 10px; font-weight: bold;">' + place.name + '</div>';
             infowindow.setContent(content);
             infowindow.open(map, marker);
             
@@ -454,7 +457,7 @@
             selectedPlace = place;
             document.getElementById('selected-place').style.display = 'block';
             document.getElementById('selected-place-name').textContent = 
-                `${place.name} (${place.address})`;
+                place.name + ' (' + place.address + ')';
             
             // 검색 키워드 입력
             if (place.keyword) {
@@ -538,24 +541,32 @@
          * 장소 정보 인포윈도우 표시
          */
         function showPlaceInfo(marker, place) {
-            const content = `
-                <div style="padding: 10px; min-width: 200px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">${place.place_name}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
-                        ${place.road_address_name || place.address_name}
-                    </div>
-                    ${place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : ''}
-                    <button onclick="selectPlace('${place.place_name}', ${place.y}, ${place.x}, 
-                        '${place.road_address_name || place.address_name}', '${place.phone || ''}')" 
-                        style="width: 100%; padding: 6px; background: #007bff; color: white; 
-                        border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
-                        선택하기
-                    </button>
-                </div>
-            `;
+            // 템플릿 리터럴 대신 문자열 연결 사용
+            var phoneHtml = place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : '';
+            
+            var content = '<div style="padding: 10px; min-width: 200px;">' +
+                '<div style="font-weight: bold; margin-bottom: 5px;">' + place.place_name + '</div>' +
+                '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' +
+                    (place.road_address_name || place.address_name) +
+                '</div>' +
+                phoneHtml +
+                '<button onclick="selectPlace(\'' + escapeQuotes(place.place_name) + '\', ' + place.y + ', ' + place.x + ', ' +
+                    '\'' + escapeQuotes(place.road_address_name || place.address_name) + '\', \'' + escapeQuotes(place.phone || '') + '\')" ' +
+                    'style="width: 100%; padding: 6px; background: #007bff; color: white; ' +
+                    'border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">' +
+                    '선택하기' +
+                '</button>' +
+            '</div>';
             
             infowindow.setContent(content);
             infowindow.open(map, marker);
+        }
+        
+        /**
+         * 따옴표 이스케이프 처리
+         */
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
         
         /**
@@ -573,7 +584,7 @@
             
             document.getElementById('selected-place').style.display = 'block';
             document.getElementById('selected-place-name').textContent = 
-                `${name} (${address})`;
+                name + ' (' + address + ')';
             
             infowindow.close();
         }
@@ -619,7 +630,7 @@
             
             if (!post) {
                 alert('게시글을 찾을 수 없습니다.');
-                location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+                location.href = contextPath + '/meeting-gather.jsp';
                 return;
             }
             
@@ -708,7 +719,7 @@
             savePostsToStorage();
             
             alert('게시글이 수정되었습니다.');
-            location.href = '${pageContext.request.contextPath}/meeting-gatherDetail.jsp?id=' + currentPostId;
+            location.href = contextPath + '/meeting-gatherDetail.jsp?id=' + currentPostId;
         }
         
         

@@ -247,11 +247,12 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <div class="write-container">
+    <div class="slot-board">
+        <div class="write-container">
         <!-- 페이지 헤더 -->
         <div class="page-header">
             <h1 class="page-title">게시글 작성</h1>
-            <a href="${pageContext.request.contextPath}/meeting-gatherList.jsp" class="btn">목록으로</a>
+            <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn">목록으로</a>
         </div>
         
         <!-- 안내 메시지 -->
@@ -335,10 +336,11 @@
             
             <!-- 버튼 그룹 -->
             <div class="button-group">
-                <a href="${pageContext.request.contextPath}/meeting-gatherList.jsp" class="btn btn-secondary">취소</a>
+                <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn btn-secondary">취소</a>
                 <button type="submit" class="btn btn-primary">등록하기</button>
             </div>
         </form>
+        </div>
     </div>
 </main>
 
@@ -348,6 +350,9 @@
          * localStorage를 사용한 클라이언트 사이드 데이터 관리
          * TODO: 추후 서버 사이드 API로 전환 필요
          */
+        
+        // JSP contextPath를 JavaScript 변수로 전달
+        var contextPath = '${pageContext.request.contextPath}';
         
         // ============================================
         // 전역 변수
@@ -370,6 +375,12 @@
         function init() {
             // 데이터 로드
             loadPostsFromStorage();
+            
+            // 디버깅: 현재 저장된 게시글 확인
+            console.log('=== 페이지 로드 시 저장된 게시글 ===');
+            console.log('게시글 개수:', posts.length);
+            console.log('게시글 목록:', posts);
+            console.log('localStorage raw data:', localStorage.getItem('posts'));
             
             // 카카오맵 초기화
             initKakaoMap();
@@ -501,24 +512,32 @@
          * @param {Object} place - 장소 정보
          */
         function showPlaceInfo(marker, place) {
-            const content = `
-                <div style="padding: 10px; min-width: 200px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">${place.place_name}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
-                        ${place.road_address_name || place.address_name}
-                    </div>
-                    ${place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : ''}
-                    <button onclick="selectPlace('${place.place_name}', ${place.y}, ${place.x}, 
-                        '${place.road_address_name || place.address_name}', '${place.phone || ''}')" 
-                        style="width: 100%; padding: 6px; background: #007bff; color: white; 
-                        border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
-                        선택하기
-                    </button>
-                </div>
-            `;
+            // 템플릿 리터럴 대신 문자열 연결 사용
+            var phoneHtml = place.phone ? '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">☎ ' + place.phone + '</div>' : '';
+            
+            var content = '<div style="padding: 10px; min-width: 200px;">' +
+                '<div style="font-weight: bold; margin-bottom: 5px;">' + place.place_name + '</div>' +
+                '<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' +
+                    (place.road_address_name || place.address_name) +
+                '</div>' +
+                phoneHtml +
+                '<button onclick="selectPlace(\'' + escapeQuotes(place.place_name) + '\', ' + place.y + ', ' + place.x + ', ' +
+                    '\'' + escapeQuotes(place.road_address_name || place.address_name) + '\', \'' + escapeQuotes(place.phone || '') + '\')" ' +
+                    'style="width: 100%; padding: 6px; background: #007bff; color: white; ' +
+                    'border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">' +
+                    '선택하기' +
+                '</button>' +
+            '</div>';
             
             infowindow.setContent(content);
             infowindow.open(map, marker);
+        }
+        
+        /**
+         * 따옴표 이스케이프 처리
+         */
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
         
         /**
@@ -543,7 +562,7 @@
             // 선택된 장소 표시
             document.getElementById('selected-place').style.display = 'block';
             document.getElementById('selected-place-name').textContent = 
-                `${name} (${address})`;
+                name + ' (' + address + ')';
             
             // 인포윈도우 닫기
             infowindow.close();
@@ -672,16 +691,22 @@
                 date: new Date().toLocaleString()
             };
             
+            console.log('새 게시글 생성:', post);
+            
             // 게시글 목록에 추가
             posts.push(post);
             
             // localStorage에 저장
             savePostsToStorage();
             
+            // 저장 확인
+            console.log('저장된 전체 게시글:', posts);
+            console.log('localStorage 확인:', localStorage.getItem('posts'));
+            
             alert('게시글이 등록되었습니다.');
             
             // 목록 페이지로 이동
-            location.href = '${pageContext.request.contextPath}/meeting-gatherList.jsp';
+            location.href = contextPath + '/meeting-gather.jsp';
         }
         
         
