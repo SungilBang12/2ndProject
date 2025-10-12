@@ -156,7 +156,6 @@
         <div class="board-header">
             <h1 class="board-title">'해'쳐 모여 게시판</h1>
             <div class="board-actions">
-                <a href="<c:url value='/'/>" class="btn">촬영 TIP</a>
                 <a href="${pageContext.request.contextPath}/meeting-gatherWriting.jsp" class="btn btn-primary">글쓰기</a>
             </div>
         </div>

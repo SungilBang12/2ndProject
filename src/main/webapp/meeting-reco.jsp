@@ -156,7 +156,6 @@
         <div class="board-header">
             <h1 class="board-title">노을 맛집 - 장소 추천 게시판</h1>
             <div class="board-actions">
-                <a href="<c:url value='/'/>" class="btn">촬영 TIP</a>
                 <a href="${pageContext.request.contextPath}/meeting-recoWriting.jsp" class="btn btn-primary">글쓰기</a>
             </div>
         </div>
