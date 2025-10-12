@@ -1,10 +1,6 @@
 package controller;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Map;
-
-import com.google.gson.Gson;
 
 import action.Action;
 import action.ActionForward;
@@ -14,6 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import service.post.CreateTradePostSyncService;
 
 /**
  * Servlet implementation class FrontController
@@ -24,7 +21,7 @@ public class TestController extends HttpServlet {
 
 	public TestController() {
 	}
-
+	
 	private void doProcess(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		// 데이터 받기
@@ -39,40 +36,8 @@ public class TestController extends HttpServlet {
 		Action action = null;
 		ActionForward forward = null;
 		if (urlCommand.equals("/editor-create.test")) {
-			try {
-		        BufferedReader reader = request.getReader();
-		        StringBuilder sb = new StringBuilder();
-		        String line;
-		        while ((line = reader.readLine()) != null) {
-		            sb.append(line);
-		        }
-
-		        String jsonData = sb.toString();
-		        System.out.println("수신된 JSON 데이터: " + jsonData);
-
-		        // Gson 파싱
-		        Gson gson = new Gson();
-		        Map<String, Object> map = gson.fromJson(jsonData, Map.class);
-
-		        // 처리 로직
-		        String title = (String) map.get("title");
-		        Object content = map.get("content");
-
-		        System.out.println("제목: " + title);
-		        System.out.println("내용: " + content);
-
-		        // ✅ JSON 응답
-		        response.setContentType("application/json; charset=UTF-8");
-		        response.getWriter().write("{\"status\":\"ok\"}");
-
-		    } catch (Exception e) {
-		        e.printStackTrace();
-		    }
-			
-			
-			
-//					action = new BoardListService();
-//			forward = action.excute(request, response);
+			action = new CreateTradePostSyncService();
+			forward = action.excute(request, response);
 		} else if (urlCommand.equals("/editor.test")) {
 			// 홈페이지 이동 view 경로
 			System.out.println("경로이동");
