@@ -5,7 +5,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Editor Template</title>
-<!-- Kakao 지도 SDK -->
 
 </head>
 <body>
@@ -16,12 +15,16 @@
 		</div>
 
 		<div class="slot-board">
-			<jsp:include page= "/WEB-INF/template/editor-template.jsp" />
+			<div class="title-block">
+				<label for="postTitle">게시글 제목</label> 
+				<input type="text" id="title" name="title" required>
+			</div>
+			<jsp:include page="/WEB-INF/include/post-trade-editor.jsp" />
 		</div>
 
 		<div class="slot-extra">
 			<!-- 필요 시 우측 칼럼 -->
 		</div>
-	<main>
+		<main>
 </body>
 </html>
