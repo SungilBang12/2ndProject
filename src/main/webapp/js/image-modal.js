@@ -108,10 +108,10 @@ export function openModal(editor) {
 		}
 
 		files.forEach(src => {
-		    resizeImage(src, selectedSize, resizedSrc => {
-		      editor.chain().focus().setImage({ src: resizedSrc }).run();
-		    });
+		  resizeImage(src, selectedSize, resizedSrc => {
+		    chain = chain.setImage({ src: resizedSrc });
 		  });
+		});
 
 		modal.remove();
 	};
