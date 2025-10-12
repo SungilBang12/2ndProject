@@ -28,8 +28,8 @@
 		<jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
 		<jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
 		<jsp:include page="link-btn.jsp"></jsp:include>
-		
-		
+
+
 
 	</div>
 
@@ -47,17 +47,72 @@
       document.getElementById("board"),
       document.getElementById("toolbar")
   );
+/*
+비동기 전송 예제
+
 // 저장 / 취소 함수
-  window.savePost = function() {
-    const content = editor.getHTML();
-    console.log("저장된 내용:", content);
-    alert("게시글이 저장되었습니다.");
+window.savePost = async function () {
+  const jsonContent = editor.getJSON(); // 💡 HTML 대신 JSON 형태로 가져오기
+	const data = {
+    title: document.querySelector("#title").value,
+    content: content
   };
+
+  console.log("저장할 JSON 데이터:", jsonContent);
+
+  try {
+    const response = await fetch("/editor-create.test", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("서버 응답 오류");
+    }
+
+    const result = await response.json();
+    console.log("서버 응답:", result);
+
+    alert("게시글이 저장되었습니다!");
+  } catch (err) {
+    console.error("저장 중 오류:", err);
+    alert("게시글 저장에 실패했습니다.");
+  }
+};
+
+*/
+
+/*
+//동기 전송 코드
+window.savePost = function() {
+  const content = editor.getJSON(); // tiptap은 JSON 구조로 교환 가능
+  const data = {
+    title: document.querySelector("#title").value,
+    content: content
+  };
+
+  fetch("/editor-create.test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(result => {
+    console.log("서버 응답:", result);
+    alert("게시글이 저장되었습니다!");
+  })
+  .catch(err => console.error("전송 오류:", err));
+};
 window.cancelPost = function() {
     if (confirm("작성을 취소하시겠습니까?")) {
       history.back();
     }
   };
+
+*/
 
 
 //유일하게 emoji기능 사용 안할꺼면 빼야하는 부분
