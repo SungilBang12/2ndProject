@@ -2,6 +2,7 @@ package service.post;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ import action.Action;
 import action.ActionForward;
 import dao.PostDao;
 import dto.Post;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -75,8 +75,8 @@ public class CreateTradePostSyncService implements Action {
 			request.setAttribute("board_url", url);
 
 			forward = new ActionForward();
-			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/views/redirect.jsp");
+			forward.setRedirect(true);
+			forward.setPath("/redirect.jsp");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
