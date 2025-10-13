@@ -273,10 +273,10 @@
                     <input type="hidden" name="listId" value="1">
                            
                     <!-- 버튼 그룹 -->
-                    <div class="button-group">
-                        <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn btn-secondary">취소</a>
-                        <button type="submit" class="btn btn-primary">등록하기</button>
-                    </div>
+				<div class="actions">
+					<button class="btn-primary" onclick="savePost()">저장</button>
+					<button class="btn-secondary" onclick="cancelPost()">취소</button>
+				</div>
                 </form>
             </div>
         </div>
@@ -405,10 +405,38 @@
         document.getElementById("toolbar")
     );
     
+
+//동기 전송 코드
+window.savePost = function() {
+  const content = editor.getJSON(); // tiptap은 JSON 구조로 교환 가능
+  const data = {
+    title: document.querySelector("#post-title").value,
+    content: content
+  };
+
+  fetch("/editor-create.test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(result => {
+    console.log("서버 응답:", result);
+    alert("게시글이 저장되었습니다!");
+  })
+  .catch(err => console.error("전송 오류:", err));
+};
+window.cancelPost = function() {
+    if (confirm("작성을 취소하시겠습니까?")) {
+      history.back();
+    }
+  };
+
     // 이모지 기능
     import * as EmojiModule from "./js/emoji.js";
     window.openEmojiPicker = EmojiModule.openPicker;
     EmojiModule.setupEmojiSuggestion(editor);
+
 </script>
 </body>
 </html>
