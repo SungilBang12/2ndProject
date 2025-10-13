@@ -15,6 +15,11 @@
     <!-- 카카오맵 API -->
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=70a909d37469228212bf0e0010b9d27e&libraries=services"></script>
  
+ 
+	 <script src="${pageContext.request.contextPath}/js/kakaomap.js"></script>
+ 
+ 
+ 
     <!-- 작성 페이지 전용 CSS -->
     <style>
         /* 기본 레이아웃 */
@@ -252,12 +257,14 @@
                         <button type="button" data-cmd="bulletList">● List</button>
                         <button type="button" data-cmd="orderedList">1. List</button>
                         
+                        
+                        
                         <jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
                         <jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
+                        <button type="button" data-cmd="kakaoMap" title="장소 검색">📍 지도</button>  
                         
                         <!-- 카카오맵 버튼 추가 -->
-                        <jsp:include page="/WEB-INF/include/map-modal-content.jsp" />
-                    </div>
+                  </div>
             
                     <!-- 에디터 영역 -->
                     <div id="board" class="board"></div>
