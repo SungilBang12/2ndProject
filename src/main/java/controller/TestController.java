@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.post.CreateTradePostSyncService;
+import service.post.GetPostViewService;
 
 /**
  * Servlet implementation class FrontController
@@ -44,9 +45,10 @@ public class TestController extends HttpServlet {
 			forward = new ActionForward();
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/post-trade-create.jsp");
-		} else if (urlCommand.equals("/ .test")) {
-			// 동기식 페이지 처리 데이터 담아서 페이지 로딩해야 하는 처리
-//					action = new BoardContentService();
+		} else if (urlCommand.equals("/post-detail.test")) {
+			
+			//request에 postId parameter로 필요
+			action = new GetPostViewService();
 			forward = action.excute(request, response);
 		} else if (urlCommand.equals("/ .test")) {
 			// 홈페이지 이동 view 경로
