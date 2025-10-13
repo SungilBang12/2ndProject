@@ -6,6 +6,8 @@ import Highlight from "https://esm.sh/@tiptap/extension-highlight";
 import { KakaoMapNode } from "./node-extensions.js";
 import { ScheduleBlock } from "./schedule-block.js";
 import Image from "https://esm.sh/@tiptap/extension-image";
+// ✨ 제거: import { openKakaoMapModal } from "./kakaomap.js"; 
+// kakaomap.js가 window.openKakaoMapModal로 직접 등록됩니다
 
 export function initEditor(boardEl, toolbarEl) {
 	const editor = new Editor({
@@ -60,7 +62,7 @@ export function initEditor(boardEl, toolbarEl) {
 				case "bulletList": chain.toggleBulletList().run(); break;
 				case "orderedList": chain.toggleOrderedList().run(); break;
 				case "image": window.openImageModal(editor); break;
-				case "kakaoMap": window.openKakaoMapModal(editor); break;
+				case "kakaoMap": window.openKakaoMapModal(editor); break; // ✨ 수정: window.openKakaoMapModal 사용
 				case "schedule": window.openScheduleModal(editor); break;
 				case "emoji": window.openEmojiPicker(editor, btn); break;
 				case "setLink": window.setLink(editor); break;

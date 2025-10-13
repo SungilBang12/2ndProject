@@ -15,6 +15,11 @@
     <!-- 카카오맵 API -->
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=70a909d37469228212bf0e0010b9d27e&libraries=services"></script>
  
+ 
+	 <script src="${pageContext.request.contextPath}/js/kakaomap.js"></script>
+ 
+ 
+ 
     <!-- 작성 페이지 전용 CSS -->
     <style>
         /* 기본 레이아웃 */
@@ -252,21 +257,26 @@
                         <button type="button" data-cmd="bulletList">● List</button>
                         <button type="button" data-cmd="orderedList">1. List</button>
                         
+                        
+                        
                         <jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
                         <jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
+                        <button type="button" data-cmd="kakaoMap" title="장소 검색">📍 지도</button>  
                         
                         <!-- 카카오맵 버튼 추가 -->
-                        <jsp:include page="/WEB-INF/include/map-modal-content.jsp" />
-                    </div>
+                  </div>
             
                     <!-- 에디터 영역 -->
                     <div id="board" class="board"></div>
+                    
+                    <input type="hidden" name="content" id="post-content-hidden">
+                    <input type="hidden" name="listId" value="1">
                            
                     <!-- 버튼 그룹 -->
-                    <div class="button-group">
-                        <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn btn-secondary">취소</a>
-                        <button type="submit" class="btn btn-primary">등록하기</button>
-                    </div>
+				<div class="actions">
+				    <button type="button" class="btn-primary" onclick="savePost()">저장</button>
+				    <button type="button" class="btn-secondary" onclick="cancelPost()">취소</button>
+				</div>
                 </form>
             </div>
         </div>
@@ -274,68 +284,18 @@
 </main>
 
 <!-- 카카오맵 JavaScript -->
-<script src="${pageContext.request.contextPath}/js/kakaomap.js"></script>
+<<script>
+    // JSP 변수를 전역으로 먼저 선언
+    const contextPath = "${pageContext.request.contextPath}";
+</script>
 
 <!-- 게시글 작성 JavaScript -->
 <script>
-    /**
-     * 게시글 작성 페이지 스크립트
-     * localStorage를 사용한 클라이언트 사이드 데이터 관리
-     */
-    
-    // JSP contextPath를 JavaScript 변수로 전달
-    var contextPath = '${pageContext.request.contextPath}';
-    
-    // 전역 변수
-    let posts = [];
-    
-    /**
-     * 페이지 로드 시 초기화
-     */
-    function init() {
-        // 데이터 로드
-        loadPostsFromStorage();
-        
-        // 이벤트 리스너 등록
-        setupEventListeners();
-        
-        console.log('✅ 게시글 작성 페이지 초기화 완료');
-        console.log('현재 저장된 게시글 수:', posts.length);
-    }
-    
-    /**
-     * localStorage에서 게시글 목록 불러오기
-     */
-    function loadPostsFromStorage() {
-        const storedPosts = localStorage.getItem('posts');
-        posts = storedPosts ? JSON.parse(storedPosts) : [];
-    }
-    
-    /**
-     * localStorage에 게시글 저장
-     */
-    function savePostsToStorage() {
-        localStorage.setItem('posts', JSON.stringify(posts));
-    }
-    
-    /**
-     * 폼 제출 처리
-     */
-    function handleSubmit(e) {
-        e.preventDefault();
-        
-        // 폼 데이터 가져오기
-        const title = document.getElementById('post-title').value.trim();
-        const content = document.getElementById('board').innerHTML;
-        
-        // 유효성 검사
-        if (!validateForm(title, content)) {
-            return;
-        }
-        
-        // 게시글 작성
-        createPost(title, content);
-    }
+<!-- 에디터 영역 -->
+<div id="board" class="board"></div>
+
+<input type="hidden" name="content" id="post-content-hidden">
+<input type="hidden" name="listId" value="1">
     
     /**
      * 폼 유효성 검사
@@ -360,6 +320,23 @@
         
         return true;
     }
+    
+    function handleSubmit(e) {
+      // 기본 submit 진행하되, 전송 직전에 hidden 채우고 유효성만 체크
+      const title = document.getElementById('post-title').value.trim();
+      const content = document.getElementById('board').innerHTML;
+
+      if (!title) { e.preventDefault(); alert('제목을 입력해주세요.'); return; }
+      if (title.length > 100) { e.preventDefault(); alert('제목은 100자 이내입니다.'); return; }
+      if (!content || content.trim() === '') { e.preventDefault(); alert('내용을 입력해주세요.'); return; }
+
+      document.getElementById('post-content-hidden').value = content;
+    }
+
+    window.addEventListener('load', function () {
+      document.getElementById('write-form').addEventListener('submit', handleSubmit);
+    });
+
     
     /**
      * 새 게시글 생성
@@ -425,12 +402,42 @@
 <script type="module">
     import { initEditor } from "./js/editor-init.js";
     
-    // 에디터 초기화
     const editor = initEditor(
         document.getElementById("board"),
         document.getElementById("toolbar")
     );
     
+   window.savePost = async function() {
+    const title = document.querySelector("#post-title").value.trim();
+    const content = editor.getJSON();
+    
+    if (!title) {
+        alert("제목을 입력해주세요.");
+        return;
+    }
+    
+    const url = contextPath + "/editor-create.test";
+    const data = { title: title, content: content };
+
+    try {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        
+        console.log("응답 상태:", res.status);
+        
+        // 저장 성공으로 간주하고 이동
+        alert("게시글이 저장되었습니다!");
+        window.location.href = contextPath + "/meeting-gather.jsp";
+        
+    } catch (err) {
+        console.error("전송 오류:", err);
+        alert("저장 중 오류가 발생했습니다.");
+    }
+};
+
     // 이모지 기능
     import * as EmojiModule from "./js/emoji.js";
     window.openEmojiPicker = EmojiModule.openPicker;
