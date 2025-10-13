@@ -308,5 +308,69 @@ public class PostDao {
             throw new RuntimeException("외부 이미지 업로드 실패: " + imageUrl, e);
         }
     }
+    
+ // PostDao.java (추가)
+    public List<Post> findByList(int listId, int pageNo, int pageSize, String keyword) throws SQLException {
+        List<Post> list = new ArrayList<>();
+        String base = 
+            "SELECT p.* FROM (" +
+            "  SELECT a.*, ROWNUM rnum FROM (" +
+            "    SELECT post_id, user_id, list_id, title, content, hit, created_at, updated_at " +
+            "    FROM post " +
+            "    WHERE list_id = ? " +
+            (keyword != null && !keyword.trim().isEmpty() ? " AND LOWER(title) LIKE ? " : "") +
+            "    ORDER BY post_id DESC" +
+            "  ) a WHERE ROWNUM <= ?" +
+            ") p WHERE p.rnum >= ?";
 
+        int end   = pageNo * pageSize;
+        int start = end - pageSize + 1;
+
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement ps = conn.prepareStatement(base)) {
+
+            int idx = 1;
+            ps.setInt(idx++, listId);
+            if (keyword != null && !keyword.trim().isEmpty()){
+                ps.setString(idx++, "%" + keyword.toLowerCase() + "%");
+            }
+            ps.setInt(idx++, end);
+            ps.setInt(idx,   start);
+
+            try (ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+                    Post p = Post.builder()
+                        .postId(rs.getInt("post_id"))
+                        .userId(rs.getString("user_id"))
+                        .listId(rs.getInt("list_id"))
+                        .title(rs.getString("title"))
+                        .content(rs.getString("content"))
+                        .hit(rs.getInt("hit"))
+                        .createdAt(rs.getDate("created_at") != null ? rs.getDate("created_at").toLocalDate() : null)
+                        .updatedAt(rs.getDate("updated_at") != null ? rs.getDate("updated_at").toLocalDate() : null)
+                        .build();
+                    list.add(p);
+                }
+            }
+        }
+        return list;
+    }
+
+    public int countByList(int listId, String keyword) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM post WHERE list_id = ?" +
+            (keyword != null && !keyword.trim().isEmpty() ? " AND LOWER(title) LIKE ?" : "");
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int idx = 1;
+            ps.setInt(idx++, listId);
+            if (keyword != null && !keyword.trim().isEmpty()){
+                ps.setString(idx++, "%" + keyword.toLowerCase() + "%");
+            }
+            try (ResultSet rs = ps.executeQuery()){
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
 }
