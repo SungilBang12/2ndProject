@@ -29,16 +29,10 @@
 
   <!-- 가운데 10칸: 보드 -->
   <div id="board" class="slot-board">
-    <!-- ✅ AjaxController의 /SunsetList.async를 부분뷰로 인클루드 -->
- 	  <jsp:include page="/SunsetList.async">
-    	<jsp:param name="pageno" value="${empty param.pageno ? '1' : param.pageno}" />
-  	  </jsp:include>
-    <!-- include 실패 시에도 페이지가 공백이 되지 않게 안전망 -->
-    <c:if test="${importErr ne null}">
       <div class="board-head" style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
         <h1 style="margin:0; font-size:20px; font-weight:700;">노을 앨범</h1>
         <div style="margin-left:auto;">
-          <a href="<c:url value='/post/write'/>"
+          <a href="<c:url value='ssp.post'/>"
              class="btn-primary"
              style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
                     background:#9A5ABF; color:#fff; text-decoration:none; font-weight:600;">
@@ -49,7 +43,6 @@
       <div style="padding:24px;border:1px dashed #e5e7eb;border-radius:12px;background:#fafafa;">
         목록을 불러오는 중 오류가 발생했습니다.
       </div>
-    </c:if>
   </div>
 
   <!-- 우측 2칸 -->

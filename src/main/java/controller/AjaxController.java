@@ -80,11 +80,7 @@ public class AjaxController extends HttpServlet {
     		
     	}else if(urlCommand.equals("/ . async")) {
     	
-    	}else if (urlCommand.equals("/SunsetList.async")) {
-    		new service.post.SunsetListAsyncService().render(request, response);
-    		return;
     	}
-		
     }
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

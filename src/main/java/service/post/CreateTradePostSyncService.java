@@ -76,7 +76,7 @@ public class CreateTradePostSyncService implements Action {
 
 			forward = new ActionForward();
 			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/views/redirect.jsp");
+			forward.setPath("/WEB-INF/view/redirect.jsp");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

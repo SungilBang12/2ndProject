@@ -22,7 +22,7 @@ public class PostViewController extends HttpServlet {
 
 	public PostViewController() {
 	}
-	
+
 	private void doProcess(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		// 데이터 받기
@@ -46,14 +46,13 @@ public class PostViewController extends HttpServlet {
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/post-trade-create.jsp");
 		} else if (urlCommand.equals("/post-detail.post")) {
-			//request에 postId parameter로 필요
+			// request에 postId parameter로 필요
 			action = new GetPostViewService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/ .post")) {
-			// 홈페이지 이동 view 경로
+		}else if (urlCommand.equals("/ssp.post")) {
 			forward = new ActionForward();
 			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/views/board/board_write.jsp");
+			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
 		}
 
 		if (forward != null) {
