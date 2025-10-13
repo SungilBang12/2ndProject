@@ -16,11 +16,11 @@ import service.post.GetPostViewService;
 /**
  * Servlet implementation class FrontController
  */
-@WebServlet("*.test")
-public class TestController extends HttpServlet {
+@WebServlet("*.post")
+public class PostViewController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	public TestController() {
+	public PostViewController() {
 	}
 	
 	private void doProcess(HttpServletRequest request, HttpServletResponse response)
@@ -36,21 +36,20 @@ public class TestController extends HttpServlet {
 		// 요청하기
 		Action action = null;
 		ActionForward forward = null;
-		if (urlCommand.equals("/editor-create.test")) {
+		if (urlCommand.equals("/editor-create.post")) {
 			action = new CreateTradePostSyncService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/editor.test")) {
+		} else if (urlCommand.equals("/editor.post")) {
 			// 홈페이지 이동 view 경로
 			System.out.println("경로이동");
 			forward = new ActionForward();
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/post-trade-create.jsp");
-		} else if (urlCommand.equals("/post-detail.test")) {
-			
+		} else if (urlCommand.equals("/post-detail.post")) {
 			//request에 postId parameter로 필요
 			action = new GetPostViewService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/ .test")) {
+		} else if (urlCommand.equals("/ .post")) {
 			// 홈페이지 이동 view 경로
 			forward = new ActionForward();
 			forward.setRedirect(false);

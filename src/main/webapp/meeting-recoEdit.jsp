@@ -608,7 +608,7 @@
          * localStorage에서 게시글 목록 불러오기
          */
         function loadPostsFromStorage() {
-            const storedPosts = localStorage.getItem('posts');
+            const storedPosts = localStorage.getItem('postsreco');
             posts = storedPosts ? JSON.parse(storedPosts) : [];
         }
         
@@ -616,7 +616,7 @@
          * localStorage에 게시글 저장
          */
         function savePostsToStorage() {
-            localStorage.setItem('posts', JSON.stringify(posts));
+            localStorage.setItem('postsreco', JSON.stringify(posts));
         }
         
         

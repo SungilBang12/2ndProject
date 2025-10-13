@@ -162,7 +162,7 @@ public class PostDao {
 		post.setContent(rs.getString("CONTENT"));
 		post.setHit(rs.getInt("HIT"));
 		post.setCreatedAt(rs.getDate("CREATED_AT").toLocalDate());
-		post.setUpdatedAt(rs.getDate("UPDATED_AT").toLocalDate());
+//		post.setUpdatedAt(rs.getDate("UPDATED_AT").toLocalDate());
 		return post;
 	}
 
