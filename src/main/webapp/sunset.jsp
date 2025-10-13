@@ -31,19 +31,19 @@
 
   <!-- 가운데 10칸: 보드 -->
   <div id="board" class="slot-board">
-	<jsp:include page="/SunsetList.async">
-    	<jsp:param name="pageno" value="${param.pageno != null ? param.pageno : '1'}" />
-  	</jsp:include>
+    <!-- ✅ 서버 사이드 인클lude: AjaxController의 /SunsetList.async 가 부분뷰로 forward -->
+    <c:import url="/SunsetList.async">
+  		<c:param name="pageno" value="${empty param.pageno ? '1' : param.pageno}" />
+	</c:import>
+
+    <%-- (선택) 아래는 안전망용 폴백. 컨트롤러가 posts 안 주면 최소 레이아웃만 유지 --%>
     <%
-      // 컨트롤러가 미리 request.setAttribute("posts", 리스트)를 넣어줬다면 그대로 사용.
-      // 없다면 JSP에서 안전하게 조회(임시) — 구조 변경 없이 동작 보장.
       @SuppressWarnings("unchecked")
       List<Post> posts = (List<Post>) request.getAttribute("posts");
       if (posts == null) {
         try {
           PostDao dao = new PostDao();
-          // TODO: 필요 시, 카테고리/보드ID로 필터하는 메소드가 있으면 그걸로 대체
-          posts = dao.getAllPosts(); // 기본 전부 가져오고, 컨트롤러에서 필터링 권장
+          posts = dao.getAllPosts();
         } catch (Exception e) {
           posts = new ArrayList<>();
         }
@@ -56,7 +56,6 @@
       <h1 style="margin:0; font-size:20px; font-weight:700;">노을 앨범</h1>
 
       <div style="margin-left:auto;">
-        <!-- 글쓰기: 실제 매핑으로 교체하세요. 예: /post/write?board=sunset -->
         <a href="<c:url value='/post/write?sunset=1'/>"
            class="btn-primary"
            style="display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
@@ -70,7 +69,7 @@
       </div>
     </div>
 
-    <!-- 앨범 그리드 -->
+    <!-- 앨범 그리드 (폴백) -->
     <c:choose>
       <c:when test="${empty posts}">
         <div style="padding:24px;border:1px dashed #e5e7eb;border-radius:12px;background:#fafafa;">
@@ -78,17 +77,12 @@
         </div>
       </c:when>
       <c:otherwise>
-        <!-- post-grid.css가 카드 레이아웃을 잡아줍니다 -->
         <ul class="post-grid">
           <c:forEach var="p" items="${posts}">
             <li class="post-card">
-              <a class="post-card__link" href="<c:out value='${p.getLink() != null ? p.getLink() : "#"}'/>">
-                <!-- 썸네일: 이미지 미정이면 파비콘으로 대체 -->
+              <a class="post-card__link" href="<c:out value='${p.link != null ? p.link : "#"}'/>">
                 <div class="post-card__thumb">
-                  <img
-                    src="<c:url value='/images/favicon.svg'/>"
-                    alt="썸네일"
-                    loading="lazy" />
+                  <img src="<c:url value='/images/favicon.svg'/>" alt="썸네일" loading="lazy" />
                 </div>
                 <div class="post-card__meta">
                   <div class="post-card__title">
@@ -107,10 +101,8 @@
 
   </div>
 
-  <!-- 우측 2칸: 필요 시 우측 영역 -->
-  <div class="slot-extra">
-    <!-- 비워둠 -->
-  </div>
+  <!-- 우측 2칸 -->
+  <div class="slot-extra"><!-- 비움 --></div>
 </main>
 
 </body>
