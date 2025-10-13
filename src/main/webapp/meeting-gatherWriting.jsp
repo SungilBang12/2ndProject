@@ -268,6 +268,9 @@
             
                     <!-- 에디터 영역 -->
                     <div id="board" class="board"></div>
+                    
+                    <input type="hidden" name="content" id="post-content-hidden">
+                    <input type="hidden" name="listId" value="1">
                            
                     <!-- 버튼 그룹 -->
                     <div class="button-group">
@@ -285,64 +288,11 @@
 
 <!-- 게시글 작성 JavaScript -->
 <script>
-    /**
-     * 게시글 작성 페이지 스크립트
-     * localStorage를 사용한 클라이언트 사이드 데이터 관리
-     */
-    
-    // JSP contextPath를 JavaScript 변수로 전달
-    var contextPath = '${pageContext.request.contextPath}';
-    
-    // 전역 변수
-    let posts = [];
-    
-    /**
-     * 페이지 로드 시 초기화
-     */
-    function init() {
-        // 데이터 로드
-        loadPostsFromStorage();
-        
-        // 이벤트 리스너 등록
-        setupEventListeners();
-        
-        console.log('✅ 게시글 작성 페이지 초기화 완료');
-        console.log('현재 저장된 게시글 수:', posts.length);
-    }
-    
-    /**
-     * localStorage에서 게시글 목록 불러오기
-     */
-    function loadPostsFromStorage() {
-        const storedPosts = localStorage.getItem('posts');
-        posts = storedPosts ? JSON.parse(storedPosts) : [];
-    }
-    
-    /**
-     * localStorage에 게시글 저장
-     */
-    function savePostsToStorage() {
-        localStorage.setItem('posts', JSON.stringify(posts));
-    }
-    
-    /**
-     * 폼 제출 처리
-     */
-    function handleSubmit(e) {
-        e.preventDefault();
-        
-        // 폼 데이터 가져오기
-        const title = document.getElementById('post-title').value.trim();
-        const content = document.getElementById('board').innerHTML;
-        
-        // 유효성 검사
-        if (!validateForm(title, content)) {
-            return;
-        }
-        
-        // 게시글 작성
-        createPost(title, content);
-    }
+<!-- 에디터 영역 -->
+<div id="board" class="board"></div>
+
+<input type="hidden" name="content" id="post-content-hidden">
+<input type="hidden" name="listId" value="1">
     
     /**
      * 폼 유효성 검사
@@ -367,6 +317,23 @@
         
         return true;
     }
+    
+    function handleSubmit(e) {
+      // 기본 submit 진행하되, 전송 직전에 hidden 채우고 유효성만 체크
+      const title = document.getElementById('post-title').value.trim();
+      const content = document.getElementById('board').innerHTML;
+
+      if (!title) { e.preventDefault(); alert('제목을 입력해주세요.'); return; }
+      if (title.length > 100) { e.preventDefault(); alert('제목은 100자 이내입니다.'); return; }
+      if (!content || content.trim() === '') { e.preventDefault(); alert('내용을 입력해주세요.'); return; }
+
+      document.getElementById('post-content-hidden').value = content;
+    }
+
+    window.addEventListener('load', function () {
+      document.getElementById('write-form').addEventListener('submit', handleSubmit);
+    });
+
     
     /**
      * 새 게시글 생성
