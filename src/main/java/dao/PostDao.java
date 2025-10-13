@@ -15,7 +15,6 @@ import utils.ConnectionPoolHelper;
 import utils.s3.R2Helper;
 
 public class PostDao {
-
 	// CREATE
 	public int createPost(Post post) {
 		// SQL 문 수정: POST_ID를 시퀀스 대신 NULL로 넣어 트리거가 작동하게 함.
