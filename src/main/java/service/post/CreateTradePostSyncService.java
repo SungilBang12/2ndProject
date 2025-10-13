@@ -2,6 +2,7 @@ package service.post;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ import action.Action;
 import action.ActionForward;
 import dao.PostDao;
 import dto.Post;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -48,7 +48,7 @@ public class CreateTradePostSyncService implements Action {
 			System.out.println("내용: " + content);
 
 			// create시 postId 자동생성, created_at 자동생성
-			Post post = new Post().builder().userId("user001").listId(Integer.valueOf(2)).title(title)
+			Post post = new Post().builder().userId("trump").listId(Integer.valueOf(12)).title(title)
 					.content(gson.toJson(content)).hit(Integer.valueOf(123)).build();
 
 			int postId = service.createPost(post);
@@ -75,8 +75,8 @@ public class CreateTradePostSyncService implements Action {
 			request.setAttribute("board_url", url);
 
 			forward = new ActionForward();
-			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/view/redirect.jsp");
+			forward.setRedirect(true);
+			forward.setPath("/redirect.jsp");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
