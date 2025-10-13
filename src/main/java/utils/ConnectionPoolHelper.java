@@ -12,6 +12,7 @@ public class ConnectionPoolHelper {
 	private static DataSource ds;
 	
 	// ServletContext에서 DataSource 가져오기
+	// DbConfig과 병합은 힘듦 => DataSource가 apache하고 sql에 둘 다 있음
     public static void init(ServletContext context) {
         ds = (DataSource) context.getAttribute("datasource");
         if (ds == null) {

@@ -20,6 +20,8 @@ export const ScheduleBlock = Node.create({
     return [{ tag: 'div[data-type="schedule-block"]' }];
   },
 
+  
+  // SSR 혹은 HTML 초기 렌더링때 renderHTML()만 씀
   renderHTML({ node, HTMLAttributes }) {
     const attrs = mergeAttributes(
       HTMLAttributes,
@@ -59,6 +61,8 @@ export const ScheduleBlock = Node.create({
     ];
   },
 
+
+  /*
   addNodeView() {
     return ({ node }) => {
       const dom = document.createElement("div");
@@ -88,5 +92,7 @@ export const ScheduleBlock = Node.create({
 
       return { dom };
     };
+	
   },
+  */
 });
