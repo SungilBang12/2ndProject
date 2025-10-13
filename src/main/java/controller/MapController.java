@@ -12,6 +12,7 @@ import java.io.IOException;
 
 import action.Action;
 import action.ActionForward;
+import dao.PostDaoImpl;
 
 /**
  * Servlet implementation class MapController

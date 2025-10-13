@@ -274,8 +274,8 @@
                            
                     <!-- 버튼 그룹 -->
 				<div class="actions">
-					<button class="btn-primary" onclick="savePost()">저장</button>
-					<button class="btn-secondary" onclick="cancelPost()">취소</button>
+				    <button type="button" class="btn-primary" onclick="savePost()">저장</button>
+				    <button type="button" class="btn-secondary" onclick="cancelPost()">취소</button>
 				</div>
                 </form>
             </div>
@@ -284,7 +284,10 @@
 </main>
 
 <!-- 카카오맵 JavaScript -->
-<script src="${pageContext.request.contextPath}/js/kakaomap.js"></script>
+<<script>
+    // JSP 변수를 전역으로 먼저 선언
+    const contextPath = "${pageContext.request.contextPath}";
+</script>
 
 <!-- 게시글 작성 JavaScript -->
 <script>
@@ -399,44 +402,46 @@
 <script type="module">
     import { initEditor } from "./js/editor-init.js";
     
-    // 에디터 초기화
     const editor = initEditor(
         document.getElementById("board"),
         document.getElementById("toolbar")
     );
     
-
-//동기 전송 코드
-window.savePost = function() {
-  const content = editor.getJSON(); // tiptap은 JSON 구조로 교환 가능
-  const data = {
-    title: document.querySelector("#post-title").value,
-    content: content
-  };
-
-  fetch("/editor-create.test", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(result => {
-    console.log("서버 응답:", result);
-    alert("게시글이 저장되었습니다!");
-  })
-  .catch(err => console.error("전송 오류:", err));
-};
-window.cancelPost = function() {
-    if (confirm("작성을 취소하시겠습니까?")) {
-      history.back();
+   window.savePost = async function() {
+    const title = document.querySelector("#post-title").value.trim();
+    const content = editor.getJSON();
+    
+    if (!title) {
+        alert("제목을 입력해주세요.");
+        return;
     }
-  };
+    
+    const url = contextPath + "/editor-create.test";
+    const data = { title: title, content: content };
+
+    try {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        
+        console.log("응답 상태:", res.status);
+        
+        // 저장 성공으로 간주하고 이동
+        alert("게시글이 저장되었습니다!");
+        window.location.href = contextPath + "/meeting-gather.jsp";
+        
+    } catch (err) {
+        console.error("전송 오류:", err);
+        alert("저장 중 오류가 발생했습니다.");
+    }
+};
 
     // 이모지 기능
     import * as EmojiModule from "./js/emoji.js";
     window.openEmojiPicker = EmojiModule.openPicker;
     EmojiModule.setupEmojiSuggestion(editor);
-
 </script>
 </body>
 </html>
