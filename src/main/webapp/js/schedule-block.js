@@ -3,7 +3,7 @@ import { Node, mergeAttributes } from "https://esm.sh/@tiptap/core";
 export const ScheduleBlock = Node.create({
   name: "scheduleBlock",
   group: "block",
-  atom: true, // 내부 편집 불가
+  atom: true,
   draggable: true,
 
   addAttributes() {
@@ -11,7 +11,7 @@ export const ScheduleBlock = Node.create({
       title: { default: "" },
       date: { default: "" },
       time: { default: "" },
-      location: { default: "" },
+//      location: { default: "" }, // ✅ location 속성 추가
       people: { default: 0 },
     };
   },
@@ -45,6 +45,7 @@ export const ScheduleBlock = Node.create({
           `🕐 ${node.attrs.date}${node.attrs.time ? " " + node.attrs.time : ""}`,
         ],
       ],
+ /*
       [
         "div",
         { class: "schedule-info" },
@@ -53,6 +54,7 @@ export const ScheduleBlock = Node.create({
           : null,
         ["div", { class: "schedule-info-item" }, `👥 ${node.attrs.people}명 모집`],
       ],
+*/
       [
         "button",
         { class: "schedule-join-btn" },
@@ -60,7 +62,7 @@ export const ScheduleBlock = Node.create({
       ],
     ];
   },
-
+});
 
   /*
   addNodeView() {
@@ -95,4 +97,3 @@ export const ScheduleBlock = Node.create({
 	
   },
   */
-});

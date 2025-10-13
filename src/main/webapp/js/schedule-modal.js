@@ -16,9 +16,10 @@ export function openModal(editor) {
 
       <label>시간</label>
       <input type="time" id="scheduleTime">
-
+<--
       <label>장소</label>
       <input type="text" id="scheduleLocation" placeholder="예: 한강 공원">
+-->
 
       <label>모집 인원</label>
       <input type="number" id="schedulePeople" min="1" value="10">
@@ -32,33 +33,33 @@ export function openModal(editor) {
   modal.querySelector(".modal-close").onclick = () => modal.remove();
 
   modal.querySelector("#scheduleConfirm").onclick = () => {
-    const title = modal.querySelector("#scheduleTitle").value.trim();
-    const date = modal.querySelector("#scheduleDate").value.trim();
-    const time = modal.querySelector("#scheduleTime").value.trim();
-    const location = modal.querySelector("#scheduleLocation").value.trim();
-    const people = modal.querySelector("#schedulePeople").value.trim();
+      const title = modal.querySelector("#scheduleTitle").value.trim();
+      const date = modal.querySelector("#scheduleDate").value.trim();
+      const time = modal.querySelector("#scheduleTime").value.trim();
+     // const location = modal.querySelector("#scheduleLocation").value.trim(); // ✅ location 값 가져오기
+      const people = modal.querySelector("#schedulePeople").value.trim();
 
-    if (!title || !date) {
-      alert("모임 이름과 날짜는 필수입니다.");
-      return;
-    }
+      if (!title || !date) {
+        alert("모임 이름과 날짜는 필수입니다.");
+        return;
+      }
 
-    // 날짜 포맷팅
-    const dateObj = new Date(date);
-    const formattedDate = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일`;
+      // 날짜 포맷팅
+      const dateObj = new Date(date);
+      const formattedDate = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일`;
 
-    // 커스텀 노드 삽입
-    editor.chain().focus().insertContent({
-      type: "scheduleBlock",
-      attrs: {
-        title,
-        date: formattedDate,
-        time,
-        location,
-        people,
-      },
-    }).run();
+      // 커스텀 노드 삽입
+      editor.chain().focus().insertContent({
+        type: "scheduleBlock",
+        attrs: {
+          title,
+          date: formattedDate,
+          time,
+      //    location, // ✅ location 속성 전달
+          people,
+        },
+      }).run();
 
-    modal.remove();
-  };
-}
+      modal.remove();
+    };
+  }
