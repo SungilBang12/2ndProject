@@ -25,7 +25,9 @@ public class ConnectionPoolHelper {
             throw new RuntimeException("DataSource가 초기화되지 않았습니다. init() 호출 필요.");
         }
         Connection c = ds.getConnection();
-        c.setAutoCommit(false);
+     // ✅ 오토커밋 활성화
+        c.setAutoCommit(true);
+//        c.setAutoCommit(false);
         return c;
     }
     
