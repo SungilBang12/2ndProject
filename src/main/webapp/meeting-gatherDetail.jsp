@@ -12,7 +12,7 @@
     <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
     
     <!-- 카카오맵 API -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_APP_KEY&libraries=services"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=70a909d37469228212bf0e0010b9d27e&libraries=services"></script>
     
     <!-- 상세보기 전용 CSS -->
     <style>
