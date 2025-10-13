@@ -55,7 +55,7 @@ window.savePost = function() {
     content: content
   };
 
-  fetch("/editor-create.test", {
+  fetch("/editor-create.post", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
