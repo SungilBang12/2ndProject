@@ -3,6 +3,8 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="${pageContext.request.contextPath}/js/kakaomap.js"></script>
+
 
 <link rel="stylesheet" href="./css/post-create-edit.css" />
 
@@ -31,6 +33,8 @@
 		<jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
 		<jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
 		<jsp:include page="/WEB-INF/template/link-btn.jsp"></jsp:include>
+		<jsp:include page="/WEB-INF/include/image-modal.jsp" />
+        <button type="button" data-cmd="kakaoMap" title="장소 검색">📍 지도</button>  
 	</div>
 
 	<div id="board" class="board"></div>
@@ -40,7 +44,6 @@
 		<button class="btn-secondary" onclick="cancelPost()">취소</button>
 	</div>
 </div>
-
 <script type="module">
     import { initEditor } from "./js/editor-init.js";
     // 유일하게 emoji기능 사용 안할꺼면 빼야하는 부분

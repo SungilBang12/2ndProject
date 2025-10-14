@@ -22,6 +22,6 @@
 		<div class="slot-extra">
 			<!-- 필요 시 우측 칼럼 -->
 		</div>
-		<main>
+		</main>
 </body>
 </html>

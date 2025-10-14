@@ -10,7 +10,6 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.post.CreateTradePostSyncService;
 import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
 
@@ -37,10 +36,7 @@ public class PostViewController extends HttpServlet {
 		// 요청하기
 		Action action = null;
 		ActionForward forward = null;
-		if (urlCommand.equals("/editor-create.post")) {
-			action = new CreateTradePostSyncService();
-			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/editor.post")) {
+		if (urlCommand.equals("/editor.post")) {
 			// 홈페이지 이동 view 경로
 			System.out.println("경로이동");
 			forward = new ActionForward();
@@ -59,6 +55,22 @@ public class PostViewController extends HttpServlet {
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
 		}
+		
+//		
+//		} else if (urlCommand.equals("/create.post")) {
+//			action = new CreateTradePostSyncService();
+//			forward = action.excute(request, response);
+//		} else if(urlCommand.equals("/edit.post")) {
+//			action = new GetPostEditFormService();
+//			forward = action.excute(request, response);
+//		} else if(urlCommand.equals("/list.post")) {
+//			action = new PostListService();
+//			forward = action.excute(request, response);
+//		} else if(urlCommand.equals("/view.post")) {
+//			action = new GetPostViewService();
+//			forward = action.excute(request, response);
+//		}
+		
 
 		if (forward != null) {
 	        // 💡 1. 요청 헤더를 확인하여 fetch 요청인지 판단

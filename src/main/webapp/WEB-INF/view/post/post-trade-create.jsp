@@ -6,6 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Editor Template</title>
 
+    <!-- 공통 CSS -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=5">
+    <link rel="stylesheet" href="./css/post-create-edit.css" />
+    <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
+    
+    <!-- 카카오맵 API -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=70a909d37469228212bf0e0010b9d27e&libraries=services"></script>
+
+
 </head>
 <body>
 	<jsp:include page="/WEB-INF/include/header.jsp" />
