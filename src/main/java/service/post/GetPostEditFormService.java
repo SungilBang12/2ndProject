@@ -31,7 +31,7 @@ public class GetPostEditFormService implements Action {
          // 3. 권한 확인 (중요!)
          HttpSession session = request.getSession();
          // String loggedInUserId = (String) session.getAttribute("userId");
-         String loggedInUserId = "trump"; // 임시 사용자 ID
+         String loggedInUserId = "user001"; // 임시 사용자 ID
 
          if (post == null) {
              // 게시글이 없는 경우
@@ -49,7 +49,7 @@ public class GetPostEditFormService implements Action {
              
              // 5. ActionForward 설정: 수정 폼 JSP로 forward
              forward.setRedirect(false); // forward 방식 지정
-             forward.setPath("/WEB-INF/views/post/post-edit.jsp"); // 수정 폼 JSP 경로
+             forward.setPath("/WEB-INF/view/post/post-edit.jsp"); // 수정 폼 JSP 경로
          }
 
      } catch (NumberFormatException e) {

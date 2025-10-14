@@ -3,6 +3,13 @@
 <link rel="stylesheet" href="./css/post-create-edit.css" />
 <!-- toolbar에서 필요한 버튼 추가 제거 -->
 <div class="container">
+	<div class="header-actions">
+		<a href="${pageContext.request.contextPath}/meeting-gather.jsp"
+			class="btn">← 목록으로</a>
+	</div>
+
+	<input type="text" id="post-title-input" class="input-title"
+		value="${post.title}" placeholder="제목을 입력하세요." />
 	<div id="toolbar" class="toolbar">
 		<button data-cmd="bold">
 			<strong>B</strong>
@@ -28,8 +35,8 @@
 		<jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
 		<jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
 		<jsp:include page="/WEB-INF/template/link-btn.jsp"></jsp:include>
-		
-		
+
+
 
 	</div>
 
@@ -51,7 +58,7 @@
 window.savePost = function() {
     const content = editor.getJSON();
     const data = {
-        title: document.querySelector("#title").value,
+        title: document.querySelector("#post-title-input").value,
         content: content
     };
 
