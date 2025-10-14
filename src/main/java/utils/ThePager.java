@@ -10,6 +10,15 @@ public class ThePager {
 	 
 	 private String linkUrl;//페이저가 포함되는 페이지의 주소
 	 
+	 public int getPageCount() {
+		    return pageCount;
+		}
+
+		public int getCurrentPage() {
+		    return currentPage;
+		}
+
+	 
 	 public ThePager(int dataCount, int currentPage, 
 	  int pageSize, int pagerSize, String linkUrl) {
 	  
