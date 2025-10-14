@@ -82,6 +82,18 @@ public class AjaxController extends HttpServlet {
     		
     	}else if(urlCommand.equals("/ . async")) {
     	
+    	}else if (urlCommand.equals("/CommentsList.async")) {
+    	    new service.post.CommentsListAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsCreate.async")) {
+    	    new service.post.CreateCommentAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsUpdate.async")) {
+    	    new service.post.UpdateCommentAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsDelete.async")) {
+    	    new service.post.DeleteCommentAsyncService().handle(request, response);
+    	    return;
     	}
     }
 
