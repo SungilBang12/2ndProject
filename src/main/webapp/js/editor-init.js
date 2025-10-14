@@ -7,12 +7,12 @@ import { KakaoMapNode } from "./node-extensions.js";
 import { ScheduleBlock } from "./schedule-block.js";
 import Image from "https://esm.sh/@tiptap/extension-image";
 
-export function initEditor(boardEl, toolbarEl) {
+// 🔑 [수정] 세 번째 인자 'initialContent' 추가
+export function initEditor(boardEl, toolbarEl, initialContent) {
 	const editor = new Editor({
 		element: boardEl,
 		extensions: [
 			StarterKit.configure({
-
 				// Configure an included extension
 				Link: {
 					openOnClick: false,
@@ -27,7 +27,8 @@ export function initEditor(boardEl, toolbarEl) {
 			KakaoMapNode,
 			ScheduleBlock
 		],
-		content: "<p>에디터 시작!</p>",
+		// 🔑 초기 내용이 전달되면 사용하고, 아니면 기본값 "<p>에디터 시작!</p>" 사용
+		content: initialContent && Object.keys(initialContent).length > 0 ? initialContent : "<p>에디터 시작!</p>",
 		onUpdate: ({ editor }) => {
 			updateButtonStates(editor, toolbarEl);
 		},
@@ -38,7 +39,8 @@ export function initEditor(boardEl, toolbarEl) {
 
 	if (!toolbarEl) return editor;
 
-	const buttons = toolbarEl.querySelectorAll("button");
+	// 툴바 엘리먼트가 제대로 전달되었다면 querySelectorAll은 작동합니다.
+	const buttons = toolbarEl.querySelectorAll("button[data-cmd]"); // [수정] data-cmd 속성 가진 버튼만 선택
 	if (!buttons || buttons.length === 0) return editor;
 
 	buttons.forEach(btn => {
