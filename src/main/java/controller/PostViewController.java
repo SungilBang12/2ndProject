@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.post.CreateTradePostSyncService;
+import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
 
 /**
@@ -49,7 +50,11 @@ public class PostViewController extends HttpServlet {
 			//request에 postId parameter로 필요
 			action = new GetPostViewService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/ssp.post")) {
+		} else if (urlCommand.equals("/post-edit-form.post")) {
+		    // request에 postId parameter로 필요
+		    action = new GetPostEditFormService();
+		    forward = action.excute(request, response);
+		}  else if (urlCommand.equals("/ssp.post")) {
 			forward = new ActionForward();
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
