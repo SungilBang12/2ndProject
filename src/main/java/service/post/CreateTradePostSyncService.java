@@ -48,7 +48,7 @@ public class CreateTradePostSyncService implements Action {
 			System.out.println("내용: " + content);
 
 			// create시 postId 자동생성, created_at 자동생성
-			Post post = new Post().builder().userId("trump").listId(Integer.valueOf(12)).title(title)
+			Post post = new Post().builder().userId("user001").listId(Integer.valueOf(2)).title(title)
 					.content(gson.toJson(content)).hit(Integer.valueOf(123)).build();
 
 			int postId = service.createPost(post);
@@ -120,5 +120,5 @@ public class CreateTradePostSyncService implements Action {
 			}
 		}
 	}
-
+	
 }
