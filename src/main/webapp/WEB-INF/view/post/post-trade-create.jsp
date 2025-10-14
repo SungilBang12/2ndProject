@@ -39,7 +39,7 @@
             <!-- 페이지 헤더 -->
             <div class="page-header">
                 <h1 class="page-title">게시글 작성</h1>
-                <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn btn-secondary">목록으로</a>
+    			<button onclick="history.back()" class="btn">← 목록으로</button>
             </div>
 
             <!-- 에디터 Include -->

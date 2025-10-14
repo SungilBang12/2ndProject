@@ -65,7 +65,7 @@
 
 <!-- 목록으로 버튼 -->
 <div class="header-actions">
-    <a href="${pageContext.request.contextPath}/meeting-gather.jsp" class="btn">← 목록으로</a>
+    <button onclick="history.back()" class="btn">← 목록으로</button>
 </div>
 
 <!-- 게시글 정보 -->

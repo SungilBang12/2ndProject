@@ -54,7 +54,11 @@ public class PostViewController extends HttpServlet {
 			forward = new ActionForward();
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
-		}
+		} 
+//		else if (urlCommand.equals("/toList.post") ) {
+//			action = new getListIdByPostId();
+//			forward = action.excute(request, response)
+//		}
 		
 //		
 //		} else if (urlCommand.equals("/create.post")) {
