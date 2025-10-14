@@ -142,7 +142,7 @@ public class PostAsyncService {
 					responseMap.put("message", "수정 완료");
 					// 비동기 AJAX 요청이므로, 클라이언트 리다이렉트를 유도하기 위한 URL을 JSON으로 반환
 					responseMap.put("redirectUrl",
-							request.getContextPath() + "/post/detail?postId=" + postToUpdate.getPostId());
+							request.getContextPath() + "/post-detail.post?postId=" + postToUpdate.getPostId());
 				} else {
 					responseMap.put("status", "error");
 					responseMap.put("message", "수정 실패 또는 권한 없음.");
@@ -168,73 +168,65 @@ public class PostAsyncService {
 		});
 	}
 
-	/**
-	 * 게시글 삭제 서비스
-	 * 
-	 * @param postId        삭제할 게시글 ID
-	 * @param requestUserId 현재 요청한 사용자 ID (권한 확인용)
-	 */
-	// ------------------------------------------------------------------
-	/**
-	 * [Delete] 게시글 삭제 작업을 비동기로 처리하고, JSON 응답을 반환합니다.
-	 */
+	//게시글 삭제
 	public void deletePostAsync(final AsyncContext asyncContext, final String jsonData) {
+	    // 🔑 이 부분이 핵심적인 비동기 처리 시작입니다.
+	    // I/O 작업(DB 삭제)을 별도의 스레드 풀에 위임합니다.
+	    executor.execute(() -> { 
+	        
+	        HttpServletRequest request = (HttpServletRequest) asyncContext.getRequest();
+	        HttpServletResponse response = (HttpServletResponse) asyncContext.getResponse();
 
-		executor.execute(() -> {
+	        // JSON 응답을 위한 Map
+	        Map<String, Object> responseMap = new HashMap<>();
 
-			HttpServletRequest request = (HttpServletRequest) asyncContext.getRequest();
-			HttpServletResponse response = (HttpServletResponse) asyncContext.getResponse();
+	        try {
+	            // 1. JSON 데이터 파싱: { "postId": 123 } 형태를 가정
+	            Map<String, Double> map = gson.fromJson(jsonData, Map.class);
+	            int postId = map.get("postId").intValue();
 
-			// JSON 응답을 위한 Map
-			Map<String, Object> responseMap = new HashMap<>();
+	            // [임시] 사용자 ID 설정
+	            // int loggedInUserId = (Integer) request.getSession().getAttribute("userId");
+	            int loggedInUserId = 1; 
 
-			try {
-				// 1. JSON 데이터 파싱: { "postId": 123 } 형태를 가정
-				// postId를 Map으로 파싱하거나 DTO를 사용할 수 있으나, 여기선 Map을 사용합니다.
-				Map<String, Double> map = gson.fromJson(jsonData, Map.class);
+	            // 2. 동기 DAO 메서드 호출 (비동기 스레드 내에서 실행)
+	            // PostDao.deletePost는 트랜잭션을 포함한 동기 DB 삭제 로직입니다.
+	            int deletedRows = postDao.deletePost(postId); 
 
-				// Gson은 숫자를 Double로 파싱하므로, Integer로 변환합니다.
-				int postId = map.get("postId").intValue();
+	            if (deletedRows > 0) {
+	                responseMap.put("status", "success");
+	                responseMap.put("message", "게시글이 성공적으로 삭제되었습니다.");
+	                // 🔑 클라이언트에게 이동할 URL은 Service에서 줄 필요 없이, 
+	                // 클라이언트 JS가 document.referrer를 사용해 이전 경로로 이동합니다.
+	            } else {
+	                responseMap.put("status", "error");
+	                responseMap.put("message", "삭제에 실패했거나 게시글이 존재하지 않습니다. (권한 확인 필요)");
+	            }
 
-				// [필수] 로그인된 사용자 ID를 세션에서 가져와 권한 확인에 사용
-				// int loggedInUserId = (Integer) request.getSession().getAttribute("userId");
-				int loggedInUserId = 1; // 임시 ID
+	            // 3. JSON 응답 전송
+	            response.setContentType("application/json");
+	            response.setCharacterEncoding("UTF-8");
+	            response.getWriter().write(gson.toJson(responseMap));
+	            
+	            // 🔑 비동기 처리 종료: HTTP 응답 전송 완료
+	            asyncContext.complete(); 
 
-				// 2. 서비스/DAO 로직 수행 (Service 계층에 권한 확인 로직이 있다고 가정)
-				// 현재 DAO만 있으므로 DAO를 호출하지만, 실제로는 Service를 통해 권한 확인을 거쳐야 합니다.
-				int deletedRows = postDao.deletePost(postId);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            responseMap.put("status", "error");
+	            responseMap.put("message", "서버 오류: 삭제 처리 중 예외 발생.");
 
-				if (deletedRows > 0) {
-					responseMap.put("status", "success");
-					responseMap.put("message", "게시글이 성공적으로 삭제되었습니다.");
-					// 삭제 성공 후 클라이언트가 이동할 URL을 제공할 수도 있지만,
-					// 일반적으로 AJAX 삭제 후에는 클라이언트 JS가 목록 페이지로 이동을 처리합니다.
-				} else {
-					responseMap.put("status", "error");
-					// 실제 애플리케이션에서는 권한 없음(-2) 또는 게시글 없음(0) 등의 코드를 분리해야 합니다.
-					responseMap.put("message", "삭제에 실패했거나 게시글이 존재하지 않습니다. (권한 확인 필요)");
-				}
-
-				// 3. JSON 응답 전송 및 컨텍스트 종료
-				response.setContentType("application/json");
-				response.getWriter().write(gson.toJson(responseMap));
-				asyncContext.complete(); // 비동기 처리 종료
-
-			} catch (Exception e) {
-				// 오류 처리
-				e.printStackTrace();
-				responseMap.put("status", "error");
-				responseMap.put("message", "서버 오류: 삭제 처리 중 예외 발생.");
-
-				try {
-					response.setContentType("application/json");
-					response.getWriter().write(gson.toJson(responseMap));
-				} catch (IOException ioE) {
-					// 응답 전송 실패는 무시
-				}
-				asyncContext.complete();
-			}
-		});
+	            try {
+	                response.setContentType("application/json");
+	                response.setCharacterEncoding("UTF-8");
+	                response.getWriter().write(gson.toJson(responseMap));
+	            } catch (IOException ioE) {
+	                // 응답 전송 실패는 무시
+	            }
+	            // 예외 발생 시에도 반드시 컨텍스트를 종료해야 합니다.
+	            asyncContext.complete();
+	        }
+	    }); // executor.execute() 끝
 	}
 
 	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {

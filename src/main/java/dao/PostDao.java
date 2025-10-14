@@ -109,46 +109,111 @@ public class PostDao {
 	}
 
 	/**
-     * 게시글을 수정합니다. (TITLE, CONTENT, LIST_ID, UPDATED_AT 갱신)
-     */
+	 * 게시글을 수정합니다. (TITLE, CONTENT, LIST_ID, UPDATED_AT 갱신)
+	 */
 	// UPDATE
 	public int updatePost(Post post) {
-        // HIT는 수정 시 갱신하지 않고, UPDATED_AT만 갱신
-        String sql = "UPDATE POST SET TITLE = ?, CONTENT = ?, LIST_ID = ?, UPDATED_AT = SYSDATE WHERE POST_ID = ?";
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, post.getTitle());
-            pstmt.setString(2, post.getContent());
-            
-            // LIST_ID 처리 (null 가능)
-            if (post.getListId() != null && post.getListId() > 0) {
-                pstmt.setInt(3, post.getListId());
-            } else {
-                pstmt.setNull(3, Types.INTEGER);
-            }
-            pstmt.setInt(4, post.getPostId());
-
-            return pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return 0;
-        }
-    }
-
-	// DELETE
-	public int deletePost(int postId) {
-		// SQL 문 수정: 따옴표 제거
-		String sql = "DELETE FROM POST WHERE POST_ID = ?";
+		// HIT는 수정 시 갱신하지 않고, UPDATED_AT만 갱신
+		String sql = "UPDATE POST SET TITLE = ?, CONTENT = ?, LIST_ID = ?, UPDATED_AT = SYSDATE WHERE POST_ID = ?";
 		try (Connection conn = ConnectionPoolHelper.getConnection();
 				PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			pstmt.setInt(1, postId);
+			pstmt.setString(1, post.getTitle());
+			pstmt.setString(2, post.getContent());
+
+			// LIST_ID 처리 (null 가능)
+			if (post.getListId() != null && post.getListId() > 0) {
+				pstmt.setInt(3, post.getListId());
+			} else {
+				pstmt.setNull(3, Types.INTEGER);
+			}
+			pstmt.setInt(4, post.getPostId());
+
 			return pstmt.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return 0;
 		}
+	}
+
+	// DELETE
+	/**
+	 * 주어진 postId에 연결된 모든 자식 레코드(DATE_POST, IMAGE_DATA, MAP_DATA)를 삭제한 후, 부모
+	 * 레코드(POST)를 삭제합니다. 모든 작업은 단일 트랜잭션으로 처리됩니다. * @param postId 삭제할 게시글 ID
+	 * 
+	 * @return 삭제된 POST 테이블의 행 수 (성공 시 1, 실패 시 0)
+	 */
+	public int deletePost(int postId) {
+		int deletedRows = 0;
+		Connection conn = null;
+
+		try {
+			// 1. Connection 획득 및 트랜잭션 시작 (Auto Commit 비활성화)
+			conn = ConnectionPoolHelper.getConnection();
+			conn.setAutoCommit(false);
+
+			// ------------------------------------------
+			// 2. [핵심] 자식 데이터 먼저 삭제 (POST_ID 기준)
+			// ------------------------------------------
+
+			// 2-1. DATE_POST 테이블 삭제 (일정 데이터)
+			String deleteDateSql = "DELETE FROM DATE_POST WHERE POST_ID = ?";
+			try (PreparedStatement pstmtDate = conn.prepareStatement(deleteDateSql)) {
+				pstmtDate.setInt(1, postId);
+				pstmtDate.executeUpdate();
+			}
+
+			// 2-2. IMAGE_DATA 테이블 삭제 (이미지 데이터)
+			String deleteImageSql = "DELETE FROM IMAGE_DATA WHERE POST_ID = ?";
+			try (PreparedStatement pstmtImage = conn.prepareStatement(deleteImageSql)) {
+				pstmtImage.setInt(1, postId);
+				pstmtImage.executeUpdate();
+			}
+
+			// 2-3. MAP_DATA 테이블 삭제 (지도 데이터)
+			String deleteMapDataSql = "DELETE FROM MAP_DATA WHERE POST_ID = ?";
+			try (PreparedStatement pstmtMap = conn.prepareStatement(deleteMapDataSql)) {
+				pstmtMap.setInt(1, postId);
+				pstmtMap.executeUpdate();
+			}
+
+			// ------------------------------------------
+			// 3. 부모 데이터 (POST) 삭제
+			// ------------------------------------------
+			String deletePostSql = "DELETE FROM POST WHERE POST_ID = ?";
+			try (PreparedStatement pstmtParent = conn.prepareStatement(deletePostSql)) {
+				pstmtParent.setInt(1, postId);
+				deletedRows = pstmtParent.executeUpdate(); // POST 테이블 삭제 결과 저장
+			}
+
+			// 4. 모든 작업이 성공했다면 Commit
+			conn.commit();
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			// 5. 오류 발생 시 Rollback (트랜잭션 되돌리기)
+			if (conn != null) {
+				try {
+					conn.rollback();
+				} catch (SQLException rollbackE) {
+					rollbackE.printStackTrace();
+				}
+			}
+			deletedRows = 0; // 실패 시 0 반환
+
+		} finally {
+			// 6. [필수] 트랜잭션 종료 및 리소스 반환
+			if (conn != null) {
+				try {
+					conn.setAutoCommit(true); // Auto Commit 상태 복구
+					conn.close();
+				} catch (SQLException closeE) {
+					closeE.printStackTrace();
+				}
+			}
+		}
+		return deletedRows;
 	}
 
 	// ResultSet → Post 매핑
@@ -188,11 +253,11 @@ public class PostDao {
 
 	// DATE_POST 테이블에 정모/일정 정보 삽입
 	public void insertSchedule(int postId, JsonObject attrs) {
-		
-		
-		//location 포함
-		//String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, MEET_LOCATION, PEOPLE) VALUES (?, ?, ?, ?, ?, ?)";
-		
+
+		// location 포함
+		// String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME,
+		// MEET_LOCATION, PEOPLE) VALUES (?, ?, ?, ?, ?, ?)";
+
 		// SQL 문 수정: post_schedule -> DATE_POST, 컬럼명 일치
 		String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, PEOPLE) VALUES (?, ?, ?, ?, ?)";
 
@@ -215,7 +280,7 @@ public class PostDao {
 			pstmt.setString(5, peopleValue);
 
 			pstmt.executeUpdate();
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -342,6 +407,7 @@ public class PostDao {
 			throw new RuntimeException("외부 이미지 업로드 실패: " + imageUrl, e);
 		}
 	}
+
 	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
 		PostDao dao = new PostDao();
 
