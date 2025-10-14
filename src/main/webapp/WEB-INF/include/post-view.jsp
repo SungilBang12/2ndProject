@@ -73,48 +73,104 @@
     }
     
  	// TipTap viewer 초기화
-  	initViewer(
+  	const editor = initViewer(
       document.getElementById("board"),
       content
   	);
 
-//postId 필요
 
+   // ---------------------------------------------------
+    // 🔑 URL에서 쿼리 파라미터(postId)를 추출하는 헬퍼 함수
+    // ---------------------------------------------------
+    function getPostIdFromUrl() {
+        // window.location.search는 "?postId=123"과 같은 문자열을 반환합니다.
+        const params = new URLSearchParams(window.location.search);
+        const postId = params.get("postId");
+        
+        // 숫자인지 확인하고, 유효하지 않으면 null 반환
+        return postId ? parseInt(postId, 10) : null;
+    }
+
+    // URL에서 postId 값을 가져와 변수에 할당
+    const postId = getPostIdFromUrl();
+
+
+// 유효성 검사
+    if (!postId) {
+        console.error("오류: URL에서 유효한 postId를 찾을 수 없습니다.");
+    }
+
+
+// ---------------------------------------------------
+// 수정 폼으로 이동 (동기 요청)
+// ---------------------------------------------------
 window.editPost = function() {
-  const content = editor.getJSON(); // tiptap은 JSON 구조로 교환 가능
-  const data = {
-    title: document.querySelector("#title").value,
-    content: content
-  };
-
-  fetch("/editor-update.post", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(result => {
-    console.log("서버 응답:", result);
-	console.log(JSON.stringify(data));
-    alert("게시글이 저장되었습니다!");
-  })
-  .catch(err => console.error("전송 오류:", err));
+    if (!postId) {
+        alert("게시글 번호 정보가 누락되었습니다.");
+        return;
+    }
+    
+    const contextPath = "${pageContext.request.contextPath}";
+    
+    // 동기 요청으로 수정 폼으로 이동 (Service에서 DB 데이터 로드)
+    window.location.href = contextPath + "/post-edit-form.post?postId=" + postId;
 };
-//postId 필요
+
+// ---------------------------------------------------
+// 🔑 삭제 요청 (비동기 AJAX: $.ajax 사용)
+// ---------------------------------------------------
 window.deletePost = function() {
-  fetch("/editor-delete.post", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(postId)
-  })
-  .then(res => res.json())
-  .then(result => {
-    console.log("서버 응답:", result);
-    alert("게시글이 삭제되었습니다!");
-  })
-  .catch(err => console.error("전송 오류:", err));
-};
+    if (!postId) {
+        alert("게시글 번호 정보가 누락되었습니다.");
+        return;
+    }
 
+    if (confirm("정말로 이 게시글을 삭제하시겠습니까?")) {
+        const data = { postId: postId }; 
+        const contextPath = "${pageContext.request.contextPath}";
+        
+        // AJAX 요청 ($.ajax 사용으로 JSON Body 전송 보장)
+        $.ajax({
+            url: contextPath + "/delete.postasync", 
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            dataType: "json", // 서버 응답을 JSON으로 예상
+
+            success: function(result) {
+                console.log("서버 응답:", result);
+                if (result.status === "success") {
+                    alert("게시글이 성공적으로 삭제되었습니다.");
+                    
+                    // 🔑 [핵심 수정] 이전 페이지(referrer)로 이동 시도
+                    const previousUrl = document.referrer;
+                    const currentUrl = window.location.href;
+                    // 목록 페이지의 안전 대체 경로
+                    const fallbackUrl = contextPath + "/index.jsp"; 
+
+                    let redirectUrl;
+
+                    // 이전 URL이 존재하고, 현재 상세 페이지 URL이 아니라면 이전 URL 사용
+                    if (previousUrl && previousUrl !== currentUrl) {
+                        redirectUrl = previousUrl;
+                    } else {
+                        // 이전 URL이 없거나 현재 페이지인 경우 (예: 북마크에서 바로 들어옴), 목록으로 이동
+                        redirectUrl = fallbackUrl;
+                    }
+                    
+                    window.location.href = redirectUrl; 
+                    
+                } else {
+                    alert("삭제 실패: " + (result.message || "알 수 없는 오류"));
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("AJAX 전송 오류:", textStatus, errorThrown);
+                alert("서버 통신 오류로 삭제에 실패했습니다.");
+            }
+        });
+    }
+};
 </script>
 
 

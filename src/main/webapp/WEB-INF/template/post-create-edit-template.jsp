@@ -16,10 +16,6 @@
 		</div>
 
 		<div class="slot-board">
-			<div class="title-block">
-				<label for="postTitle">게시글 제목</label> <input type="text" id="title"
-					name="title" required>
-			</div>
 			<jsp:include page="/WEB-INF/template/editor-template.jsp" />
 		</div>
 
