@@ -104,15 +104,7 @@
     import { getAuth, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     // Firebase 설정
-    const firebaseConfig = {
-  		apiKey: "AIzaSyDQZRVGrB2Qdzlw5kuUFcIAg724WomCJJ4",
-        authDomain: "secondproject-91733.firebaseapp.com",
-        projectId: "secondproject-91733",
-        storageBucket: "secondproject-91733.firebasestorage.app",
-        messagingSenderId: "1056914003",
-        appId: "1:1056914003:web:a03605f898314c6feea4a6",
-        measurementId: "G-V2QTFGRD4T"
-    };
+    const firebaseConfig = CONFIG;
 
     // Firebase 초기화
     const app = initializeApp(firebaseConfig);
