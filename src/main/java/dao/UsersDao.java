@@ -12,10 +12,10 @@ import java.util.Optional;
 
 import org.mindrot.jbcrypt.BCrypt; // 비밀번호 암호화 라이브러리
 
-import Interface.UserInterface;
+import Interface.UsersInterface;
 import dto.Users;
 
-public class UsersDao implements UserInterface {
+public class UsersDao implements UsersInterface {
 	
 	// SQL 쿼리 상수 추가 및 통합
     private static final String INSERT_USER_SQL = "INSERT INTO users (USER_ID, USERNAME, PASSWORD, EMAIL, ROLE, IS_EMAIL_VERIFIED, FIREBASE_UID, CREATED_AT) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
