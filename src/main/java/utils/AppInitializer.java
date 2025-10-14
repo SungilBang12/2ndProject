@@ -1,5 +1,9 @@
 package utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import javax.sql.DataSource;
 
 import org.apache.tomcat.jdbc.pool.DataSourceProxy;
@@ -9,8 +13,6 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import utils.s3.R2Helper;
-
-import java.io.InputStream;
 
 @WebListener
 public class AppInitializer implements ServletContextListener {
@@ -43,6 +45,31 @@ public class AppInitializer implements ServletContextListener {
             System.err.println("R2Helper 초기화 실패: " + e.getMessage());
             e.printStackTrace();
         }
+        
+     // 🚨 [추가된 로직] Firebase 설정 로드 및 ServletContext에 저장
+        // 이로써 API Key는 코드 외부에서 로드되어 메모리에만 존재합니다.
+        try {
+            Properties firebaseConfig = loadProperties(ctx, "/META-INF/keys/firebase-config.properties");
+            ctx.setAttribute("firebaseConfig", firebaseConfig);
+            System.out.println("Firebase 설정 로드 완료: ServletContext에 저장");
+        } catch (IOException e) {
+            System.err.println("Firebase 설정 파일 로드 실패!");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 지정된 경로에서 Properties 파일을 로드하는 헬퍼 메서드
+     */
+    private Properties loadProperties(ServletContext ctx, String path) throws IOException {
+        Properties props = new Properties();
+        try (InputStream in = ctx.getResourceAsStream(path)) {
+            if (in == null) {
+                throw new IOException("설정 파일 경로를 찾을 수 없습니다: " + path);
+            }
+            props.load(in);
+        }
+        return props;
     }
 
     @Override
