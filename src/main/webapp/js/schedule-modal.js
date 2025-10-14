@@ -16,10 +16,6 @@ export function openModal(editor) {
 
       <label>시간</label>
       <input type="time" id="scheduleTime">
-<--
-      <label>장소</label>
-      <input type="text" id="scheduleLocation" placeholder="예: 한강 공원">
--->
 
       <label>모집 인원</label>
       <input type="number" id="schedulePeople" min="1" value="10">
