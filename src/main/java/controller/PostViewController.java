@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.post.CreateTradePostSyncService;
+import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
 
 /**
@@ -49,23 +50,48 @@ public class PostViewController extends HttpServlet {
 			//request에 postId parameter로 필요
 			action = new GetPostViewService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/ .post")) {
-			// 홈페이지 이동 view 경로
+		} else if (urlCommand.equals("/post-edit-form.post")) {
+		    // request에 postId parameter로 필요
+		    action = new GetPostEditFormService();
+		    forward = action.excute(request, response);
+		}  else if (urlCommand.equals("/ssp.post")) {
 			forward = new ActionForward();
 			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/views/board/board_write.jsp");
+			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
 		}
 
 		if (forward != null) {
-			if (forward.isRedirect()) { // true location.href = "페이지 이동"
-				// 뷰지정
-				response.sendRedirect(forward.getPath()); // 주소값이 바뀌어서 잘 안씀
-			} else {
-				// 보낼 곳 있을 경우 => 데이터 처리 반환
-				RequestDispatcher dis = request.getRequestDispatcher(forward.getPath());
-				dis.forward(request, response);
-			}
-		}
+	        // 💡 1. 요청 헤더를 확인하여 fetch 요청인지 판단
+	        String requestedWith = request.getHeader("X-Requested-With");
+	        boolean isAjax = "XMLHttpRequest".equals(requestedWith);
+	        
+	        if (forward.isRedirect()) {
+	            System.out.println("페이지 리다이렉트");
+
+	            if (isAjax) {
+	                // 💡 2. fetch 요청인 경우, JSON으로 redirect URL을 반환
+	                response.setContentType("application/json");
+	                response.setCharacterEncoding("UTF-8");
+	                String redirectUrl = forward.getPath();
+	                
+	                // JSON 응답을 클라이언트에게 직접 보냅니다.
+	                String jsonResponse = "{\"success\": true, \"redirectUrl\": \"" + redirectUrl + "\"}";
+	                response.getWriter().write(jsonResponse);
+	                return; // 처리 종료
+	            } else {
+	                // 3. 일반적인 브라우저 요청인 경우, 기존 sendRedirect() 수행
+	                response.sendRedirect(forward.getPath());
+	            }
+	        } else {
+	            // 보낼 곳 있을 경우 => 데이터 처리 반환 (forward)
+	            System.out.println("포워딩");
+	            RequestDispatcher dis = request.getRequestDispatcher(forward.getPath());
+	            
+	            // 💡 fetch 요청이라도 forward는 JSP 내용을 HTML로 돌려주는 것이므로 그대로 둡니다.
+	            // (클라이언트 JS에서 .text()로 받은 후 DOM에 삽입해야 함)
+	            dis.forward(request, response);
+	        }
+	    }
 	}
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)

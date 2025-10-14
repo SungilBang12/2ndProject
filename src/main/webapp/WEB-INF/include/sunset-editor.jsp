@@ -24,12 +24,9 @@
 		<button data-cmd="bulletList">● List</button>
 		<button data-cmd="orderedList">1. List</button>
 		<jsp:include page="/WEB-INF/include/image-modal.jsp" />
-		<jsp:include page="/WEB-INF/include/map-modal.jsp" />
-		<jsp:include page="/WEB-INF/include/schedule-modal.jsp" />
 		<jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
-		<jsp:include page="/WEB-INF/template/link-btn.jsp"></jsp:include>
-		
-		
+
+
 
 	</div>
 
@@ -94,7 +91,7 @@ window.cancelPost = function() {
     if (confirm("작성을 취소하시겠습니까?")) {
       history.back();
     }
-  };
+};
 
 
 //유일하게 emoji기능 사용 안할꺼면 빼야하는 부분

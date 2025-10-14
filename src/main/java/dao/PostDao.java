@@ -1,3 +1,4 @@
+
 package dao;
 
 import java.sql.Connection;
@@ -8,6 +9,8 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import dto.Post;
@@ -105,33 +108,33 @@ public class PostDao {
 		return posts;
 	}
 
+	/**
+     * 게시글을 수정합니다. (TITLE, CONTENT, LIST_ID, UPDATED_AT 갱신)
+     */
 	// UPDATE
 	public int updatePost(Post post) {
-		// SQL 문 수정: 따옴표 제거, UPDATED_AT 추가
-		String sql = "UPDATE POST SET TITLE = ?, CONTENT = ?, LIST_ID = ?, HIT = ?, UPDATED_AT = SYSDATE WHERE POST_ID = ?";
-		try (Connection conn = ConnectionPoolHelper.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        // HIT는 수정 시 갱신하지 않고, UPDATED_AT만 갱신
+        String sql = "UPDATE POST SET TITLE = ?, CONTENT = ?, LIST_ID = ?, UPDATED_AT = SYSDATE WHERE POST_ID = ?";
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			pstmt.setString(1, post.getTitle());
-			pstmt.setString(2, post.getContent());
-			if (post.getListId() != null) {
-				pstmt.setInt(3, post.getListId());
-			} else {
-				pstmt.setNull(3, Types.INTEGER);
-			}
-			if (post.getHit() != null) {
-				pstmt.setInt(4, post.getHit());
-			} else {
-				pstmt.setInt(4, 0);
-			}
-			pstmt.setInt(5, post.getPostId());
+            pstmt.setString(1, post.getTitle());
+            pstmt.setString(2, post.getContent());
+            
+            // LIST_ID 처리 (null 가능)
+            if (post.getListId() != null && post.getListId() > 0) {
+                pstmt.setInt(3, post.getListId());
+            } else {
+                pstmt.setNull(3, Types.INTEGER);
+            }
+            pstmt.setInt(4, post.getPostId());
 
-			return pstmt.executeUpdate();
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
 
 	// DELETE
 	public int deletePost(int postId) {
@@ -337,6 +340,43 @@ public class PostDao {
 
 		} catch (Exception e) {
 			throw new RuntimeException("외부 이미지 업로드 실패: " + imageUrl, e);
+		}
+	}
+	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
+		PostDao dao = new PostDao();
+
+		for (JsonElement element : contentArray) {
+			JsonObject node = element.getAsJsonObject();
+			String type = node.get("type").getAsString();
+
+			switch (type) {
+			case "kakaoMap":
+				JsonObject mapAttrs = node.getAsJsonObject("attrs");
+				dao.insertMap(postId, mapAttrs);
+				break;
+
+			case "scheduleBlock":
+				JsonObject schedAttrs = node.getAsJsonObject("attrs");
+				dao.insertSchedule(postId, schedAttrs);
+				break;
+
+			case "image":
+				JsonObject imgAttrs = node.getAsJsonObject("attrs");
+				try {
+					dao.insertImage(postId, imgAttrs);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+
+			// 다른 블록이 추가되면 여기에 case 추가
+			}
+
+			// 하위 content 안에 nested node가 있으면 재귀 탐색
+			if (node.has("content")) {
+				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId);
+			}
 		}
 	}
 }

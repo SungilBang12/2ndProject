@@ -7,6 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import service.post.PostListService;
+
+
 // 비동기 통신 컨트롤러
 @WebServlet("*.async")
 public class AjaxController extends HttpServlet {
@@ -75,15 +78,13 @@ public class AjaxController extends HttpServlet {
 		if(urlCommand.equals("/CreateReply.async")) {
 //	    	CreateReplyService crs = new CreateReplyService();
 //			crs.createReply(request, response);
-    	}else if(urlCommand.equals("/ .async")) {
-    	
+    	}else if(urlCommand.equals("/postList.async")) {
+    		new PostListService().getPostList(request, response);
+            return;
     		
     	}else if(urlCommand.equals("/ . async")) {
     	
-    	}else if (urlCommand.equals("/SunsetList.async")) {
-    		new service.post.SunsetListAsyncService().render(request, response);
     	}
-		
     }
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
