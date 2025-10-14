@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+//이메일 세션 저장용
 @WebServlet("/saveUserSession")
 public class SaveUserSessionServlet extends HttpServlet {
     
