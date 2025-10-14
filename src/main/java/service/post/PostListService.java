@@ -20,6 +20,8 @@ import com.google.gson.JsonDeserializer;
 
 // ...
 public class PostListService {
+	
+	
 
 	public void getPostList(HttpServletRequest request, HttpServletResponse response) throws IOException {
 	    response.setContentType("application/json; charset=UTF-8");
