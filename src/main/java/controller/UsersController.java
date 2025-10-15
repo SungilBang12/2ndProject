@@ -74,7 +74,7 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
 		} else if ("/myInfo".equals(pathInfo)) { // 🚨 내 정보 수정
 			request.getRequestDispatcher("/WEB-INF/view/users/myInfo.jsp").forward(request, response);
-		} else if ("/myPosts".equals(pathInfo)) { // 🚨 내가 단 게시글
+		} else if ("/myPosts".equals(pathInfo)) { // 🚨 내가 단 사진
 			request.getRequestDispatcher("/WEB-INF/view/users/myPosts.jsp").forward(request, response);
 		} else if ("/myComments".equals(pathInfo)) { // 🚨 내가 단 댓글 보기
 			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
@@ -129,6 +129,10 @@ public class UsersController extends HttpServlet {
 			HttpSession session = request.getSession(true);
 			session.invalidate(); // 기존 세션 무효화
 			session = request.getSession(true); // 새로운 세션 생성
+			
+			System.out.println("로그인 정보 = 비밀번호 확인" + user);
+			// 패스워드 제거
+			user.setPassword(null);
 
 			// 새 세션에 사용자 정보 저장 (비밀번호는 저장하지 않음)
 			session.setAttribute("loggedInUser", user);
