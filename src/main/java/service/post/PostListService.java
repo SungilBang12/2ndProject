@@ -4,16 +4,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dao.PostDao;
 import dto.Post;
-
 import java.util.List;
 
 public class PostListService {
 
-    public JsonObject getPostList(String sort, int page, int limit) {
+    public JsonObject getPostList(String sort, int page, int limit, String query) {
         PostDao dao = new PostDao();
+        boolean hasQuery = (query != null && !query.trim().isEmpty());
 
-        List<Post> posts = dao.getPagedPosts(sort, page, limit);
-        int dataCount = dao.getTotalPostCount();
+        List<Post> posts;
+        int dataCount;
+
+        if (hasQuery) {
+            posts = dao.getPagedPostsByKeyword(sort, page, limit, query);
+            dataCount = dao.getSearchPostCount(query);
+        } else {
+            posts = dao.getPagedPosts(sort, page, limit);
+            dataCount = dao.getTotalPostCount();
+        }
 
         int totalPages = (int) Math.ceil((double) dataCount / limit);
 
@@ -22,13 +30,14 @@ public class PostListService {
             JsonObject obj = new JsonObject();
             obj.addProperty("postId", p.getPostId());
             obj.addProperty("userId", p.getUserId());
-            obj.addProperty("listId", p.getListId());
             obj.addProperty("title", p.getTitle());
             obj.addProperty("content", p.getContent());
             obj.addProperty("hit", p.getHit());
             obj.addProperty("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : "-");
-            obj.addProperty("postType", p.getPostType());   // ✅ 새로 추가된 필드
-            obj.addProperty("category", p.getCategory());   // ✅ 새로 추가된 필드
+            obj.addProperty("category", p.getCategory());
+            obj.addProperty("categoryId", p.getCategoryId());
+            obj.addProperty("postType", p.getPostType());
+            obj.addProperty("postTypeId", p.getPostTypeId());
             arr.add(obj);
         }
 
@@ -42,5 +51,6 @@ public class PostListService {
         return result;
     }
 }
+
 
 

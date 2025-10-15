@@ -25,34 +25,41 @@ public class UsersController extends HttpServlet {
 	private final UsersService usersService = new UsersService();
 
 	/**
-     * ServletContext에서 Firebase 설정 Properties를 로드하여 JSON으로 변환 후 request에 저장합니다.
-     */
-    private void setFirebaseConfigToRequest(HttpServletRequest request) {
-        // ConfigLoader를 사용하여 ServletContext에서 설정값을 가져옵니다.
-        Optional<Properties> configOpt = ConfigLoader.getFirebaseConfig(getServletContext());
-        
-        if (configOpt.isPresent()) {
-            Properties props = configOpt.get();
-            Map<String, String> firebaseConfigMap = new HashMap<>();
+	 * ServletContext에서 Firebase 설정 Properties를 로드하여 JSON으로 변환 후 request에 저장합니다.
+	 */
+	private void setFirebaseConfigToRequest(HttpServletRequest request) {
+	    // 🚨 디버깅: ServletContext 확인
+	    System.out.println("[DEBUG] ServletContext: " + getServletContext());
+	    
+	    Optional<Properties> configOpt = ConfigLoader.getFirebaseConfig(getServletContext());
+	    
+	    // 🚨 디버깅: Properties 로드 여부 확인
+	    System.out.println("[DEBUG] Firebase Config 로드 여부: " + configOpt.isPresent());
 
-            // Properties에서 필요한 값들을 가져와 Map에 담습니다.
-            firebaseConfigMap.put("apiKey", props.getProperty("firebase.apiKey"));
-            firebaseConfigMap.put("authDomain", props.getProperty("firebase.authDomain"));
-            firebaseConfigMap.put("projectId", props.getProperty("firebase.projectId"));
-            firebaseConfigMap.put("storageBucket", props.getProperty("firebase.storageBucket"));
-            firebaseConfigMap.put("messagingSenderId", props.getProperty("firebase.messagingSenderId"));
-            firebaseConfigMap.put("appId", props.getProperty("firebase.appId"));
+	    if (configOpt.isPresent()) {
+	        Properties props = configOpt.get();
+	        
+	        // 🚨 디버깅: Properties 내용 확인 (apiKey는 일부만)
+	        System.out.println("[DEBUG] apiKey 존재: " + (props.getProperty("firebase.apiKey") != null));
+//	        System.out.println("[DEBUG] authDomain: " + props.getProperty("firebase.authDomain"));
+	        
+	        Map<String, String> firebaseConfigMap = new HashMap<>();
+	        firebaseConfigMap.put("apiKey", props.getProperty("firebase.apiKey"));
+	        firebaseConfigMap.put("authDomain", props.getProperty("firebase.authDomain"));
+	        firebaseConfigMap.put("projectId", props.getProperty("firebase.projectId"));
+	        firebaseConfigMap.put("storageBucket", props.getProperty("firebase.storageBucket"));
+	        firebaseConfigMap.put("messagingSenderId", props.getProperty("firebase.messagingSenderId"));
+	        firebaseConfigMap.put("appId", props.getProperty("firebase.appId"));
 
-            // Map을 JSON 문자열로 변환하여 JSP로 전달합니다.
-            String configJson = new Gson().toJson(firebaseConfigMap);
-            request.setAttribute("firebaseConfigJson", configJson);
-            
-        } else {
-            // 설정 로드 실패 시 빈 JSON 문자열 전달
-            request.setAttribute("firebaseConfigJson", "{}");
-            System.err.println("Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
-        }
-    }
+	        String configJson = new Gson().toJson(firebaseConfigMap);
+	        request.setAttribute("firebaseConfigJson", configJson);
+//	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
+	    } else {
+	        request.setAttribute("firebaseConfigJson", "{}");
+//	        System.err.println("[ERROR] Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
+	    }
+	}
+
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -63,14 +70,20 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/login.jsp").forward(request, response);
 		} else if ("/join".equals(pathInfo)) {
 			// 🚨 Firebase 설정 정보를 ServletContext에서 로드하여 JSP로 전달
-            setFirebaseConfigToRequest(request); 
+			setFirebaseConfigToRequest(request);
 			request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
+		} else if ("/myInfo".equals(pathInfo)) { // 🚨 내 정보 수정
+			request.getRequestDispatcher("/WEB-INF/view/users/myInfo.jsp").forward(request, response);
+		} else if ("/myPosts".equals(pathInfo)) { // 🚨 내가 단 게시글
+			request.getRequestDispatcher("/WEB-INF/view/users/myPosts.jsp").forward(request, response);
+		} else if ("/myComments".equals(pathInfo)) { // 🚨 내가 단 댓글 보기
+			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
 		} else if ("/logout".equals(pathInfo)) {
 			handleLogout(request, response);
 		} else if ("/admin/users".equals(pathInfo)) {
 			// 필터에서 ADMIN 권한 체크 완료 후 여기로 진입함
 			// 여기서는 사용자 목록 조회 로직이 필요
-			request.getRequestDispatcher("/WEB-INF/views/admin/user_management.jsp").forward(request, response);
+			request.getRequestDispatcher("/WEB-INF/view/admin/user_management.jsp").forward(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
@@ -101,11 +114,13 @@ public class UsersController extends HttpServlet {
 
 		if (userId == null || userId.isEmpty() || password == null || password.isEmpty()) {
 			request.setAttribute("error", "ID와 비밀번호를 모두 입력해야 합니다.");
-			request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);
+			request.getRequestDispatcher("/WEB-INF/view/login.jsp").forward(request, response);
 			return;
 		}
 
 		Optional<Users> userOpt = usersService.loginUser(userId, password);
+		
+		
 
 		if (userOpt.isPresent()) {
 			Users user = userOpt.get();
@@ -122,8 +137,9 @@ public class UsersController extends HttpServlet {
 			// 메인 페이지로 리다이렉트
 			response.sendRedirect(request.getContextPath() + "/index.jsp");
 		} else {
+			System.out.println("id 비밀번호 오류");
 			request.setAttribute("error", "ID 또는 비밀번호가 일치하지 않습니다.");
-			request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);
+			request.getRequestDispatcher("/WEB-INF/view/login.jsp").forward(request, response);
 		}
 	}
 
@@ -131,41 +147,55 @@ public class UsersController extends HttpServlet {
 	 * 회원가입 최종 처리 (동기)
 	 */
 	private void handleJoin(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		// 🚨 시큐어 코딩: 모든 입력 데이터는 서버에서 다시 검증해야 합니다. (KISA: 입력 데이터 검증)
-		String userId = request.getParameter("userId");
-		String username = request.getParameter("username");
-		String password = request.getParameter("password");
-		String email = request.getParameter("email");
+	        throws ServletException, IOException {
+	    // 🚨 시큐어 코딩: 모든 입력 데이터는 서버에서 다시 검증해야 합니다.
+	    String userId = request.getParameter("userId");
+	    String username = request.getParameter("username");
+	    String password = request.getParameter("password");
+	    String email = request.getParameter("email");
+	    String uid = request.getParameter("uid");
+	    System.out.println("회원가입 경로 진입");
 
-		try {
-			// 1. 필수값 누락 체크
-			if (userId == null || userId.isEmpty() || password == null || password.isEmpty() || email == null
-					|| email.isEmpty()) {
-				throw new ServiceException("필수 정보(아이디, 비밀번호, 이메일)를 모두 입력해야 합니다.");
-			}
+	    try {
+	        // 1. 필수값 누락 체크
+	        if (userId == null || userId.isEmpty() || password == null || password.isEmpty() || email == null
+	                || email.isEmpty()) {
+	            throw new ServiceException("필수 정보(아이디, 비밀번호, 이메일)를 모두 입력해야 합니다.");
+	        }
 
-			// 2. 🚨 핵심 로직: 최종 회원가입 직전, 서버에서 이메일 인증 상태를 다시 확인합니다.
-			if (!usersService.isEmailVerified(email)) {
-				throw new ServiceException("이메일 인증이 완료되지 않았습니다. 메일함을 확인하고 인증 링크를 클릭한 후 다시 시도해 주세요.");
-			}
+//	     // ❌ 이전: DB에서 인증 상태 체크.
+//	        if (!usersService.isEmailVerified(email)) {
+//	            throw new ServiceException("이메일 인증이 완료되지 않았습니다. 메일함을 확인하고 인증 링크를 클릭한 후 다시 시도해 주세요.");
+//	        }
+	        String isEmailVerified = request.getParameter("isEmailVerified");
+	        if (!"true".equals(isEmailVerified)) {
+	        	throw new ServiceException("이메일 인증이 완료되지 않았습니다. 메일함을 확인하고 인증 링크를 클릭한 후 다시 시도해 주세요.");
+	        }
 
-			// 3. 사용자 객체 생성
-			Users user = Users.builder().userId(userId).username(username).password(password).email(email).ROLE("USER")
-					.isEmailVerified(true) // DB에 저장할 때 인증 상태 반영
-					.build();
+	        // 3. 사용자 객체 생성
+	        Users user = Users.builder().userId(userId).username(username).password(password).email(email).ROLE("USER")
+	                .isEmailVerified(true) // DB에 저장할 때 인증 상태 반영
+	                .build();
 
-			if (usersService.joinUser(user)) {
-				// 성공 시 로그인 페이지로 리다이렉트 (PRG 패턴 권장)
-				response.sendRedirect(request.getContextPath() + "/users/login?msg=joinSuccess");
-			} else {
-				request.setAttribute("error", "회원가입 처리 중 오류가 발생했습니다.");
-				request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
-			}
-		} catch (ServiceException e) {
-			request.setAttribute("error", e.getMessage());
-			request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
-		}
+	        if (usersService.joinUser(user)) {
+	            // 성공 시 로그인 페이지로 리다이렉트 (PRG 패턴 권장)
+	            response.sendRedirect(request.getContextPath() + "/users/login?msg=joinSuccess");
+	        } else {
+	        	System.out.println("회원가입 처리 중 오류");
+	            request.setAttribute("error", "회원가입 처리 중 오류가 발생했습니다.");
+	            
+	            // 🚨 [추가] Firebase 설정 다시 로드
+	            setFirebaseConfigToRequest(request);
+	            
+	            request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
+	        }
+	    } catch (ServiceException e) {
+	    	System.out.println(e.getMessage());
+	        request.setAttribute("error", e.getMessage());
+	        // 🚨 [추가] Firebase 설정 다시 로드
+	        setFirebaseConfigToRequest(request);
+	        request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
+	    }
 	}
 
 	/**
