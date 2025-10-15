@@ -1,71 +1,74 @@
 /**
- * 카카오맵 모듈 (TipTap 에디터 통합)
+ * 카카오맵 모듈 (TipTap 에디터 통합) - Enhanced Version
  * - 키워드 검색 결과 리스트/마커 동시 표출
  * - 리스트 클릭/마커 클릭 → 선택 반영
  * - Kakao Places pagination 지원
+ * 
+ * 주의: 이 버전은 map-modal.js와 공존하도록 설계되었습니다.
  */
 (function () {
   'use strict';
 
   // =========================
-  // CSS 스타일 주입
+  // CSS 스타일 주입 (고유 ID 사용)
   // =========================
   function injectModalStyles() {
-    if (document.getElementById('kakaomap-modal-styles')) return;
+    // ✅ 고유한 ID로 변경하여 다른 모달과 충돌 방지
+    if (document.getElementById('kakaomap-enhanced-modal-styles')) return;
 
     const style = document.createElement('style');
-    style.id = 'kakaomap-modal-styles';
+    style.id = 'kakaomap-enhanced-modal-styles';
     style.textContent = `
-      .kakaomap-modal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,.5);animation:fadeIn .2s}
-      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-      .kakaomap-modal-content{position:relative;background:#fff;margin:5% auto;padding:0;border-radius:12px;width:90%;max-width:900px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideDown .3s}
-      @keyframes slideDown{from{transform:translateY(-50px);opacity:0}to{transform:translateY(0);opacity:1}}
-      .kakaomap-modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e0e0e0}
-      .kakaomap-modal-header h3{margin:0;font-size:20px;font-weight:600;color:#333}
-      .kakaomap-close{background:none;border:none;font-size:32px;font-weight:300;color:#999;cursor:pointer;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;transition:color .2s}
-      .kakaomap-close:hover{color:#333}
-      .kakaomap-modal-body{padding:16px 24px}
-      .kakaomap-search-box{display:flex;gap:8px;margin-bottom:12px}
-      .kakaomap-input{flex:1;padding:12px 16px;border:1px solid #ddd;border-radius:8px;font-size:14px;transition:border-color .2s}
-      .kakaomap-input:focus{outline:none;border-color:#4CAF50}
-      .kakaomap-search-btn{padding:12px 24px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background-color .2s;white-space:nowrap}
-      .kakaomap-search-btn:hover{background:#45a049}
-      .kakaomap-body-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;align-items:start}
-      .kakaomap-container{width:100%;height:420px;border-radius:8px;overflow:hidden;border:1px solid #ddd}
-      .kakaomap-right{display:flex;flex-direction:column;gap:8px;min-height:420px}
-      .kakaomap-results{border:1px solid #ddd;border-radius:8px;overflow:hidden;flex:1;min-height:240px;background:#fff}
-      .kakaomap-result-header{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;color:#555;background:#fafafa}
-      .kakaomap-result-list{list-style:none;margin:0;padding:0;max-height:calc(420px - 40px - 44px);overflow:auto}
-      .kakaomap-result-item{padding:10px 12px;border-bottom:1px solid #f2f2f2;cursor:pointer;transition:background .15s}
-      .kakaomap-result-item:hover{background:#f7fbff}
-      .kakaomap-result-title{font-size:14px;font-weight:600;color:#222;margin:0 0 4px}
-      .kakaomap-result-addr{font-size:12px;color:#666;line-height:1.4}
-      .kakaomap-pagination{display:flex;gap:6px;justify-content:center;align-items:center;padding:8px;border-top:1px solid #eee;background:#fafafa}
-      .kakaomap-page-btn{border:1px solid #ddd;background:#fff;border-radius:6px;font-size:12px;padding:6px 10px;cursor:pointer}
-      .kakaomap-page-btn[disabled]{opacity:.5;cursor:not-allowed}
-      .kakaomap-selected-info{margin-top:8px;padding:12px 16px;background:#f5f5f5;border-radius:8px;font-size:14px;line-height:1.6;color:#333;min-height:60px}
-      .kakaomap-modal-footer{display:flex;justify-content:flex-end;gap:12px;padding:16px 24px;border-top:1px solid #e0e0e0}
-      .kakaomap-modal-footer button{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
-      .kakaomap-btn-secondary{background:#f5f5f5;color:#666}
-      .kakaomap-btn-secondary:hover{background:#e0e0e0}
-      .kakaomap-btn-danger{background:#f44336;color:#fff}
-      .kakaomap-btn-danger:hover{background:#d32f2f}
-      .kakaomap-btn-primary{background:#2196F3;color:#fff}
-      .kakaomap-btn-primary:hover{background:#1976D2}
-      .kakaomap-btn-primary:disabled{background:#ccc;cursor:not-allowed}
+      .kakaomap-enhanced-modal{display:none;position:fixed;z-index:10000;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,.5);animation:fadeInEnhanced .2s}
+      @keyframes fadeInEnhanced{from{opacity:0}to{opacity:1}}
+      .kakaomap-enhanced-modal-content{position:relative;background:#fff;margin:5% auto;padding:0;border-radius:12px;width:90%;max-width:900px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideDownEnhanced .3s}
+      @keyframes slideDownEnhanced{from{transform:translateY(-50px);opacity:0}to{transform:translateY(0);opacity:1}}
+      .kakaomap-enhanced-modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e0e0e0}
+      .kakaomap-enhanced-modal-header h3{margin:0;font-size:20px;font-weight:600;color:#333}
+      .kakaomap-enhanced-close{background:none;border:none;font-size:32px;font-weight:300;color:#999;cursor:pointer;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;transition:color .2s}
+      .kakaomap-enhanced-close:hover{color:#333}
+      .kakaomap-enhanced-modal-body{padding:16px 24px}
+      .kakaomap-enhanced-search-box{display:flex;gap:8px;margin-bottom:12px}
+      .kakaomap-enhanced-input{flex:1;padding:12px 16px;border:1px solid #ddd;border-radius:8px;font-size:14px;transition:border-color .2s}
+      .kakaomap-enhanced-input:focus{outline:none;border-color:#4CAF50}
+      .kakaomap-enhanced-search-btn{padding:12px 24px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background-color .2s;white-space:nowrap}
+      .kakaomap-enhanced-search-btn:hover{background:#45a049}
+      .kakaomap-enhanced-body-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;align-items:start}
+      .kakaomap-enhanced-container{width:100%;height:420px;border-radius:8px;overflow:hidden;border:1px solid #ddd}
+      .kakaomap-enhanced-right{display:flex;flex-direction:column;gap:8px;min-height:420px}
+      .kakaomap-enhanced-results{border:1px solid #ddd;border-radius:8px;overflow:hidden;flex:1;min-height:240px;background:#fff}
+      .kakaomap-enhanced-result-header{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;color:#555;background:#fafafa}
+      .kakaomap-enhanced-result-list{list-style:none;margin:0;padding:0;max-height:calc(420px - 40px - 44px);overflow:auto}
+      .kakaomap-enhanced-result-item{padding:10px 12px;border-bottom:1px solid #f2f2f2;cursor:pointer;transition:background .15s}
+      .kakaomap-enhanced-result-item:hover{background:#f7fbff}
+      .kakaomap-enhanced-result-title{font-size:14px;font-weight:600;color:#222;margin:0 0 4px}
+      .kakaomap-enhanced-result-addr{font-size:12px;color:#666;line-height:1.4}
+      .kakaomap-enhanced-pagination{display:flex;gap:6px;justify-content:center;align-items:center;padding:8px;border-top:1px solid #eee;background:#fafafa}
+      .kakaomap-enhanced-page-btn{border:1px solid #ddd;background:#fff;border-radius:6px;font-size:12px;padding:6px 10px;cursor:pointer}
+      .kakaomap-enhanced-page-btn[disabled]{opacity:.5;cursor:not-allowed}
+      .kakaomap-enhanced-selected-info{margin-top:8px;padding:12px 16px;background:#f5f5f5;border-radius:8px;font-size:14px;line-height:1.6;color:#333;min-height:60px}
+      .kakaomap-enhanced-modal-footer{display:flex;justify-content:flex-end;gap:12px;padding:16px 24px;border-top:1px solid #e0e0e0}
+      .kakaomap-enhanced-modal-footer button{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
+      .kakaomap-enhanced-btn-secondary{background:#f5f5f5;color:#666}
+      .kakaomap-enhanced-btn-secondary:hover{background:#e0e0e0}
+      .kakaomap-enhanced-btn-danger{background:#f44336;color:#fff}
+      .kakaomap-enhanced-btn-danger:hover{background:#d32f2f}
+      .kakaomap-enhanced-btn-primary{background:#2196F3;color:#fff}
+      .kakaomap-enhanced-btn-primary:hover{background:#1976D2}
+      .kakaomap-enhanced-btn-primary:disabled{background:#ccc;cursor:not-allowed}
       @media (max-width: 900px){
-        .kakaomap-modal-content{width:95%;margin:2% auto}
-        .kakaomap-body-layout{grid-template-columns:1fr}
-        .kakaomap-container{height:360px}
+        .kakaomap-enhanced-modal-content{width:95%;margin:2% auto}
+        .kakaomap-enhanced-body-layout{grid-template-columns:1fr}
+        .kakaomap-enhanced-container{height:360px}
       }
     `;
     document.head.appendChild(style);
   }
 
   // =========================
-  // 메인 함수
+  // 메인 함수 (고유한 이름으로 노출)
   // =========================
-  function openKakaoMapModal(editor) {
+  function openKakaoMapModalEnhanced(editor) {
     injectModalStyles();
 
     // TipTap 문서에서 기존 kakaoMap 노드 탐색
@@ -79,37 +82,37 @@
       }
     });
 
-    // 모달 DOM 생성
+    // 모달 DOM 생성 (모든 클래스에 enhanced 접두사)
     const modal = document.createElement('div');
-    modal.className = 'kakaomap-modal';
+    modal.className = 'kakaomap-enhanced-modal';
     modal.innerHTML = `
-      <div class="kakaomap-modal-content">
-        <div class="kakaomap-modal-header">
+      <div class="kakaomap-enhanced-modal-content">
+        <div class="kakaomap-enhanced-modal-header">
           <h3>${existingMapNode ? '📍 지도 수정' : '📍 위치 선택'}</h3>
-          <button type="button" class="kakaomap-close">&times;</button>
+          <button type="button" class="kakaomap-enhanced-close">&times;</button>
         </div>
-        <div class="kakaomap-modal-body">
-          <div class="kakaomap-search-box">
-            <input type="text" id="kakaomap-search-input" class="kakaomap-input" placeholder="주소 또는 장소명 검색 (예: 한강공원, 남산타워)">
-            <button type="button" id="kakaomap-search-btn" class="kakaomap-search-btn">🔍 검색</button>
+        <div class="kakaomap-enhanced-modal-body">
+          <div class="kakaomap-enhanced-search-box">
+            <input type="text" id="kakaomap-enhanced-search-input" class="kakaomap-enhanced-input" placeholder="주소 또는 장소명 검색 (예: 한강공원, 남산타워)">
+            <button type="button" id="kakaomap-enhanced-search-btn" class="kakaomap-enhanced-search-btn">🔍 검색</button>
           </div>
 
-          <div class="kakaomap-body-layout">
+          <div class="kakaomap-enhanced-body-layout">
             <div>
-              <div id="kakaomap-container" class="kakaomap-container"></div>
-              <div id="kakaomap-selected-info" class="kakaomap-selected-info">
+              <div id="kakaomap-enhanced-container" class="kakaomap-enhanced-container"></div>
+              <div id="kakaomap-enhanced-selected-info" class="kakaomap-enhanced-selected-info">
                 ${existingMapNode ? existingMapNode.attrs.label : '지도를 클릭하거나 주소/키워드를 검색하세요'}
               </div>
             </div>
 
-            <div class="kakaomap-right">
-              <div class="kakaomap-results">
-                <div class="kakaomap-result-header">검색 결과</div>
-                <ul id="kakaomap-result-list" class="kakaomap-result-list"></ul>
-                <div class="kakaomap-pagination">
-                  <button type="button" id="kakaomap-prev" class="kakaomap-page-btn" disabled>이전</button>
-                  <span id="kakaomap-page-indicator" style="font-size:12px;color:#555;"></span>
-                  <button type="button" id="kakaomap-next" class="kakaomap-page-btn" disabled>다음</button>
+            <div class="kakaomap-enhanced-right">
+              <div class="kakaomap-enhanced-results">
+                <div class="kakaomap-enhanced-result-header">검색 결과</div>
+                <ul id="kakaomap-enhanced-result-list" class="kakaomap-enhanced-result-list"></ul>
+                <div class="kakaomap-enhanced-pagination">
+                  <button type="button" id="kakaomap-enhanced-prev" class="kakaomap-enhanced-page-btn" disabled>이전</button>
+                  <span id="kakaomap-enhanced-page-indicator" style="font-size:12px;color:#555;"></span>
+                  <button type="button" id="kakaomap-enhanced-next" class="kakaomap-enhanced-page-btn" disabled>다음</button>
                 </div>
               </div>
               <small style="color:#888;line-height:1.4;">💡 리스트에서 항목을 클릭하면 지도와 선택 정보가 업데이트 됩니다.</small>
@@ -117,10 +120,10 @@
           </div>
         </div>
 
-        <div class="kakaomap-modal-footer">
-          <button type="button" id="kakaomap-cancel-btn" class="kakaomap-btn-secondary">취소</button>
-          ${existingMapNode ? `<button type="button" id="kakaomap-delete-btn" class="kakaomap-btn-danger">삭제</button>` : ''}
-          <button type="button" id="kakaomap-confirm-btn" class="kakaomap-btn-primary" ${existingMapNode ? '' : 'disabled'}>
+        <div class="kakaomap-enhanced-modal-footer">
+          <button type="button" id="kakaomap-enhanced-cancel-btn" class="kakaomap-enhanced-btn-secondary">취소</button>
+          ${existingMapNode ? `<button type="button" id="kakaomap-enhanced-delete-btn" class="kakaomap-enhanced-btn-danger">삭제</button>` : ''}
+          <button type="button" id="kakaomap-enhanced-confirm-btn" class="kakaomap-enhanced-btn-primary" ${existingMapNode ? '' : 'disabled'}>
             ${existingMapNode ? '수정 완료' : '선택 완료'}
           </button>
         </div>
@@ -130,7 +133,7 @@
     modal.style.display = 'block';
 
     // Kakao 객체 준비
-    const container = modal.querySelector('#kakaomap-container');
+    const container = modal.querySelector('#kakaomap-enhanced-container');
     const geocoder = new kakao.maps.services.Geocoder();
     const places = new kakao.maps.services.Places();
 
@@ -176,12 +179,11 @@
     }
 
     function clearResultList() {
-      const ul = modal.querySelector('#kakaomap-result-list');
+      const ul = modal.querySelector('#kakaomap-enhanced-result-list');
       ul.innerHTML = '';
-      // 페이지 인디케이터/버튼 초기화
-      modal.querySelector('#kakaomap-page-indicator').textContent = '';
-      modal.querySelector('#kakaomap-prev').disabled = true;
-      modal.querySelector('#kakaomap-next').disabled = true;
+      modal.querySelector('#kakaomap-enhanced-page-indicator').textContent = '';
+      modal.querySelector('#kakaomap-enhanced-prev').disabled = true;
+      modal.querySelector('#kakaomap-enhanced-next').disabled = true;
     }
 
     // =========================
@@ -205,11 +207,11 @@
         roadAddress: roadAddress || ''
       };
       updateSelectedInfo();
-      modal.querySelector('#kakaomap-confirm-btn').disabled = false;
+      modal.querySelector('#kakaomap-enhanced-confirm-btn').disabled = false;
     }
 
     function updateSelectedInfo() {
-      const infoDiv = modal.querySelector('#kakaomap-selected-info');
+      const infoDiv = modal.querySelector('#kakaomap-enhanced-selected-info');
       if (selectedData) {
         infoDiv.innerHTML = `
           <strong>📍 선택된 위치:</strong><br>
@@ -250,7 +252,7 @@
       clearResultList();
       clearSearchMarkers();
 
-      const ul = modal.querySelector('#kakaomap-result-list');
+      const ul = modal.querySelector('#kakaomap-enhanced-result-list');
       const bounds = new kakao.maps.LatLngBounds();
 
       list.forEach((place, idx) => {
@@ -267,10 +269,10 @@
 
         // 리스트 아이템
         const li = document.createElement('li');
-        li.className = 'kakaomap-result-item';
+        li.className = 'kakaomap-enhanced-result-item';
         li.innerHTML = `
-          <p class="kakaomap-result-title">${idx + 1}. ${title}</p>
-          <div class="kakaomap-result-addr">
+          <p class="kakaomap-enhanced-result-title">${idx + 1}. ${title}</p>
+          <div class="kakaomap-enhanced-result-addr">
             ${road ? `도로명: ${road}<br>` : ''}
             ${jibun ? `지번: ${jibun}` : ''}
           </div>
@@ -301,9 +303,9 @@
 
       // 페이지네이션 바인딩
       currentPagination = pagination || null;
-      const prevBtn = modal.querySelector('#kakaomap-prev');
-      const nextBtn = modal.querySelector('#kakaomap-next');
-      const indicator = modal.querySelector('#kakaomap-page-indicator');
+      const prevBtn = modal.querySelector('#kakaomap-enhanced-prev');
+      const nextBtn = modal.querySelector('#kakaomap-enhanced-next');
+      const indicator = modal.querySelector('#kakaomap-enhanced-page-indicator');
 
       if (currentPagination) {
         currentPage = currentPagination.current || 1;
@@ -329,7 +331,6 @@
         if (status === kakao.maps.services.Status.OK && Array.isArray(data) && data.length > 0) {
           renderResults(data, pagination);
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-          // 키워드 결과 없으면 주소로 재시도
           clearResultList();
           clearSearchMarkers();
           searchByAddress(keyword);
@@ -348,7 +349,7 @@
           const d = result[0];
           const addr = d.address?.address_name || '';
           const road = d.road_address?.address_name || '';
-          modal.querySelector('#kakaomap-search-input').value = road || addr || '';
+          modal.querySelector('#kakaomap-enhanced-search-input').value = road || addr || '';
           placeMarker(e.latLng, addr || '선택한 위치', road || '');
         } else {
           placeMarker(e.latLng, '선택한 위치', '');
@@ -356,23 +357,23 @@
       });
     });
 
-    modal.querySelector('#kakaomap-search-btn').onclick = () => {
-      const keyword = modal.querySelector('#kakaomap-search-input').value.trim();
+    modal.querySelector('#kakaomap-enhanced-search-btn').onclick = () => {
+      const keyword = modal.querySelector('#kakaomap-enhanced-search-input').value.trim();
       if (!keyword) return alert('검색할 장소나 주소를 입력하세요.');
       searchPlacesByKeyword(keyword);
     };
 
-    modal.querySelector('#kakaomap-search-input').onkeypress = (e) => {
+    modal.querySelector('#kakaomap-enhanced-search-input').onkeypress = (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        modal.querySelector('#kakaomap-search-btn').click();
+        modal.querySelector('#kakaomap-enhanced-search-btn').click();
       }
     };
 
-    modal.querySelector('.kakaomap-close').onclick = () => modal.remove();
-    modal.querySelector('#kakaomap-cancel-btn').onclick = () => modal.remove();
+    modal.querySelector('.kakaomap-enhanced-close').onclick = () => modal.remove();
+    modal.querySelector('#kakaomap-enhanced-cancel-btn').onclick = () => modal.remove();
 
-    modal.querySelector('#kakaomap-confirm-btn').onclick = () => {
+    modal.querySelector('#kakaomap-enhanced-confirm-btn').onclick = () => {
       if (!selectedData) return;
       if (existingMapNode && existingMapPos !== null) {
         editor
@@ -408,7 +409,7 @@
       modal.remove();
     };
 
-    const deleteBtn = modal.querySelector('#kakaomap-delete-btn');
+    const deleteBtn = modal.querySelector('#kakaomap-enhanced-delete-btn');
     if (deleteBtn) {
       deleteBtn.onclick = () => {
         if (confirm('지도를 삭제하시겠습니까?')) {
@@ -422,12 +423,16 @@
       if (e.target === modal) modal.remove();
     };
 
-    setTimeout(() => modal.querySelector('#kakaomap-search-input').focus(), 100);
+    setTimeout(() => modal.querySelector('#kakaomap-enhanced-search-input').focus(), 100);
   }
 
-  // 전역/모듈 노출
-  window.openKakaoMapModal = openKakaoMapModal;
+  // ✅ 전역 노출 - 고유한 이름 사용
+  window.openKakaoMapModalEnhanced = openKakaoMapModalEnhanced;
+  
+  // ✅ 하위 호환성을 위해 기존 이름도 유지 (선택사항)
+  window.openKakaoMapModal = openKakaoMapModalEnhanced;
+  
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { openKakaoMapModal };
+    module.exports = { openKakaoMapModalEnhanced, openKakaoMapModal: openKakaoMapModalEnhanced };
   }
 })();

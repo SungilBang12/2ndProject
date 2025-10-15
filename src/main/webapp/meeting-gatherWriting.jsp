@@ -263,7 +263,6 @@
                         <jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
                         <button type="button" data-cmd="kakaoMap" title="장소 검색">📍 지도</button>  
                         
-                        <!-- 카카오맵 버튼 추가 -->
                   </div>
             
                     <!-- 에디터 영역 -->

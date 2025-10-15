@@ -51,12 +51,13 @@ public class PostAsyncService {
 
 				String title = (String) jsonMap.get("title");
 				Object content = jsonMap.get("content");
+				int listId = (int) jsonMap.get("listId");
 
 				// Post 객체 빌드 (실제로는 세션에서 userId를 가져와야 함)
-				Post post = new Post().builder().userId("user001").listId(2).title(title).content(gson.toJson(content))
+				Post post = new Post().builder().userId("user001").listId(listId).title(title).content(gson.toJson(content))
 						.hit(0).build();
 
-				// 2. DAO 호출 (DB 접근)
+				// 2. DAO 호출 (DB 접근)₩
 				int postId = postDao.createPost(post);
 
 				// 3. 커스텀 노드 처리 (추가 DB 작업)

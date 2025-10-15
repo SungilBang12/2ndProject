@@ -13,7 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import service.post.PostAsyncService;
 
 //모든 비동기 POST 요청을 처리
-@WebServlet(urlPatterns = "*.postasync", asyncSupported = true) 
+@WebServlet(urlPatterns = "*.postasync", asyncSupported = true)
+
 public class PostAjaxController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
