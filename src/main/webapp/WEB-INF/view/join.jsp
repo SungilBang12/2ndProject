@@ -82,10 +82,9 @@
 					<div class="form-group" id="passwordGroup">
 						<label for="password" class="form-label">비밀번호</label> <input
 							type="password" id="password" name="password" class="form-input"
-							placeholder="8자 이상, 문자/숫자/특수문자 포함" required
+							placeholder="8자 이상, 대소문자/숫자/특수문자 포함" required
 							oninput="validatePassword();">
-						<p id="passwordMessage" class="input-message">8자 이상, 문자, 숫자,
-							특수문자를 포함해야 합니다.</p>
+						<p id="passwordMessage" class="input-message">8자 이상, 영문 대소문자, 숫자, 특수문자를 모두 포함해야 합니다.</p>
 					</div>
 
 					<!-- 3. 비밀번호 확인 -->
@@ -142,28 +141,57 @@
 	// ----------------------------------------------------
 	// Firebase 설정 및 초기화
 	// ----------------------------------------------------
-	const firebaseConfigString = '${firebaseConfigJson}';
-    let firebaseConfig;
+	// 🚨 JSP Scriptlet으로 안전하게 JSON 문자열 출력
+	<%
+		String firebaseJson = (String) request.getAttribute("firebaseConfigJson");
+		if (firebaseJson == null || firebaseJson.isEmpty()) {
+			firebaseJson = "{}";
+		}
+	%>
+	
+	// 🚨 JSON을 직접 JavaScript 객체로 파싱 (문자열 이스케이프 문제 완전 우회)
+	let firebaseConfig = null;
+	let app = null;
+	let auth = null;
 	
 	try {
-		// JSP 문자열을 JSON 객체로 파싱
-		firebaseConfig = JSON.parse(firebaseConfigString);
-		console.log("Firebase Config loaded dynamically.");
+		// JSP에서 직접 JavaScript 객체로 출력
+		firebaseConfig = <%= firebaseJson %>;
+		
+		// 🚨 디버깅 로그
+		console.log('[DEBUG] firebaseConfig 객체:', firebaseConfig);
+		console.log('[DEBUG] apiKey:', firebaseConfig.apiKey);
+		
+		// 필수 필드 검증
+		if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+			throw new Error('Firebase 설정에 필수 필드가 누락되었습니다.');
+		}
+		
+		console.log("✅ Firebase Config loaded dynamically.");
+		
+		// Firebase 초기화
+		app = firebase.initializeApp(firebaseConfig);
+		auth = firebase.auth();
+		console.log("✅ Firebase App initialized successfully.");
+		
 	} catch (e) {
-		console.error("Firebase Config JSON 파싱 오류: 서버에서 설정값을 확인해주세요.", e);
-		firebaseConfig = {};
+		console.error("❌ Firebase 초기화 실패:", e.message);
+		console.error("❌ 전체 에러:", e);
+		
+		// 사용자에게 알림
+		const emailGroup = document.getElementById('emailGroup');
+		if (emailGroup) {
+			const errorMsg = document.createElement('p');
+			errorMsg.className = 'error-message';
+			errorMsg.style.color = 'var(--error-color)';
+			errorMsg.textContent = '⚠️ Firebase 서비스 초기화 실패. 이메일 인증 기능을 사용할 수 없습니다. 관리자에게 문의하세요.';
+			emailGroup.appendChild(errorMsg);
+		}
+		
+		// 이메일 인증 관련 UI 비활성화
+		document.getElementById('sendEmailBtn').disabled = true;
+		document.getElementById('email').disabled = true;
 	}
-
-    // Firebase 초기화
-    let app;
-    let auth;
-    try {
-        app = firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        console.log("Firebase App initialized successfully.");
-    } catch (e) {
-        console.error("Firebase 초기화 오류: Firebase 설정값을 확인해주세요.", e);
-    }
 
 	// ----------------------------------------------------
 	// 전역 상태 변수
@@ -254,17 +282,43 @@
 	// ----------------------------------------------------
 	function validatePassword() {
 		const password = $('#password').val();
-		const isValidFormat = password.length >= 8 && 
-							  /[a-zA-Z]/.test(password) && 
-							  /[0-9]/.test(password) && 
-							  /[!@#$%^&*(),.?":{}|<>]/.test(password);
+		
+		// 🚨 비밀번호 변경 감지: 인증 진행 중이면 경고
+		if (authCheckInterval && tempUserPassword && password !== tempUserPassword) {
+			// 인증 진행 중인데 비밀번호가 변경됨
+			updateMessage('passwordMessage', 'password', '⚠️ 비밀번호가 변경되었습니다. 이메일 인증을 다시 시작해야 합니다.', true);
+			updateMessage('emailMessage', 'email', '⚠️ 비밀번호 변경으로 인증이 취소되었습니다. "인증 취소" 버튼을 눌러주세요.', true);
+			
+			// 자동으로 인증 취소 (선택사항)
+			// cancelEmailVerification();
+			return;
+		}
+		
+		// 🚨 강화된 비밀번호 검증: 대소문자, 숫자, 특수문자 각각 필수
+		const hasLowerCase = /[a-z]/.test(password);
+		const hasUpperCase = /[A-Z]/.test(password);
+		const hasNumber = /[0-9]/.test(password);
+		const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+		const isLengthValid = password.length >= 8;
+		
+		const isValidFormat = isLengthValid && hasLowerCase && hasUpperCase && hasNumber && hasSpecialChar;
 
 		isPasswordValid = isValidFormat;
 		
-		if (isValidFormat) {
-			updateMessage('passwordMessage', 'password', '✅ 비밀번호 형식이 유효합니다.', false);
+		if (password.length === 0) {
+			updateMessage('passwordMessage', 'password', '비밀번호를 입력해 주세요.', false);
+		} else if (!isLengthValid) {
+			updateMessage('passwordMessage', 'password', '🚨 비밀번호는 최소 8자 이상이어야 합니다.', true);
+		} else if (!hasLowerCase) {
+			updateMessage('passwordMessage', 'password', '🚨 영문 소문자를 포함해야 합니다.', true);
+		} else if (!hasUpperCase) {
+			updateMessage('passwordMessage', 'password', '🚨 영문 대문자를 포함해야 합니다.', true);
+		} else if (!hasNumber) {
+			updateMessage('passwordMessage', 'password', '🚨 숫자를 포함해야 합니다.', true);
+		} else if (!hasSpecialChar) {
+			updateMessage('passwordMessage', 'password', '🚨 특수문자(!@#$%^&* 등)를 포함해야 합니다.', true);
 		} else {
-			updateMessage('passwordMessage', 'password', '🚨 8자 이상, 문자, 숫자, 특수문자를 포함해야 합니다.', true);
+			updateMessage('passwordMessage', 'password', '✅ 안전한 비밀번호입니다.', false);
 		}
 		
 		validatePasswordConfirm(); 
@@ -295,6 +349,12 @@
 		const email = $('#email').val().trim();
 		const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 		const sendBtn = $('#sendEmailBtn');
+
+		// 🚨 이메일 변경 감지: 인증 진행 중이면 자동 취소
+		if (authCheckInterval && tempUserEmail && email !== tempUserEmail) {
+			console.log('이메일 변경 감지: 인증 자동 취소');
+			cancelEmailVerification();
+		}
 
 		isEmailChecked = false;
 		isEmailAvailable = false;
@@ -348,6 +408,7 @@
 	// 4. 이메일 인증 요청 (Firebase Authentication 사용)
 	// ----------------------------------------------------
 	$('#sendEmailBtn').on('click', async function() {
+		// 🚨 Firebase 초기화 확인
 		if (!auth) {
 			updateMessage('emailMessage', 'email', '🚨 Firebase 서비스가 초기화되지 않았습니다. 관리자에게 문의하세요.', true);
 			return;
@@ -451,6 +512,17 @@
 					return;
 				}
 
+				// 🚨 비밀번호 변경 감지: 현재 입력된 비밀번호와 저장된 비밀번호 비교
+				const currentPassword = $('#password').val();
+				if (currentPassword !== tempUserPassword) {
+					console.warn('비밀번호가 변경되었습니다. Polling 중단.');
+					clearInterval(authCheckInterval);
+					authCheckInterval = null;
+					updateMessage('emailMessage', 'email', '⚠️ 비밀번호가 변경되어 인증이 중단되었습니다. 인증 취소 후 다시 시작해주세요.', true);
+					$('#sendEmailBtn').prop('disabled', true).text('인증 취소 필요');
+					return;
+				}
+
 				if (!user) {
 					// 세션이 끊어졌다면, 다시 로그인 시도
 					const userCredential = await auth.signInWithEmailAndPassword(tempUserEmail, tempUserPassword);
@@ -490,14 +562,17 @@
 				console.error('Firebase 인증 상태 확인 중 오류 발생:', error);
 				
 				if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/wrong-password') {
-					updateMessage('emailMessage', 'email', '❌ 인증 상태 확인 실패. 비밀번호 불일치. 비밀번호를 수정하려면 인증 취소를 눌러주세요.', true);
-					// 비밀번호 불일치 시 Polling 중단. 사용자가 취소를 누르거나 비밀번호를 수정 후 재전송해야 함.
+					updateMessage('emailMessage', 'email', '❌ 비밀번호 불일치로 인증 확인 실패. 인증을 취소하고 다시 시작해주세요.', true);
+					// 비밀번호 불일치 시 Polling 중단
+					clearInterval(authCheckInterval);
+					authCheckInterval = null;
+					$('#sendEmailBtn').prop('disabled', true).text('인증 취소 필요');
 				} else {
 					updateMessage('emailMessage', 'email', '❌ 인증 상태 확인 중 알 수 없는 오류 발생. 재전송을 시도해 주세요.', true);
+					clearInterval(authCheckInterval);
+					authCheckInterval = null;
+					$('#sendEmailBtn').prop('disabled', false).text('재전송');
 				}
-				clearInterval(authCheckInterval);
-				authCheckInterval = null; 
-				$('#sendEmailBtn').prop('disabled', false).text('재전송');
 				isEmailVerified = false;
 
 			} finally {
@@ -589,7 +664,7 @@
 		
 		// 메시지 초기화
 		updateMessage('idCheckMessage', 'userId', '아이디를 입력해 주세요.', false);
-		updateMessage('passwordMessage', 'password', '8자 이상, 문자, 숫자, 특수문자를 포함해야 합니다.', false);
+		updateMessage('passwordMessage', 'password', '8자 이상, 영문 대소문자, 숫자, 특수문자를 모두 포함해야 합니다.', false);
 		updateMessage('passwordConfirmMessage', 'passwordConfirm', '비밀번호가 일치해야 합니다.', false);
 		updateMessage('emailMessage', 'email', '유효한 이메일을 입력하면 인증 요청 버튼이 활성화됩니다.', false);
 		
@@ -663,7 +738,7 @@
     }
 
 	// 페이지 로드 시 초기화
-	$(document.ready(function() {
+	$(function() {
 		validatePassword();
 		validatePasswordConfirm();
 		checkAllValidity();

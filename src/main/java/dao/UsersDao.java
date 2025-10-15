@@ -18,7 +18,7 @@ import dto.Users;
 public class UsersDao implements UsersInterface {
 	
 	// SQL 쿼리 상수 추가 및 통합
-    private static final String INSERT_USER_SQL = "INSERT INTO users (USER_ID, USERNAME, PASSWORD, EMAIL, ROLE, IS_EMAIL_VERIFIED, FIREBASE_UID, CREATED_AT) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_USER_SQL = "INSERT INTO users (USER_ID, USERNAME, PASSWORD, EMAIL, ROLE, IS_EMAIL_VERIFIED, \"UID\", CREATED_AT) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 	private static final String SELECT_USER_BY_EMAIL_SQL = "SELECT * FROM users WHERE EMAIL = ?";
 	private static final String UPDATE_EMAIL_VERIFIED_SQL = "UPDATE users SET IS_EMAIL_VERIFIED = TRUE WHERE EMAIL = ?";
 	private static final String CHECK_EMAIL_EXISTS_SQL = "SELECT COUNT(*) FROM users WHERE EMAIL = ?";
@@ -31,14 +31,21 @@ public class UsersDao implements UsersInterface {
 	private Users mapResultSetToUser(ResultSet rs) throws SQLException {
 	    Timestamp timestamp = rs.getTimestamp("CREATED_AT");
 	    
+	    boolean isEmailVerified = false;
+	    
+	    // 오라클은 boolean값이 없음
+	    if(rs.getInt("IS_EMAIL_VERIFIED")==1) {
+	    	isEmailVerified = true;
+	    }
+	    
 		return Users.builder()
 				.userId(rs.getString("USER_ID"))
 				.username(rs.getString("USERNAME"))
 				.password(rs.getString("PASSWORD"))
 				.email(rs.getString("EMAIL"))
 				.ROLE(rs.getString("ROLE"))
-				.isEmailVerified(rs.getBoolean("IS_EMAIL_VERIFIED")) // 💡 추가됨: 이메일 인증 상태
-				.uid(rs.getString("FIREBASE_UID")) // 💡 추가됨: Firebase UID
+				.isEmailVerified(isEmailVerified) // 💡 추가됨: 이메일 인증 상태
+				.uid(rs.getString("UID")) // 💡 추가됨: Firebase UID
 				.createdAt(timestamp != null ? timestamp.toLocalDateTime() : null)
 				.build();
 	}
@@ -49,18 +56,21 @@ public class UsersDao implements UsersInterface {
 	 */
 	@Override
 	public int insertUser(Connection conn, Users user) throws SQLException {
-		// 비밀번호는 Service 계층에서 Bcrypt 해싱되어 넘어와야 하지만, DAO 내에서 안전하게 처리
-		String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
-
-		int result = 0;
-
+			int result = 0;
+		
+		int isEmailVerified = 0;
+		if(user.isEmailVerified()) {
+			isEmailVerified = 1;
+		}
+		
+		System.out.println("회원가입 user dto 정보" + user.toString());
 		try (PreparedStatement pstmt = conn.prepareStatement(INSERT_USER_SQL)) {
 			pstmt.setString(1, user.getUserId());
-			pstmt.setString(2, hashedPassword); // Bcrypt 해시된 비밀번호
-			pstmt.setString(3, user.getUsername());
+			pstmt.setString(2, user.getUsername()); 
+			pstmt.setString(3, user.getPassword());// Bcrypt 해시된 비밀번호
 			pstmt.setString(4, user.getEmail());
 			pstmt.setString(5, user.getROLE() != null ? user.getROLE() : "USER");
-			pstmt.setBoolean(6, user.isEmailVerified()); // 💡 추가됨: 이메일 인증 상태
+			pstmt.setInt(6, isEmailVerified); // 💡 추가됨: 이메일 인증 상태
 			pstmt.setString(7, user.getUid()); // 💡 추가됨: Firebase UID
 			// DB 타입에 맞게 LocalDateTime을 Timestamp로 변환하여 저장
 			pstmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
@@ -79,6 +89,7 @@ public class UsersDao implements UsersInterface {
 		Users user = null;
 
 		try (PreparedStatement pstmt = conn.prepareStatement(SELECT_USER_BY_ID_SQL)) {
+			System.out.println();
 			pstmt.setString(1, userId);
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
