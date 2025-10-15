@@ -554,7 +554,7 @@ public class PostDao {
 		}
 	}
 
-	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
+	public void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
 		PostDao dao = new PostDao();
 
 		for (JsonElement element : contentArray) {

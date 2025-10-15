@@ -10,6 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import service.post.CreatePostService;
 import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
 import service.post.UpdatePostService;
@@ -59,7 +60,12 @@ public class PostViewController extends HttpServlet {
             forward = new ActionForward();
             forward.setRedirect(false);
             forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
-        } else {
+        }   else if (urlCommand.equals("/create.post")) {
+            System.out.println(">>> 게시글 생성 처리 (Synchronous)");
+            action = new CreatePostService(); // Use the new service
+            forward = action.excute(request, response);
+        } 
+        else {
             System.out.println(">>> 매칭되는 URL이 없습니다: " + urlCommand);
         }
 

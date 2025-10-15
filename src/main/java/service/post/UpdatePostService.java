@@ -19,24 +19,7 @@ public class UpdatePostService implements Action {
         PostDao postDao = new PostDao();
         
         try {
-            // ============================================
-            // 1. 세션 체크 (로그인 확인)
-            // ============================================
-            HttpSession session = request.getSession(false);
-            String loggedInUserId = null;
-            
-            if (session != null) {
-                loggedInUserId = (String) session.getAttribute("userId");
-                System.out.println("=== 세션에서 가져온 userId: " + loggedInUserId + " ===");
-            }
-            
-            if (loggedInUserId == null || loggedInUserId.trim().isEmpty()) {
-                System.out.println("❌ 로그인되지 않음");
-                request.setAttribute("error_msg", "로그인이 필요합니다.");
-                forward.setRedirect(true);
-                forward.setPath(request.getContextPath() + "/login");
-                return forward;
-            }
+           
             
             // ============================================
             // 2. 폼 데이터 받기
@@ -89,16 +72,8 @@ public class UpdatePostService implements Action {
                 forward.setPath(request.getContextPath() + "/post-list.post");
                 return forward;
             }
+                
             
-            System.out.println("=== 권한 체크: 게시글 작성자=" + existingPost.getUserId() + ", 로그인 사용자=" + loggedInUserId + " ===");
-            
-            if (!existingPost.getUserId().equals(loggedInUserId)) {
-                System.out.println("❌ 수정 권한 없음");
-                request.setAttribute("error_msg", "수정 권한이 없습니다. 본인이 작성한 게시글만 수정할 수 있습니다.");
-                forward.setRedirect(true);
-                forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
-                return forward;
-            }
             
             // ============================================
             // 4. 게시글 수정
@@ -113,7 +88,6 @@ public class UpdatePostService implements Action {
             
             if (result > 0) {
                 System.out.println("✅ 게시글 수정 성공");
-                session.setAttribute("success_msg", "게시글이 성공적으로 수정되었습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
             } else {

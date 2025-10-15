@@ -90,6 +90,13 @@
     </div>
 </c:if>
 
+<!-- 권한 없는 사용자에게 메시지 표시 (선택사항) -->
+<c:if test="${not empty sessionScope.userId && sessionScope.userId != post.userId}">
+    <div class="action-buttons">
+        <p style="color: #666; font-size: 14px;">본인이 작성한 게시글만 수정/삭제할 수 있습니다.</p>
+    </div>
+</c:if>
+
 <!-- 스크립트 -->
 <script type="module">
 import { initViewer } from "${pageContext.request.contextPath}/js/editor-view.js";
@@ -116,21 +123,4 @@ try {
 // TipTap 뷰어 초기화
 const editor = initViewer(document.getElementById("board"), content);
 console.log("=== 에디터 초기화 완료 ===");
-
-<!-- 액션 버튼 (작성자만 표시) -->
-<c:if test="${not empty sessionScope.userId && sessionScope.userId == post.userId}">
-    <div class="action-buttons">
-        <button onclick="editPost()" class="btn btn-primary">수정</button>
-        <button onclick="deletePost()" class="btn btn-danger">삭제</button>
-    </div>
-</c:if>
-
-<!-- 권한 없는 사용자에게 메시지 표시 (선택사항) -->
-<c:if test="${not empty sessionScope.userId && sessionScope.userId != post.userId}">
-    <div class="action-buttons">
-        <p style="color: #666; font-size: 14px;">본인이 작성한 게시글만 수정/삭제할 수 있습니다.</p>
-    </div>
-</c:if>
-
-
 </script>
