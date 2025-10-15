@@ -10,14 +10,14 @@
 
   <!-- ✅ CSS 분리 -->
   <link rel="stylesheet" href="<c:url value='/css/style.css'/>?v=6">
-  <link rel="stylesheet" href="<c:url value='/css/post-list.css'/>?v=1">
+  <link rel="stylesheet" href="<c:url value='/css/post-list.css'/>?v=2">
   <link rel="icon" href="<c:url value='/images/favicon.ico'/>?v=1">
 </head>
 
 <body>
   <!-- ✅ header & nav include -->
   <jsp:include page="/WEB-INF/include/header.jsp" />
-  
+
   <main class="main grid-14x5">
     <div class="slot-nav">
       <jsp:include page="/WEB-INF/include/nav.jsp" />
@@ -76,6 +76,7 @@
     let currentPage = 1;
     let totalPages = 1;
 
+    // ✅ 게시글 목록 불러오기
     async function loadPosts() {
       const sort = sortSelect.value;
       const limit = limitSelect.value;
@@ -93,27 +94,43 @@
         curPageEl.textContent = currentPage;
         totalPagesEl.textContent = totalPages;
 
-        grid.innerHTML = data.posts.map(p => `
-          <article class="post-card" data-id="${p.postId}">
-            <div class="post-head">
-              <button class="monogram-btn" type="button">${p.title ? p.title.charAt(0) : "?"}</button>
-              <div class="post-title">${p.title || "제목 없음"}</div>
-            </div>
-            <div class="post-body">
-              <div class="post-content">${p.content || "내용 없음"}</div>
-              <div class="meta">${p.userId || "익명"} · 🕒 ${p.createdAt || "-"} · 👁️ ${p.hit ?? 0} views</div>
-            </div>
-          </article>
-        `).join('');
+        // ✅ 게시글 렌더링
+        grid.innerHTML = data.posts.map(p => {
+          const shortContent = p.content 
+            ? (p.content.length > 120 ? p.content.substring(0, 120) + "..." : p.content)
+            : "내용 없음";
 
-        document.querySelectorAll(".post-card").forEach(card => {
-          card.addEventListener("click", () => {
-            const content = card.querySelector(".post-content");
-            content.style.display = (content.style.display === "none" || !content.style.display)
-              ? "block" : "none";
-          });
-        });
+          return `
+            <article class="post-card" data-id="${p.postId}">
+              <div class="post-head">
+                <button class="monogram-btn ${p.postType ? p.postType.toLowerCase() : ''}" type="button">
+                  ${p.postType ? p.postType.charAt(0).toUpperCase() : "?"}
+                </button>
 
+                <!-- ✅ 제목 클릭 시 상세페이지 이동 -->
+                <div class="post-title">
+                  <a href="post-detail.post?postId=${p.postId}&categoryId=${p.categoryId}&postTypeId=${p.postTypeId}">
+                    ${p.title || "제목 없음"}
+                  </a>
+                </div>
+              </div>
+
+              <div class="post-body">
+                <div class="post-content">${shortContent}</div>
+                <div class="meta">
+                  <span class="meta-type">${p.postType || "분류 없음"}</span>
+                  <span> &gt; </span>
+                  <span class="meta-category">${p.category || "카테고리 없음"}</span>
+                  <span> · ${p.userId || "익명"}</span>
+                  <span> · 🕒 ${p.createdAt || "-"}</span>
+                  <span> · 👁️ ${p.hit ?? 0} views</span>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        // ✅ 이전/다음 버튼 상태 갱신
         prevBtn.disabled = (currentPage === 1);
         nextBtn.disabled = (currentPage === totalPages);
 
@@ -123,19 +140,38 @@
       }
     }
 
+    // ✅ 페이지 버튼 동작
     prevBtn.addEventListener("click", () => {
-      if (currentPage > 1) { currentPage--; loadPosts(); }
+      if (currentPage > 1) {
+        currentPage--;
+        loadPosts();
+      }
     });
 
     nextBtn.addEventListener("click", () => {
-      if (currentPage < totalPages) { currentPage++; loadPosts(); }
+      if (currentPage < totalPages) {
+        currentPage++;
+        loadPosts();
+      }
     });
 
     sortSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
     limitSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
 
+    // ✅ 페이지 로드 시 첫 목록 불러오기
     loadPosts();
+<<<<<<< HEAD
   })(); 
  </script>
+=======
+    
+    const writeBtn = document.getElementById("writeBtn");
+    writeBtn.addEventListener("click", () => {
+      window.location.href = `${contextPath}editor.post`;
+    });
+  })();
+  </script>
+>>>>>>> 5031de1ba298bffbb3faae9cdaa222d9b567a91e
 </body>
 </html>
+

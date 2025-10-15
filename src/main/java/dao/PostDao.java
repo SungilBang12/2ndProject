@@ -170,41 +170,86 @@ public class PostDao {
         }
         return 0;
     }
-
-    // ✅ 페이지 단위로 게시글 가져오기 (정렬 포함)
+    
     public List<Post> getPagedPosts(String sort, int page, int limit) {
         String orderBy;
         switch (sort) {
-            case "views": orderBy = "ORDER BY HIT DESC"; break;
-            case "oldest": orderBy = "ORDER BY POST_ID ASC"; break;
-            default: orderBy = "ORDER BY POST_ID DESC";
+            case "views":
+                orderBy = "ORDER BY P.HIT DESC";
+                break;
+            case "oldest":
+                orderBy = "ORDER BY P.POST_ID ASC";
+                break;
+            default:
+                orderBy = "ORDER BY P.POST_ID DESC";
         }
 
         int start = (page - 1) * limit + 1;
         int end = start + limit - 1;
 
-        String sql = String.format(
-            "SELECT * FROM (SELECT ROWNUM rnum, P.* FROM (SELECT * FROM POST %s) P) WHERE rnum BETWEEN ? AND ?",
-            orderBy
-        );
+        // ✅ categoryId, typeId, categoryName, postTypeName까지 전부 조회
+        String sql =
+                "SELECT * FROM ( " +
+                "  SELECT ROWNUM AS rnum, inner_query.* " +
+                "  FROM ( " +
+                "    SELECT " +
+                "      P.POST_ID, " +
+                "      P.USER_ID, " +
+                "      P.TITLE, " +
+                "      P.CONTENT, " +
+                "      P.HIT, " +
+                "      P.CREATED_AT, " +
+                "      PL.LIST_ID, " +
+                "      PL.CATEGORY_ID, " +
+                "      PL.TYPE_ID, " +
+                "      C.CATEGORY_NAME AS CATEGORY, " +
+                "      PT.TYPE_NAME AS POST_TYPE " +
+                "    FROM POST P " +
+                "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
+                "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+                "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+                     orderBy + " " +
+                "  ) inner_query " +
+                "  WHERE ROWNUM <= ? " +
+                ") WHERE rnum >= ?";
 
         List<Post> posts = new ArrayList<>();
+
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, start);
-            pstmt.setInt(2, end);
+            pstmt.setInt(1, end);
+            pstmt.setInt(2, start);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    posts.add(mapRowToPost(rs));
+                    Post post = Post.builder()
+                            .postId(rs.getInt("POST_ID"))
+                            .userId(rs.getString("USER_ID"))
+                            .title(rs.getString("TITLE"))
+                            .content(rs.getString("CONTENT"))
+                            .hit(rs.getInt("HIT"))
+                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                            .listId(rs.getInt("LIST_ID"))
+                            .categoryId(rs.getInt("CATEGORY_ID"))
+                            .postTypeId(rs.getInt("TYPE_ID"))
+                            .category(rs.getString("CATEGORY"))
+                            .postType(rs.getString("POST_TYPE"))
+                            .build();
+
+                    posts.add(post);
                 }
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return posts;
     }
+
+
+
 
 
 

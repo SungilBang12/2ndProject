@@ -5,7 +5,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+import java.util.Map;
+import com.google.gson.Gson;
+import service.post.PostListService;
+import com.google.gson.JsonObject;
 
 
 // 비동기 통신 컨트롤러
@@ -76,12 +81,33 @@ public class AjaxController extends HttpServlet {
 		if(urlCommand.equals("/CreateReply.async")) {
 //	    	CreateReplyService crs = new CreateReplyService();
 //			crs.createReply(request, response);
-    	}else if(urlCommand.equals("/postList.async")) {
-    		new service.post.PostListService().getPostList(request, response);
-    		return;
-    		
+    	}else if (urlCommand.equals("/postList.async")) {
+    	    String sort = request.getParameter("sort");
+    	    int page = Integer.parseInt(request.getParameter("page"));
+    	    int limit = Integer.parseInt(request.getParameter("limit"));
+
+    	    PostListService service = new PostListService();
+    	    JsonObject result = service.getPostList(sort, page, limit);
+
+    	    response.setContentType("application/json;charset=UTF-8");
+    	    response.getWriter().write(result.toString());
+    	    return;
+    	
+
     	}else if(urlCommand.equals("/ . async")) {
     	
+    	}else if (urlCommand.equals("/CommentsList.async")) {
+    	    new service.post.CommentsListAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsCreate.async")) {
+    	    new service.post.CreateCommentAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsUpdate.async")) {
+    	    new service.post.UpdateCommentAsyncService().handle(request, response);
+    	    return;
+    	} else if (urlCommand.equals("/CommentsDelete.async")) {
+    	    new service.post.DeleteCommentAsyncService().handle(request, response);
+    	    return;
     	}
     }
 

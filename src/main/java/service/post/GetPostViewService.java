@@ -17,14 +17,19 @@ public class GetPostViewService implements Action {
 
         try {
             // 1️⃣ 요청 파라미터 받기
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5031de1ba298bffbb3faae9cdaa222d9b567a91e
             String postIdParam = request.getParameter("postId");
 
             if (postIdParam == null || postIdParam.isEmpty()) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "postId가 필요합니다.");
                 return null;
             }
+
             int postId = Integer.parseInt(postIdParam);
+            System.out.println("🔍 [GetPostViewService] postId = " + postId);
 
             // 2️⃣ DAO 호출
             PostDao dao = new PostDao();
