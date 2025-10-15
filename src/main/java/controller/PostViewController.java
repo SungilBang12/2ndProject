@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
+import service.post.UpdatePostService;
 
 /**
  * Servlet implementation class FrontController
@@ -55,6 +56,10 @@ public class PostViewController extends HttpServlet {
 			forward.setRedirect(false);
 			forward.setPath("/WEB-INF/view/post/sunset-pic.jsp");
 		} 
+		else if (urlCommand.equals("/update.post")) {
+		    action = new UpdatePostService();
+		    forward = action.excute(request, response);
+		}
 //		else if (urlCommand.equals("/toList.post") ) {
 //			action = new getListIdByPostId();
 //			forward = action.excute(request, response)

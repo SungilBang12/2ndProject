@@ -118,4 +118,4 @@ public class UpdatePostService implements Action {
         
         return forward;
     }
-}s
+}
