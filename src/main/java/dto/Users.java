@@ -23,7 +23,7 @@ public class Users {
 	private String email;
 	private String ROLE; // 관리자(ADMIN), 일반 사용자(USER) 등의 역할
 	private boolean isEmailVerified; // 💡 추가됨: 이메일 인증 여부
-	private String uid; // 💡 추가됨: Firebase UID
+	private String uid; // 💡 추가됨: Firebase UID UID는 오라클에서 에러뜸
 	private LocalDateTime createdAt; // DB: CREATED_AT
 }
 
