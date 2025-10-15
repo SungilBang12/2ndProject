@@ -1,0 +1,218 @@
+@charset "UTF-8";
+
+:root {
+--primary-color: #6a4c93; 
+--secondary-color: #8f6ed5; 
+--error-color: #e53e3e; 
+--success-color: #38a169; 
+--card-bg: #ffffff;
+--border-color: #d1d5db; 
+--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+body {
+background-color: var(--bg-color);
+display: flex;
+justify-content: center;
+align-items: center;
+min-height: 100vh;
+}
+#wrapper {
+max-width: 420px;
+width: 100%;
+padding: 20px;
+}
+header {
+text-align: center;
+margin-bottom: 30px;
+}
+.service-name {
+color: var(--primary-color);
+font-size: 2.5rem;
+font-weight: 700;
+}
+
+.form-card {
+background-color: var(--card-bg);
+padding: 30px;
+border-radius: 12px;
+box-shadow: var(--shadow);
+}
+.form-title {
+font-size: 1.5rem;
+font-weight: 600;
+margin-bottom: 25px;
+text-align: center;
+color: #333;
+}
+
+.form-group {
+margin-bottom: 20px;
+}
+.form-label {
+display: block;
+font-size: 0.9rem;
+font-weight: 500;
+color: #4b5563;
+margin-bottom: 6px;
+}
+.form-input-container {
+position: relative;
+display: flex;
+align-items: center;
+}
+.form-input {
+width: 100%;
+padding: 10px 12px;
+padding-right: 40px; 
+border: 1px solid var(--border-color);
+border-radius: 8px;
+font-size: 1rem;
+transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+border-color: var(--primary-color);
+outline: none;
+box-shadow: 0 0 0 3px rgba(106, 76, 147, 0.1);
+}
+
+.input-icon {
+position: absolute;
+right: 12px;
+width: 20px;
+height: 20px;
+color: var(--border-color);
+cursor: pointer;
+}
+.input-icon.clear-icon:hover {
+color: #9ca3af;
+}
+.input-icon.error-icon {
+color: var(--error-color);
+cursor: default;
+}
+.form-input.is-error {
+border-color: var(--error-color) !important;
+}
+
+.error-message {
+color: var(--error-color);
+font-size: 0.85rem;
+margin-top: 5px;
+font-weight: 500;
+}
+.success-message {
+color: var(--success-color);
+font-size: 0.85rem;
+margin-top: 5px;
+font-weight: 500;
+}
+
+.button-container {
+display: flex;
+justify-content: space-between;
+gap: 10px;
+margin-top: 25px;
+}
+.btn {
+flex-grow: 1;
+padding: 12px 20px;
+font-size: 1rem;
+font-weight: 600;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+transition: background-color 0.2s, opacity 0.2s;
+text-align: center;
+text-decoration: none;
+}
+.btn-primary {
+background-color: var(--primary-color);
+color: white;
+}
+.btn-primary:hover {
+background-color: #5a3c73;
+}
+.btn-secondary {
+background-color: var(--secondary-color);
+color: white;
+}
+.btn-secondary:hover {
+background-color: #7f5eb5;
+}
+
+.validation-message {
+font-size: 0.8rem;
+margin-top: 4px;
+padding-left: 2px;
+color: var(--error-color);
+display: none; 
+}
+
+.email-action-container {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.email-action-container .form-input {
+	flex-grow: 1;
+}
+
+.email-action-container button {
+	white-space: nowrap;
+	padding: 10px 15px;
+	border: none;
+	border-radius: 6px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+#sendEmailBtn {
+	background-color: var(--primary-color);
+	color: white;
+}
+
+#sendEmailBtn:disabled {
+	background-color: #ccc;
+	cursor: not-allowed;
+}
+
+#cancelEmailBtn {
+	background-color: #ff9800; /* 주황색 계열 */
+	color: white;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 10px;
+	justify-content: space-between;
+	margin-top: 20px;
+}
+
+.action-buttons button {
+	padding: 10px 15px;
+	border: none;
+	border-radius: 6px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	flex-grow: 1;
+}
+
+#resetBtn {
+	background-color: #757575; /* 회색 */
+	color: white;
+}
+
+#cancelJoinBtn {
+	background-color: #f44336; /* 빨간색 */
+	color: white;
+}

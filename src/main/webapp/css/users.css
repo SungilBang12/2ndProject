@@ -1,0 +1,140 @@
+@charset "UTF-8"
+
+:root {
+--primary-color: #6a4c93; 
+--secondary-color: #8f6ed5;
+--error-color: #e53e3e;
+--bg-color: #f7f7f7;
+--card-bg: #ffffff;
+--border-color: #d1d5db;
+--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+}
+
+body {
+font-family: 'Inter', sans-serif;
+background-color: var(--bg-color);
+display: flex;
+justify-content: center;
+align-items: center;
+min-height: 100vh;
+margin: 0;
+}
+#wrapper {
+width: 100%;
+max-width: 400px;
+padding: 2rem;
+box-sizing: border-box;
+}
+.service-name {
+text-align: center;
+color: var(--primary-color);
+margin-bottom: 2.5rem;
+font-size: 1.8rem;
+}
+.form-card {
+background: var(--card-bg);
+padding: 2rem;
+border-radius: 12px;
+box-shadow: var(--shadow);
+border: 1px solid var(--border-color);
+}
+.form-group {
+margin-bottom: 1.5rem;
+}
+.form-label {
+display: block;
+font-size: 0.9rem;
+color: #4b5563;
+margin-bottom: 0.4rem;
+position: relative;
+}
+.form-input-container {
+position: relative;
+}
+.form-input {
+width: 100%;
+padding: 0.75rem 2.5rem 0.75rem 0.75rem; 
+border: 1px solid var(--border-color);
+border-radius: 8px;
+box-sizing: border-box;
+transition: border-color 0.2s;
+}
+.form-input:focus {
+border-color: var(--primary-color);
+outline: none;
+}
+.form-input.is-error {
+border-color: var(--error-color) !important;
+}
+.input-icon {
+position: absolute;
+right: 0.75rem;
+top: 50%;
+transform: translateY(-50%);
+width: 1.25rem;
+height: 1.25rem;
+color: #9ca3af;
+cursor: pointer;
+}
+.input-icon.error-icon {
+color: var(--error-color);
+}
+.input-icon.clear-icon {
+color: #9ca3af;
+}
+.button-container {
+display: flex;
+justify-content: space-between;
+gap: 1rem;
+margin-top: 2rem;
+}
+.btn {
+flex: 1;
+padding: 0.8rem;
+border: none;
+border-radius: 8px;
+font-weight: 600;
+cursor: pointer;
+transition: background-color 0.2s, transform 0.1s;
+}
+.btn-primary {
+background-color: var(--primary-color);
+color: white;
+}
+.btn-primary:hover {
+background-color: var(--secondary-color);
+}
+.btn-secondary {
+background-color: #e5e7eb;
+color: #4b5563;
+}
+.btn:active {
+transform: scale(0.98);
+}
+.error-message {
+color: var(--error-color);
+font-size: 0.8rem;
+margin-top: 0.5rem;
+}
+.user-table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 1.5rem;
+background-color: var(--card-bg);
+border-radius: 8px;
+overflow: hidden;
+box-shadow: var(--shadow);
+}
+.user-table th, .user-table td {
+padding: 0.8rem;
+text-align: left;
+border-bottom: 1px solid #e5e7eb;
+}
+.user-table th {
+background-color: var(--bg-color);
+font-weight: 600;
+color: #374151;
+}
+.user-table tr:hover {
+background-color: #f9fafb;
+}
