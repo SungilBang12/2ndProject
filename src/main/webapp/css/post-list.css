@@ -114,7 +114,7 @@
   transform: translateY(-2px);
 }
 
-/* 🌀 회전하는 Monogram 버튼 */
+/* 🌀 기본 Monogram 버튼 */
 .monogram-btn {
   --size: 40px;
   width: var(--size);
@@ -163,4 +163,30 @@
 @keyframes monoring-rotate {
   to { transform: rotate(360deg); }
 }
+
+/* 🌞 타입별 색상 테마 */
+.monogram-btn.sunset {
+  color: #fb9062;
+  box-shadow: inset 0 0 0 999px #fff4ef;
+}
+.monogram-btn.sunset::before {
+  background: conic-gradient(#eeaf61,#fb9062,#ee5d6c,#fb9062,#eeaf61);
+}
+
+.monogram-btn.equipment {
+  color: #3583f3;
+  box-shadow: inset 0 0 0 999px #f0f8ff;
+}
+.monogram-btn.equipment::before {
+  background: conic-gradient(#7bc8f6,#3583f3,#2f61b3,#3583f3,#7bc8f6);
+}
+
+.monogram-btn.meeting {
+  color: #9d55f1;
+  box-shadow: inset 0 0 0 999px #f9f0ff;
+}
+.monogram-btn.meeting::before {
+  background: conic-gradient(#ce8af7,#9d55f1,#6a0d83,#9d55f1,#ce8af7);
+}
+
 

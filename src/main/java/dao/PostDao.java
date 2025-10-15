@@ -171,40 +171,79 @@ public class PostDao {
         return 0;
     }
 
-    // ✅ 페이지 단위로 게시글 가져오기 (정렬 포함)
     public List<Post> getPagedPosts(String sort, int page, int limit) {
         String orderBy;
         switch (sort) {
-            case "views": orderBy = "ORDER BY HIT DESC"; break;
-            case "oldest": orderBy = "ORDER BY POST_ID ASC"; break;
-            default: orderBy = "ORDER BY POST_ID DESC";
+            case "views":
+                orderBy = "ORDER BY P.HIT DESC";
+                break;
+            case "oldest":
+                orderBy = "ORDER BY P.POST_ID ASC";
+                break;
+            default:
+                orderBy = "ORDER BY P.POST_ID DESC";
         }
 
         int start = (page - 1) * limit + 1;
         int end = start + limit - 1;
 
         String sql = String.format(
-            "SELECT * FROM (SELECT ROWNUM rnum, P.* FROM (SELECT * FROM POST %s) P) WHERE rnum BETWEEN ? AND ?",
+            "SELECT * FROM ( " +
+            "  SELECT ROWNUM AS rnum, inner_query.* " +
+            "  FROM ( " +
+            "    SELECT " +
+            "      P.POST_ID, " +
+            "      P.USER_ID, " +
+            "      P.TITLE, " +
+            "      P.CONTENT, " +
+            "      P.HIT, " +
+            "      P.CREATED_AT, " +
+            "      PL.LIST_ID, " +
+            "      PT.TYPE_NAME AS postType, " +
+            "      C.CATEGORY_NAME AS category " +
+            "    FROM POST P " +
+            "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " + // ✅ 안전하게 LEFT JOIN
+            "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+            "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+            "    %s " +
+            "  ) inner_query " +
+            "  WHERE ROWNUM <= ? " +
+            ") WHERE rnum >= ?",
             orderBy
         );
 
         List<Post> posts = new ArrayList<>();
+
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, start);
-            pstmt.setInt(2, end);
+            pstmt.setInt(1, end);
+            pstmt.setInt(2, start);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    posts.add(mapRowToPost(rs));
+                    posts.add(Post.builder()
+                        .postId(rs.getInt("POST_ID"))
+                        .userId(rs.getString("USER_ID"))
+                        .title(rs.getString("TITLE"))
+                        .content(rs.getString("CONTENT"))
+                        .hit(rs.getInt("HIT"))
+                        .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                        .listId(rs.getInt("LIST_ID"))
+                        .postType(rs.getString("postType"))     // ✅ 추가됨
+                        .category(rs.getString("category"))     // ✅ 추가됨
+                        .build());
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return posts;
     }
+
+
+
 
 
 

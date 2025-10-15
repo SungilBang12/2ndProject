@@ -1,75 +1,46 @@
 package service.post;
 
-import java.io.IOException;
-import java.util.List;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import dao.PostDao;
 import dto.Post;
-import utils.ThePager;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
-import com.google.gson.JsonDeserializer;
+import java.util.List;
 
-// ...
 public class PostListService {
-	
-	
 
-	public void getPostList(HttpServletRequest request, HttpServletResponse response) throws IOException {
-	    response.setContentType("application/json; charset=UTF-8");
+    public JsonObject getPostList(String sort, int page, int limit) {
+        PostDao dao = new PostDao();
 
-	    // 요청 파라미터
-	    String sort = request.getParameter("sort");
-	    int limit = parseOrDefault(request.getParameter("limit"), 10);
-	    int page = parseOrDefault(request.getParameter("page"), 1);
+        List<Post> posts = dao.getPagedPosts(sort, page, limit);
+        int dataCount = dao.getTotalPostCount();
 
-	    PostDao dao = new PostDao();
-	    int totalCount = dao.getTotalPostCount();
+        int totalPages = (int) Math.ceil((double) dataCount / limit);
 
-	    // ✅ ThePager로 전체 페이지 수 계산
-	    ThePager pager = new ThePager(totalCount, page, limit, 5, "");
-	    int totalPages = pager.getPageCount();
+        JsonArray arr = new JsonArray();
+        for (Post p : posts) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("postId", p.getPostId());
+            obj.addProperty("userId", p.getUserId());
+            obj.addProperty("listId", p.getListId());
+            obj.addProperty("title", p.getTitle());
+            obj.addProperty("content", p.getContent());
+            obj.addProperty("hit", p.getHit());
+            obj.addProperty("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : "-");
+            obj.addProperty("postType", p.getPostType());   // ✅ 새로 추가된 필드
+            obj.addProperty("category", p.getCategory());   // ✅ 새로 추가된 필드
+            arr.add(obj);
+        }
 
-	    List<Post> posts = dao.getPagedPosts(sort, page, limit);
+        JsonObject result = new JsonObject();
+        result.addProperty("currentPage", page);
+        result.addProperty("dataCount", dataCount);
+        result.addProperty("pageSize", limit);
+        result.addProperty("totalPages", totalPages);
+        result.add("posts", arr);
 
-	 // ✅ JSON 응답 구성
-	    Gson gson = new GsonBuilder()
-	        .registerTypeAdapter(LocalDate.class,
-	            (JsonSerializer<LocalDate>) (date, type, ctx) ->
-	                new com.google.gson.JsonPrimitive(date.format(DateTimeFormatter.ISO_LOCAL_DATE)))
-	        .registerTypeAdapter(LocalDate.class,
-	            (JsonDeserializer<LocalDate>) (json, type, ctx) ->
-	                LocalDate.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE))
-	        .setPrettyPrinting()
-	        .create();
-
-	    JsonObject json = new JsonObject();
-	    json.add("posts", gson.toJsonTree(posts));
-	    json.addProperty("currentPage", page);
-	    json.addProperty("totalPages", totalPages);
-	    json.addProperty("pageSize", limit);
-	    json.addProperty("dataCount", totalCount);
-
-	    response.getWriter().write(gson.toJson(json));
-
-	}
-
-	private int parseOrDefault(String param, int defaultValue) {
-	    try {
-	        return (param != null) ? Integer.parseInt(param) : defaultValue;
-	    } catch (NumberFormatException e) {
-	        return defaultValue;
-	    }
-	}
-
-
+        return result;
+    }
 }
+
 
