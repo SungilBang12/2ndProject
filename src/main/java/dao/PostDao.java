@@ -291,6 +291,90 @@ public class PostDao {
         }
         return posts;
     }
+    
+ // 아래 부분만 기존 PostDao.java 하단에 추가해줘도 돼.
+
+    public int getSearchPostCount(String keyword) {
+        String sql = "SELECT COUNT(*) FROM POST WHERE LOWER(TITLE) LIKE LOWER(?) OR LOWER(CONTENT) LIKE LOWER(?)";
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            String pattern = "%" + keyword + "%";
+            pstmt.setString(1, pattern);
+            pstmt.setString(2, pattern);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public List<Post> getPagedPostsByKeyword(String sort, int page, int limit, String keyword) {
+        String orderBy;
+        switch (sort) {
+            case "views":
+                orderBy = "ORDER BY P.HIT DESC";
+                break;
+            case "oldest":
+                orderBy = "ORDER BY P.POST_ID ASC";
+                break;
+            default:
+                orderBy = "ORDER BY P.POST_ID DESC";
+        }
+
+        int start = (page - 1) * limit + 1;
+        int end = start + limit - 1;
+
+        String sql =
+            "SELECT * FROM ( " +
+            "  SELECT ROWNUM AS rnum, inner_query.* " +
+            "  FROM ( " +
+            "    SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, " +
+            "           PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, " +
+            "           C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " +
+            "    FROM POST P " +
+            "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
+            "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+            "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+            "    WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) " +
+            orderBy + " " +
+            "  ) inner_query " +
+            "  WHERE ROWNUM <= ? " +
+            ") WHERE rnum >= ?";
+
+        List<Post> posts = new ArrayList<>();
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            String pattern = "%" + keyword + "%";
+            pstmt.setString(1, pattern);
+            pstmt.setString(2, pattern);
+            pstmt.setInt(3, end);
+            pstmt.setInt(4, start);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    posts.add(Post.builder()
+                            .postId(rs.getInt("POST_ID"))
+                            .userId(rs.getString("USER_ID"))
+                            .title(rs.getString("TITLE"))
+                            .content(rs.getString("CONTENT"))
+                            .hit(rs.getInt("HIT"))
+                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                            .listId(rs.getInt("LIST_ID"))
+                            .categoryId(rs.getInt("CATEGORY_ID"))
+                            .postTypeId(rs.getInt("TYPE_ID"))
+                            .category(rs.getString("CATEGORY"))
+                            .postType(rs.getString("POST_TYPE"))
+                            .build());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return posts;
+    }
+
 
 
 
