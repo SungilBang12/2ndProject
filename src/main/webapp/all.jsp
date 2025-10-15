@@ -59,7 +59,6 @@
 
   <jsp:include page="/WEB-INF/include/footer.jsp" />
 
-  <!-- ✅ JS -->
   <script>
   (function(){
     const contextPath = "<c:url value='/'/>";
@@ -137,22 +136,7 @@
     sortSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
     limitSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
 
-<<<<<<< HEAD
-    sortSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
-    limitSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
-
-    // ✅ 페이지 로드 시 첫 목록 불러오기
-    loadPosts();
-<<<<<<< HEAD
-  })(); 
- </script>
-=======
-    
-    const writeBtn = document.getElementById("writeBtn");
-    writeBtn.addEventListener("click", () => {
-=======
     document.getElementById("writeBtn").addEventListener("click", () => {
->>>>>>> b930a8cdda182ad1d2bdd22b87510127dbd93dae
       window.location.href = `${contextPath}editor.post`;
     });
 
@@ -160,7 +144,6 @@
     loadPosts();
   })();
   </script>
->>>>>>> 5031de1ba298bffbb3faae9cdaa222d9b567a91e
 </body>
 </html>
 
