@@ -1,0 +1,86 @@
+@charset "UTF-8";
+
+
+/* 헤더 우측 액션(프로필 팝오버 앵커) */
+.header-actions{ display:flex; align-items:center; gap:8px; position:relative; }
+
+/* 아바타 버튼 */
+.avatar-btn{
+  width: var(--home-btn-size);
+  height: var(--home-btn-size);
+  border-radius: 9999px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  outline: none;
+  border: none;
+  appearance: none;
+  cursor: pointer;
+  padding: 0;
+}
+.avatar-btn svg{ pointer-events: none; }
+
+/* 프로필 드롭다운 */
+.profile-popover[hidden]{ display:none !important; }
+.profile-popover{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: #fff; color:#111;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+  width: 280px;
+  max-width: calc(100vw - 16px);
+  z-index: 1500;
+}
+.profile-card{ padding: 10px; }
+.profile-row{
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 4px 10px;
+}
+.avatar-mini{
+  width: 36px; height: 36px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.meta .name{ font-weight: 700; }
+.meta .sub{ font-size: 12px; color:#6b7280; }
+
+/* 비로그인 상태일 때의 텍스트 스타일 */
+.meta .name-guest{ font-size: 14px; font-weight: 500; color: #6b7280; }
+.meta .sub-guest{ font-size: 14px; font-weight: 700; color: #ef4444; } /* 로그인 필요 문구 강조 */
+
+.divider{ height:1px; background:#f1f5f9; margin:8px 0; }
+
+.menu-item{
+  display: block; width: 100%;
+  padding: 10px 8px;
+  border-radius: 8px;
+  text-decoration: none; color: inherit;
+  text-align: left;
+}
+.menu-item:hover{ background:#f8fafc; }
+.menu-item.is-danger{ color:#b91c1c; font-weight: 700; } /* 로그아웃 강조 */
+.menu-item.is-primary{ 
+    color: #2563eb; 
+    font-weight: 700; 
+    background: #eff6ff; 
+    text-align: center;
+}
+.menu-item.is-primary:hover{ background: #dbeafe; }
+
+.menu-item:is(button){ background: transparent; border: 0; cursor: pointer; }
+
+/* 모바일에서도 자연스럽게 뜨도록(헤더 안에 앵커) */
+@media (max-width: 991px){
+  .profile-popover{
+    right: 0;
+    left: auto;
+    max-width: min(92vw, 320px);
+  }
+}
