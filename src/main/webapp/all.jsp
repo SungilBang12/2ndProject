@@ -108,7 +108,7 @@
 
                 <!-- ✅ 제목 클릭 시 상세페이지 이동 -->
                 <div class="post-title">
-                  <a href="post-detail.post?postId=${p.postId}">
+                  <a href="post-detail.post?postId=${p.postId}&categoryId=${p.categoryId}&postTypeId=${p.postTypeId}">
                     ${p.title || "제목 없음"}
                   </a>
                 </div>
@@ -159,6 +159,11 @@
 
     // ✅ 페이지 로드 시 첫 목록 불러오기
     loadPosts();
+    
+    const writeBtn = document.getElementById("writeBtn");
+    writeBtn.addEventListener("click", () => {
+      window.location.href = `${contextPath}editor.post`;
+    });
   })();
   </script>
 </body>
