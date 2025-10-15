@@ -8,14 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>노을 맛집 - 전체글 게시판</title>
 
-  <!-- ✅ CSS 분리 -->
   <link rel="stylesheet" href="<c:url value='/css/style.css'/>?v=6">
   <link rel="stylesheet" href="<c:url value='/css/post-list.css'/>?v=2">
   <link rel="icon" href="<c:url value='/images/favicon.ico'/>?v=1">
 </head>
 
 <body>
-  <!-- ✅ header & nav include -->
   <jsp:include page="/WEB-INF/include/header.jsp" />
 
   <main class="main grid-14x5">
@@ -72,100 +70,81 @@
     const curPageEl = document.getElementById("curPage");
     const totalPagesEl = document.getElementById("totalPages");
 
-    let currentPage = 1;
+    // ✅ 전역 상태
+    window.currentPage = 1;
+    window.currentQuery = "";
     let totalPages = 1;
 
-    // ✅ 게시글 목록 불러오기
-    async function loadPosts() {
+    // ✅ 게시글 로드 함수 (검색·정렬·페이지 통합)
+    window.loadPosts = async function() {
       const sort = sortSelect.value;
       const limit = limitSelect.value;
+      const query = window.currentQuery;
 
       grid.innerHTML = '<div class="loading">로딩 중...</div>';
-
       try {
-        const res = await fetch(`${contextPath}postList.async?sort=${sort}&limit=${limit}&page=${currentPage}`);
+        let url = `${contextPath}postList.async?sort=${sort}&limit=${limit}&page=${window.currentPage}`;
+        if (query) url += `&q=${encodeURIComponent(query)}`;
+
+        const res = await fetch(url);
         const data = await res.json();
-        console.log("📦 불러온 데이터:", data);
 
         totalPages = data.totalPages;
-        currentPage = data.currentPage;
+        window.currentPage = data.currentPage;
 
-        curPageEl.textContent = currentPage;
+        curPageEl.textContent = window.currentPage;
         totalPagesEl.textContent = totalPages;
 
-        // ✅ 게시글 렌더링
-        grid.innerHTML = data.posts.map(p => {
-          const shortContent = p.content 
-            ? (p.content.length > 120 ? p.content.substring(0, 120) + "..." : p.content)
-            : "내용 없음";
-
-          return `
-            <article class="post-card" data-id="${p.postId}">
-              <div class="post-head">
-                <button class="monogram-btn ${p.postType ? p.postType.toLowerCase() : ''}" type="button">
-                  ${p.postType ? p.postType.charAt(0).toUpperCase() : "?"}
-                </button>
-
-                <!-- ✅ 제목 클릭 시 상세페이지 이동 -->
-                <div class="post-title">
-                  <a href="post-detail.post?postId=${p.postId}&categoryId=${p.categoryId}&postTypeId=${p.postTypeId}">
-                    ${p.title || "제목 없음"}
-                  </a>
-                </div>
+        grid.innerHTML = data.posts.map(p => `
+          <article class="post-card" data-id="${p.postId}">
+            <div class="post-head">
+              <button class="monogram-btn ${p.postType ? p.postType.toLowerCase() : ''}" type="button">
+                ${p.postType ? p.postType.charAt(0).toUpperCase() : "?"}
+              </button>
+              <div class="post-title">
+                <a href="post-detail.post?postId=${p.postId}&categoryId=${p.categoryId}&postTypeId=${p.postTypeId}">
+                  ${p.title || "제목 없음"}
+                </a>
               </div>
-
-              <div class="post-body">
-                <div class="post-content">${shortContent}</div>
-                <div class="meta">
-                  <span class="meta-type">${p.postType || "분류 없음"}</span>
-                  <span> &gt; </span>
-                  <span class="meta-category">${p.category || "카테고리 없음"}</span>
-                  <span> · ${p.userId || "익명"}</span>
-                  <span> · 🕒 ${p.createdAt || "-"}</span>
-                  <span> · 👁️ ${p.hit ?? 0} views</span>
-                </div>
+            </div>
+            <div class="post-body">
+              <div class="post-content">${p.content ? p.content.substring(0, 120) + (p.content.length > 120 ? "..." : "") : "내용 없음"}</div>
+              <div class="meta">
+                <span>${p.category || "카테고리 없음"}</span> · 
+                <span>${p.userId || "익명"}</span> · 
+                <span>🕒 ${p.createdAt || "-"}</span> · 
+                <span>👁️ ${p.hit ?? 0}</span>
               </div>
-            </article>
-          `;
-        }).join('');
+            </div>
+          </article>
+        `).join('');
 
-        // ✅ 이전/다음 버튼 상태 갱신
-        prevBtn.disabled = (currentPage === 1);
-        nextBtn.disabled = (currentPage === totalPages);
-
+        prevBtn.disabled = (window.currentPage === 1);
+        nextBtn.disabled = (window.currentPage === totalPages);
       } catch (err) {
         console.error(err);
         grid.innerHTML = '<div class="error">⚠️ 게시글을 불러오지 못했습니다.</div>';
       }
-    }
+    };
 
-    // ✅ 페이지 버튼 동작
     prevBtn.addEventListener("click", () => {
-      if (currentPage > 1) {
-        currentPage--;
-        loadPosts();
-      }
+      if (window.currentPage > 1) { window.currentPage--; loadPosts(); }
     });
-
     nextBtn.addEventListener("click", () => {
-      if (currentPage < totalPages) {
-        currentPage++;
-        loadPosts();
-      }
+      if (window.currentPage < totalPages) { window.currentPage++; loadPosts(); }
     });
+    sortSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
+    limitSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
 
-    sortSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
-    limitSelect.addEventListener("change", () => { currentPage = 1; loadPosts(); });
-
-    // ✅ 페이지 로드 시 첫 목록 불러오기
-    loadPosts();
-    
-    const writeBtn = document.getElementById("writeBtn");
-    writeBtn.addEventListener("click", () => {
+    document.getElementById("writeBtn").addEventListener("click", () => {
       window.location.href = `${contextPath}editor.post`;
     });
+
+    // ✅ 최초 로드
+    loadPosts();
   })();
   </script>
 </body>
 </html>
+
 
