@@ -32,13 +32,7 @@ public class GetPostEditFormService implements Action {
                 System.out.println("=== 세션이 존재하지 않음 ===");
             }
             
-            // 로그인하지 않은 경우
-            if (loggedInUserId == null || loggedInUserId.trim().isEmpty()) {
-                System.out.println("❌ 로그인되지 않음 - 로그인 페이지로 리다이렉트");
-                forward.setRedirect(true);
-                forward.setPath(request.getContextPath() + "/login");
-                return forward;
-            }
+
             
             // ============================================
             // 2. postId 파라미터 확인
@@ -78,6 +72,8 @@ public class GetPostEditFormService implements Action {
             
             if (!post.getUserId().equals(loggedInUserId)) {
                 System.out.println("❌ 권한 없음 - 본인이 작성한 게시글이 아님");
+                System.out.println(post.getUserId());
+                System.out.println(loggedInUserId);
                 request.setAttribute("error_msg", "수정 권한이 없습니다. 본인이 작성한 게시글만 수정할 수 있습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
