@@ -247,6 +247,51 @@ public class PostDao {
 
         return posts;
     }
+    
+    public List<Post> searchPosts(String keyword) {
+        String sql = 
+            "SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, " +
+            "       PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, " +
+            "       C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " +
+            "FROM POST P " +
+            "LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
+            "LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+            "LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+            "WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) " +
+            "ORDER BY P.CREATED_AT DESC";
+
+        List<Post> posts = new ArrayList<>();
+
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            String pattern = "%" + keyword + "%";
+            pstmt.setString(1, pattern);
+            pstmt.setString(2, pattern);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    posts.add(Post.builder()
+                            .postId(rs.getInt("POST_ID"))
+                            .userId(rs.getString("USER_ID"))
+                            .title(rs.getString("TITLE"))
+                            .content(rs.getString("CONTENT"))
+                            .hit(rs.getInt("HIT"))
+                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                            .listId(rs.getInt("LIST_ID"))
+                            .categoryId(rs.getInt("CATEGORY_ID"))
+                            .postTypeId(rs.getInt("TYPE_ID"))
+                            .category(rs.getString("CATEGORY"))
+                            .postType(rs.getString("POST_TYPE"))
+                            .build());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return posts;
+    }
+
 
 
 

@@ -92,9 +92,22 @@ public class AjaxController extends HttpServlet {
     	    response.setContentType("application/json;charset=UTF-8");
     	    response.getWriter().write(result.toString());
     	    return;
+    	    
     	
 
-    	}else if(urlCommand.equals("/ . async")) {
+    	}
+    	else if (urlCommand.equals("/postSearch.async")) {
+    	    String keyword = request.getParameter("q");
+    	    service.post.PostSearchService searchService = new service.post.PostSearchService();
+    	    JsonObject result = searchService.getSearchResults(keyword);
+
+    	    response.setContentType("application/json;charset=UTF-8");
+    	    response.getWriter().write(result.toString());
+    	    return;
+    	}
+
+    	
+    	else if(urlCommand.equals("/ . async")) {
     	
     	}else if (urlCommand.equals("/CommentsList.async")) {
     	    new service.post.CommentsListAsyncService().handle(request, response);
