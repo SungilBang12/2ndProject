@@ -20,4 +20,6 @@ public class Post {
 	Integer hit;
 	LocalDate createdAt;
 	LocalDate updatedAt;
+	String postType;
+	String category;
 }

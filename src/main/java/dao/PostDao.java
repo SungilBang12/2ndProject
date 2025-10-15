@@ -1,4 +1,3 @@
-
 package dao;
 
 import java.sql.Connection;
@@ -107,6 +106,147 @@ public class PostDao {
 
 		return posts;
 	}
+	
+	public List<Post> getPostsByNewest(int limit) {
+        // POST_ID가 AUTO_INCREMENT거나 SEQUENCE 기반이면 최신순 정렬과 동일
+		String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY POST_ID DESC) WHERE ROWNUM <= ?";
+        return getPostsByQuery(sql, limit);
+    }
+	
+    public List<Post> getPostsByOldest(int limit) {
+    	String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY POST_ID ASC) WHERE ROWNUM <= ?";
+        return getPostsByQuery(sql, limit);
+    }
+    
+    public List<Post> getPostsByViews(int limit) {
+    	String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY HIT DESC, POST_ID DESC) WHERE ROWNUM <= ?";
+        return getPostsByQuery(sql, limit);
+    }
+
+    private List<Post> getPostsByQuery(String sql) {
+        List<Post> posts = new ArrayList<>();
+
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                posts.add(mapRowToPost(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return posts;
+    }
+    
+    private List<Post> getPostsByQuery(String sql, int limit) {
+        List<Post> posts = new ArrayList<>();
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, limit); // ✅ LIMIT 바인딩
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    posts.add(mapRowToPost(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return posts;
+    }
+    
+ // ✅ 전체 게시글 수 조회
+    public int getTotalPostCount() {
+        String sql = "SELECT COUNT(*) FROM POST";
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public List<Post> getPagedPosts(String sort, int page, int limit) {
+        String orderBy;
+        switch (sort) {
+            case "views":
+                orderBy = "ORDER BY P.HIT DESC";
+                break;
+            case "oldest":
+                orderBy = "ORDER BY P.POST_ID ASC";
+                break;
+            default:
+                orderBy = "ORDER BY P.POST_ID DESC";
+        }
+
+        int start = (page - 1) * limit + 1;
+        int end = start + limit - 1;
+
+        String sql = String.format(
+            "SELECT * FROM ( " +
+            "  SELECT ROWNUM AS rnum, inner_query.* " +
+            "  FROM ( " +
+            "    SELECT " +
+            "      P.POST_ID, " +
+            "      P.USER_ID, " +
+            "      P.TITLE, " +
+            "      P.CONTENT, " +
+            "      P.HIT, " +
+            "      P.CREATED_AT, " +
+            "      PL.LIST_ID, " +
+            "      PT.TYPE_NAME AS postType, " +
+            "      C.CATEGORY_NAME AS category " +
+            "    FROM POST P " +
+            "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " + // ✅ 안전하게 LEFT JOIN
+            "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+            "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+            "    %s " +
+            "  ) inner_query " +
+            "  WHERE ROWNUM <= ? " +
+            ") WHERE rnum >= ?",
+            orderBy
+        );
+
+        List<Post> posts = new ArrayList<>();
+
+        try (Connection conn = ConnectionPoolHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, end);
+            pstmt.setInt(2, start);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    posts.add(Post.builder()
+                        .postId(rs.getInt("POST_ID"))
+                        .userId(rs.getString("USER_ID"))
+                        .title(rs.getString("TITLE"))
+                        .content(rs.getString("CONTENT"))
+                        .hit(rs.getInt("HIT"))
+                        .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                        .listId(rs.getInt("LIST_ID"))
+                        .postType(rs.getString("postType"))     // ✅ 추가됨
+                        .category(rs.getString("category"))     // ✅ 추가됨
+                        .build());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return posts;
+    }
+
+
+
+
+
+
 
 	/**
 	 * 게시글을 수정합니다. (TITLE, CONTENT, LIST_ID, UPDATED_AT 갱신)

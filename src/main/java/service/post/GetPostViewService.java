@@ -22,8 +22,6 @@ public class GetPostViewService implements Action {
 =======
         	// TODO 프론트 request로 id값 전달해주는 것 필요
             String postIdParam = request.getParameter("postId");
- 
->>>>>>> 2d89d9f65e8b1dc8e7db3fb802e842cfd249bd37
             if (postIdParam == null || postIdParam.isEmpty()) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "postId가 필요합니다.");
                 return null;
