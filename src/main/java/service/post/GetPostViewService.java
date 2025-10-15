@@ -17,10 +17,7 @@ public class GetPostViewService implements Action {
 
         try {
             // 1️⃣ 요청 파라미터 받기
-<<<<<<< HEAD
 
-=======
->>>>>>> 5031de1ba298bffbb3faae9cdaa222d9b567a91e
             String postIdParam = request.getParameter("postId");
 
             if (postIdParam == null || postIdParam.isEmpty()) {
