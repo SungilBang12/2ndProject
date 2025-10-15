@@ -61,8 +61,6 @@ public class EncodingFilter implements Filter {
 	            req.setAttribute("user", loggedInUser);
 	        }
 	    }
-	    
-	    System.out.println("로그인 유저 세션 정보= " + req.getAttribute("loggedInUser"));
 		
 		// 다음 필터 또는 서블릿으로 요청을 전달합니다.
 		chain.doFilter(req, res);
