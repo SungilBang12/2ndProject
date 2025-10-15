@@ -7,7 +7,6 @@ import dto.Post;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.util.Enumeration;
 
 public class GetPostEditFormService implements Action {
     
@@ -16,62 +15,82 @@ public class GetPostEditFormService implements Action {
         
         System.out.println("=== GetPostEditFormService 실행됨 ===");
         
-        // 모든 파라미터 출력
-        System.out.println("=== 전체 파라미터 목록 ===");
-        Enumeration<String> paramNames = request.getParameterNames();
-        while (paramNames.hasMoreElements()) {
-            String paramName = paramNames.nextElement();
-            String paramValue = request.getParameter(paramName);
-            System.out.println("파라미터: " + paramName + " = " + paramValue);
-        }
-        
-        // 요청 정보 출력
-        System.out.println("=== 요청 정보 ===");
-        System.out.println("Request URI: " + request.getRequestURI());
-        System.out.println("Query String: " + request.getQueryString());
-        System.out.println("Method: " + request.getMethod());
-        
         ActionForward forward = new ActionForward();
         PostDao postDao = new PostDao();
         
         try {
+            // ============================================
+            // 1. 세션 체크 (로그인 확인)
+            // ============================================
+            HttpSession session = request.getSession(false);
+            String loggedInUserId = null;
+            
+            if (session != null) {
+                loggedInUserId = (String) session.getAttribute("userId");
+                System.out.println("=== 세션에서 가져온 userId: " + loggedInUserId + " ===");
+            } else {
+                System.out.println("=== 세션이 존재하지 않음 ===");
+            }
+            
+            // 로그인하지 않은 경우
+            if (loggedInUserId == null || loggedInUserId.trim().isEmpty()) {
+                System.out.println("❌ 로그인되지 않음 - 로그인 페이지로 리다이렉트");
+                forward.setRedirect(true);
+                forward.setPath(request.getContextPath() + "/login");
+                return forward;
+            }
+            
+            // ============================================
+            // 2. postId 파라미터 확인
+            // ============================================
             String postIdParam = request.getParameter("postId");
             System.out.println("=== postId 파라미터: [" + postIdParam + "] ===");
-            System.out.println("=== postId가 null인가? " + (postIdParam == null));
-            System.out.println("=== postId가 비어있나? " + (postIdParam != null && postIdParam.isEmpty()));
             
             if (postIdParam == null || postIdParam.trim().isEmpty()) {
                 System.out.println("❌ postId가 없습니다!");
-                throw new NumberFormatException("게시글 번호가 누락되었습니다.");
+                request.setAttribute("error_msg", "게시글 번호가 누락되었습니다.");
+                forward.setRedirect(true);
+                forward.setPath(request.getContextPath() + "/post-list.post");
+                return forward;
             }
             
             int postId = Integer.parseInt(postIdParam.trim());
             System.out.println("✅ postId 파싱 성공: " + postId);
             
+            // ============================================
+            // 3. 게시글 조회
+            // ============================================
             Post post = postDao.getPostById(postId);
-            
             System.out.println("조회된 게시글: " + (post != null ? post.getTitle() : "null"));
-            
-            HttpSession session = request.getSession();
-            String loggedInUserId = "user001"; // 임시
             
             if (post == null) {
                 System.out.println("❌ 게시글을 찾을 수 없습니다!");
                 request.setAttribute("error_msg", "게시글을 찾을 수 없습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-list.post");
-            } else if (!post.getUserId().equals(loggedInUserId)) {
-                System.out.println("❌ 권한 없음: " + post.getUserId() + " vs " + loggedInUserId);
-                request.setAttribute("error_msg", "수정 권한이 없습니다.");
+                return forward;
+            }
+            
+            // ============================================
+            // 4. 작성자 권한 체크
+            // ============================================
+            System.out.println("=== 권한 체크: 게시글 작성자=" + post.getUserId() + ", 로그인 사용자=" + loggedInUserId + " ===");
+            
+            if (!post.getUserId().equals(loggedInUserId)) {
+                System.out.println("❌ 권한 없음 - 본인이 작성한 게시글이 아님");
+                request.setAttribute("error_msg", "수정 권한이 없습니다. 본인이 작성한 게시글만 수정할 수 있습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
-            } else {
-                System.out.println("✅ 게시글 조회 성공, request에 저장");
-                request.setAttribute("post", post);
-                forward.setRedirect(false);
-                forward.setPath("/WEB-INF/view/post/post-edit.jsp");
-                System.out.println("✅ Forward 경로 설정: " + forward.getPath());
+                return forward;
             }
+            
+            // ============================================
+            // 5. 권한 확인 완료 - 수정 페이지로 이동
+            // ============================================
+            System.out.println("✅ 권한 확인 완료 - 수정 페이지로 이동");
+            request.setAttribute("post", post);
+            forward.setRedirect(false);
+            forward.setPath("/WEB-INF/view/post/post-edit.jsp");
             
         } catch (NumberFormatException e) {
             System.out.println("❌ NumberFormatException: " + e.getMessage());
@@ -82,6 +101,7 @@ public class GetPostEditFormService implements Action {
         } catch (Exception e) {
             System.out.println("❌ Exception: " + e.getMessage());
             e.printStackTrace();
+            request.setAttribute("error_msg", "서버 오류가 발생했습니다.");
             forward.setRedirect(true);
             forward.setPath(request.getContextPath() + "/error.jsp");
         }

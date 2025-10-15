@@ -1,4 +1,3 @@
-// src/main/java/service/post/UpdatePostService.java
 package service.post;
 
 import action.Action;
@@ -20,6 +19,28 @@ public class UpdatePostService implements Action {
         PostDao postDao = new PostDao();
         
         try {
+            // ============================================
+            // 1. 세션 체크 (로그인 확인)
+            // ============================================
+            HttpSession session = request.getSession(false);
+            String loggedInUserId = null;
+            
+            if (session != null) {
+                loggedInUserId = (String) session.getAttribute("userId");
+                System.out.println("=== 세션에서 가져온 userId: " + loggedInUserId + " ===");
+            }
+            
+            if (loggedInUserId == null || loggedInUserId.trim().isEmpty()) {
+                System.out.println("❌ 로그인되지 않음");
+                request.setAttribute("error_msg", "로그인이 필요합니다.");
+                forward.setRedirect(true);
+                forward.setPath(request.getContextPath() + "/login");
+                return forward;
+            }
+            
+            // ============================================
+            // 2. 폼 데이터 받기
+            // ============================================
             String postIdParam = request.getParameter("postId");
             String listIdParam = request.getParameter("listId");
             String title = request.getParameter("title");
@@ -46,20 +67,20 @@ public class UpdatePostService implements Action {
             if (title == null || title.trim().isEmpty()) {
                 request.setAttribute("error_msg", "제목을 입력해주세요.");
                 forward.setRedirect(false);
-                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
+                forward.setPath("/post-edit-form.post?postId=" + postId);
                 return forward;
             }
             
             if (content == null || content.trim().isEmpty()) {
                 request.setAttribute("error_msg", "내용을 입력해주세요.");
                 forward.setRedirect(false);
-                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
+                forward.setPath("/post-edit-form.post?postId=" + postId);
                 return forward;
             }
             
-            HttpSession session = request.getSession();
-            String loggedInUserId = "user001";
-            
+            // ============================================
+            // 3. 게시글 조회 및 권한 체크
+            // ============================================
             Post existingPost = postDao.getPostById(postId);
             
             if (existingPost == null) {
@@ -69,13 +90,19 @@ public class UpdatePostService implements Action {
                 return forward;
             }
             
+            System.out.println("=== 권한 체크: 게시글 작성자=" + existingPost.getUserId() + ", 로그인 사용자=" + loggedInUserId + " ===");
+            
             if (!existingPost.getUserId().equals(loggedInUserId)) {
-                request.setAttribute("error_msg", "수정 권한이 없습니다.");
+                System.out.println("❌ 수정 권한 없음");
+                request.setAttribute("error_msg", "수정 권한이 없습니다. 본인이 작성한 게시글만 수정할 수 있습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
                 return forward;
             }
             
+            // ============================================
+            // 4. 게시글 수정
+            // ============================================
             Post post = new Post();
             post.setPostId(postId);
             post.setListId(listId);
@@ -93,7 +120,7 @@ public class UpdatePostService implements Action {
                 System.out.println("❌ 게시글 수정 실패");
                 request.setAttribute("error_msg", "게시글 수정에 실패했습니다.");
                 forward.setRedirect(false);
-                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
+                forward.setPath("/post-edit-form.post?postId=" + postId);
             }
             
         } catch (Exception e) {
