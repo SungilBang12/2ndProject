@@ -170,7 +170,7 @@ public class PostDao {
         }
         return 0;
     }
-
+    
     public List<Post> getPagedPosts(String sort, int page, int limit) {
         String orderBy;
         switch (sort) {
@@ -187,30 +187,31 @@ public class PostDao {
         int start = (page - 1) * limit + 1;
         int end = start + limit - 1;
 
-        String sql = String.format(
-            "SELECT * FROM ( " +
-            "  SELECT ROWNUM AS rnum, inner_query.* " +
-            "  FROM ( " +
-            "    SELECT " +
-            "      P.POST_ID, " +
-            "      P.USER_ID, " +
-            "      P.TITLE, " +
-            "      P.CONTENT, " +
-            "      P.HIT, " +
-            "      P.CREATED_AT, " +
-            "      PL.LIST_ID, " +
-            "      PT.TYPE_NAME AS postType, " +
-            "      C.CATEGORY_NAME AS category " +
-            "    FROM POST P " +
-            "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " + // ✅ 안전하게 LEFT JOIN
-            "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
-            "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
-            "    %s " +
-            "  ) inner_query " +
-            "  WHERE ROWNUM <= ? " +
-            ") WHERE rnum >= ?",
-            orderBy
-        );
+        // ✅ categoryId, typeId, categoryName, postTypeName까지 전부 조회
+        String sql =
+                "SELECT * FROM ( " +
+                "  SELECT ROWNUM AS rnum, inner_query.* " +
+                "  FROM ( " +
+                "    SELECT " +
+                "      P.POST_ID, " +
+                "      P.USER_ID, " +
+                "      P.TITLE, " +
+                "      P.CONTENT, " +
+                "      P.HIT, " +
+                "      P.CREATED_AT, " +
+                "      PL.LIST_ID, " +
+                "      PL.CATEGORY_ID, " +
+                "      PL.TYPE_ID, " +
+                "      C.CATEGORY_NAME AS CATEGORY, " +
+                "      PT.TYPE_NAME AS POST_TYPE " +
+                "    FROM POST P " +
+                "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
+                "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
+                "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
+                     orderBy + " " +
+                "  ) inner_query " +
+                "  WHERE ROWNUM <= ? " +
+                ") WHERE rnum >= ?";
 
         List<Post> posts = new ArrayList<>();
 
@@ -222,19 +223,24 @@ public class PostDao {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    posts.add(Post.builder()
-                        .postId(rs.getInt("POST_ID"))
-                        .userId(rs.getString("USER_ID"))
-                        .title(rs.getString("TITLE"))
-                        .content(rs.getString("CONTENT"))
-                        .hit(rs.getInt("HIT"))
-                        .createdAt(rs.getDate("CREATED_AT").toLocalDate())
-                        .listId(rs.getInt("LIST_ID"))
-                        .postType(rs.getString("postType"))     // ✅ 추가됨
-                        .category(rs.getString("category"))     // ✅ 추가됨
-                        .build());
+                    Post post = Post.builder()
+                            .postId(rs.getInt("POST_ID"))
+                            .userId(rs.getString("USER_ID"))
+                            .title(rs.getString("TITLE"))
+                            .content(rs.getString("CONTENT"))
+                            .hit(rs.getInt("HIT"))
+                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
+                            .listId(rs.getInt("LIST_ID"))
+                            .categoryId(rs.getInt("CATEGORY_ID"))
+                            .postTypeId(rs.getInt("TYPE_ID"))
+                            .category(rs.getString("CATEGORY"))
+                            .postType(rs.getString("POST_TYPE"))
+                            .build();
+
+                    posts.add(post);
                 }
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
