@@ -64,7 +64,6 @@ public class UsersController extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		String pathInfo = request.getPathInfo();
-
 		// 간단한 페이지 이동 처리
 		if ("/login".equals(pathInfo)) {
 			request.getRequestDispatcher("/WEB-INF/view/login.jsp").forward(request, response);
@@ -80,10 +79,6 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
 		} else if ("/logout".equals(pathInfo)) {
 			handleLogout(request, response);
-		} else if ("/admin/users".equals(pathInfo)) {
-			// 필터에서 ADMIN 권한 체크 완료 후 여기로 진입함
-			// 여기서는 사용자 목록 조회 로직이 필요
-			request.getRequestDispatcher("/WEB-INF/view/admin/user_management.jsp").forward(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
