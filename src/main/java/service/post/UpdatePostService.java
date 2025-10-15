@@ -1,3 +1,4 @@
+// src/main/java/service/post/UpdatePostService.java
 package service.post;
 
 import action.Action;
@@ -13,17 +14,23 @@ public class UpdatePostService implements Action {
     @Override
     public ActionForward excute(HttpServletRequest request, HttpServletResponse response) {
         
+        System.out.println("=== UpdatePostService 실행됨 ===");
+        
         ActionForward forward = new ActionForward();
         PostDao postDao = new PostDao();
         
         try {
-            // 1. 폼 데이터 받기
             String postIdParam = request.getParameter("postId");
             String listIdParam = request.getParameter("listId");
             String title = request.getParameter("title");
             String content = request.getParameter("content");
             
-            // 2. 유효성 검사
+            System.out.println("받은 파라미터:");
+            System.out.println("- postId: " + postIdParam);
+            System.out.println("- listId: " + listIdParam);
+            System.out.println("- title: " + title);
+            System.out.println("- content 길이: " + (content != null ? content.length() : 0));
+            
             if (postIdParam == null || postIdParam.isEmpty()) {
                 request.setAttribute("error_msg", "게시글 번호가 누락되었습니다.");
                 forward.setRedirect(true);
@@ -39,23 +46,20 @@ public class UpdatePostService implements Action {
             if (title == null || title.trim().isEmpty()) {
                 request.setAttribute("error_msg", "제목을 입력해주세요.");
                 forward.setRedirect(false);
-                forward.setPath("/post-edit.post?postId=" + postId);
+                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
                 return forward;
             }
             
             if (content == null || content.trim().isEmpty()) {
                 request.setAttribute("error_msg", "내용을 입력해주세요.");
                 forward.setRedirect(false);
-                forward.setPath("/post-edit.post?postId=" + postId);
+                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
                 return forward;
             }
             
-            // 3. 권한 확인
             HttpSession session = request.getSession();
-            // String loggedInUserId = (String) session.getAttribute("userId");
-            String loggedInUserId = "user001"; // 임시 사용자 ID
+            String loggedInUserId = "user001";
             
-            // 기존 게시글 조회
             Post existingPost = postDao.getPostById(postId);
             
             if (existingPost == null) {
@@ -72,46 +76,30 @@ public class UpdatePostService implements Action {
                 return forward;
             }
             
-            // 4. Post 객체 생성 및 업데이트
             Post post = new Post();
             post.setPostId(postId);
             post.setListId(listId);
             post.setTitle(title.trim());
             post.setContent(content);
             
-            System.out.println("게시글 수정 시도: postId=" + postId + ", listId=" + listId + ", title=" + title);
-            
-            // 5. 데이터베이스 업데이트
             int result = postDao.updatePost(post);
             
-            // 6. 결과 처리
             if (result > 0) {
-                // 성공 - 게시글 상세 페이지로 리다이렉트
-                System.out.println("게시글 수정 성공: postId=" + postId);
-                
-                // 성공 메시지를 세션에 저장 (선택사항)
+                System.out.println("✅ 게시글 수정 성공");
                 session.setAttribute("success_msg", "게시글이 성공적으로 수정되었습니다.");
-                
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);
             } else {
-                // 실패 - 수정 페이지로 다시 이동
-                System.out.println("게시글 수정 실패: postId=" + postId);
-                
+                System.out.println("❌ 게시글 수정 실패");
                 request.setAttribute("error_msg", "게시글 수정에 실패했습니다.");
                 forward.setRedirect(false);
-                forward.setPath("/post-edit.post?postId=" + postId);
+                forward.setPath(request.getContextPath() + "/post-edit-form.post?postId=" + postId);
             }
             
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            request.setAttribute("error_msg", "잘못된 요청입니다.");
-            forward.setRedirect(true);
-            forward.setPath(request.getContextPath() + "/post-list.post");
-            
         } catch (Exception e) {
+            System.out.println("❌ Exception: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("error_msg", "서버 오류가 발생했습니다: " + e.getMessage());
+            request.setAttribute("error_msg", "서버 오류가 발생했습니다.");
             forward.setRedirect(true);
             forward.setPath(request.getContextPath() + "/error.jsp");
         }
