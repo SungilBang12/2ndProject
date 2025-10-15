@@ -36,17 +36,17 @@ public class AuthFilter implements Filter {
 		// 🚨 권한이 필요한 페이지 및 필요한 ROLE 정의
         // /users/myInfo, /users/myPosts, /users/myComments 는 로그인(USER) 권한이 필요합니다.
         // 이 경로는 앞에서 LoginCheckFilter를 통해 별도 처리할 수 있지만, 여기서는 AuthFilter에 통합 처리합니다.
-        pageRoles.put("/users/myInfo", "USER,ADMIN");
-		pageRoles.put("/users/myPosts", "USER,ADMIN");
-		pageRoles.put("/users/myComments", "USER,ADMIN");
-        
+        pageRoles.put("/users/myInfo", "USER");
+        pageRoles.put("/users/update", "USER");
+		pageRoles.put("/users/myPosts", "USER");
+		pageRoles.put("/users/myComments", "USER");
+		pageRoles.put("/editor.post", "USER");
+		pageRoles.put("/ssp.post", "USER");
+		pageRoles.put("/post-edit-form.post", "USER");
+		pageRoles.put("/admin/editor", "ADMIN");
 		// /admin/users (사용자 관리 페이지)는 "ADMIN" 권한이 필요합니다.
 		pageRoles.put("/admin/users", "ADMIN");
 		
-        // 기타 마이페이지/회원정보 수정 관련
-		pageRoles.put("/mypage", "USER,ADMIN");
-		pageRoles.put("/update", "USER,ADMIN");
-		pageRoles.put("/withdraw", "USER,ADMIN");
 	}
 
 	@Override
