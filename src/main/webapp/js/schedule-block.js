@@ -1,99 +1,118 @@
 import { Node, mergeAttributes } from "https://esm.sh/@tiptap/core";
+import { Plugin } from "https://esm.sh/prosemirror-state";
 
 export const ScheduleBlock = Node.create({
-  name: "scheduleBlock",
-  group: "block",
-  atom: true,
-  draggable: true,
+	name: "scheduleBlock",
+	group: "block",
+	atom: true,
+	draggable: false,
 
-  addAttributes() {
-    return {
-      title: { default: "" },
-      date: { default: "" },
-      time: { default: "" },
-//      location: { default: "" }, // ✅ location 속성 추가
-      people: { default: 0 },
-    };
-  },
+	addAttributes() {
+		return {
+			title: { default: "" },
+			date: { default: "" },
+			time: { default: "" },
+			people: { default: 0 },
+		};
+	},
 
-  parseHTML() {
-    return [{ tag: 'div[data-type="schedule-block"]' }];
-  },
+	addKeyboardShortcuts() {
+		return {
+			Backspace: ({ editor }) => {
+				const { $from } = editor.state.selection;
+				return $from.nodeAfter?.type.name === "scheduleBlock";
+			},
+			Delete: ({ editor }) => {
+				const { $from } = editor.state.selection;
+				return $from.nodeBefore?.type.name === "scheduleBlock";
+			},
+		};
+	},
 
-  
-  // SSR 혹은 HTML 초기 렌더링때 renderHTML()만 씀
-  renderHTML({ node, HTMLAttributes }) {
-    const attrs = mergeAttributes(
-      HTMLAttributes,
-      { "data-type": "schedule-block" }
-    );
+	addProseMirrorPlugins() {
+		return [
+			new Plugin({
+				props: {
+					handleKeyDown(view, event) {
+						const { $from } = view.state.selection;
 
-    return [
-      "div",
-      attrs,
-      [
-        "div",
-        { class: "schedule-header" },
-        [
-          "h3",
-          { class: "schedule-title" },
-          `📅 ${node.attrs.title}`,
-        ],
-        [
-          "div",
-          { class: "schedule-date" },
-          `🕐 ${node.attrs.date}${node.attrs.time ? " " + node.attrs.time : ""}`,
-        ],
-      ],
- /*
-      [
-        "div",
-        { class: "schedule-info" },
-        node.attrs.location
-          ? ["div", { class: "schedule-info-item" }, `📍 ${node.attrs.location}`]
-          : null,
-        ["div", { class: "schedule-info-item" }, `👥 ${node.attrs.people}명 모집`],
-      ],
-*/
-      [
-        "button",
-        { class: "schedule-join-btn" },
-        "참가하기",
-      ],
-    ];
-  },
-});
+						// 노드 앞에 ScheduleBlock이 있거나, 커서가 0이면 isBeforeBlock
+						const nodeAfter = $from.nodeAfter;
+						const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock" || $from.parentOffset === 0;
 
-  /*
-  addNodeView() {
-    return ({ node }) => {
-      const dom = document.createElement("div");
-      dom.className = "schedule-block";
-      dom.dataset.type = "schedule-block";
+						if (isBeforeBlock) {
+							// 허용 키
+							if (
+								event.key.startsWith("Arrow") ||
+								event.key === "Tab" ||
+								event.ctrlKey ||
+								event.metaKey
+							) return false;
 
-      dom.innerHTML = `
-        <div class="schedule-header">
-          <h3 class="schedule-title">📅 ${node.attrs.title}</h3>
-          <div class="schedule-date">
-            🕐 ${node.attrs.date}${node.attrs.time ? " " + node.attrs.time : ""}
-          </div>
+							return true; // 나머지 모든 키 차단
+						}
+
+						return false; // 일반 블록 정상
+					},
+
+					handleTextInput(view, from, to, text) {
+						const { $from } = view.state.selection;
+						const nodeAfter = $from.nodeAfter;
+						const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock" || $from.parentOffset === 0;
+
+						return isBeforeBlock; // 바로 앞 텍스트 입력 차단
+					},
+				},
+			}),
+		];
+	},
+
+	parseHTML() {
+		return [{ tag: "div.schedule-block" }];
+	},
+
+	renderHTML({ HTMLAttributes }) {
+		return ["div", mergeAttributes(HTMLAttributes, { class: "schedule-block" }), 0];
+	},
+
+	addNodeView() {
+		return ({ node, getPos, editor }) => {
+			const dom = document.createElement("div");
+			dom.className = "schedule-block";
+			dom.dataset.type = "schedule-block";
+			dom.setAttribute("contenteditable", "false");
+
+			dom.innerHTML = `
+        <div class="schedule-title">📅 ${node.attrs.title}</div>
+        <div class="schedule-date">🕐 ${node.attrs.date} ${node.attrs.time ?? ""}</div>
+        <div class="schedule-info-item">👥 ${node.attrs.people}명 모집</div>
+        <div class="schedule-btns">
+          <button class="schedule-join-btn">참가하기</button>
+          <button class="schedule-cancel-btn">취소</button>
         </div>
-        <div class="schedule-info">
-          ${node.attrs.location ? `<div class="schedule-info-item">📍 ${node.attrs.location}</div>` : ""}
-          <div class="schedule-info-item">👥 ${node.attrs.people}명 모집</div>
-        </div>
-        <button class="schedule-join-btn">참가하기</button>
       `;
 
-      const joinBtn = dom.querySelector(".schedule-join-btn");
-      joinBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        alert("참가 신청이 완료되었습니다!");
-      });
+			// 드래그/드롭 방지
+			dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
+			dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
+			dom.addEventListener("keydown", e => e.stopPropagation());
 
-      return { dom };
-    };
-	
-  },
-  */
+			// 참가 버튼
+			dom.querySelector(".schedule-join-btn").addEventListener("click", e => {
+				e.stopPropagation();
+				alert(`'${node.attrs.title}' 모임에 참가 신청 완료!`);
+			});
+
+			// 취소 버튼
+			dom.querySelector(".schedule-cancel-btn").addEventListener("click", e => {
+				e.stopPropagation();
+				const pos = getPos();
+				if (pos != null && editor) {
+					editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+				}
+			});
+
+			return { dom, contentDOM: null };
+		};
+	},
+});
