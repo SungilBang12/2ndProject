@@ -40,7 +40,7 @@ public class UsersDao implements UsersInterface {
 	    
 		return Users.builder()
 				.userId(rs.getString("USER_ID"))
-				.username(rs.getString("USERNAME"))
+				.userName(rs.getString("USERNAME"))
 				.password(rs.getString("PASSWORD"))
 				.email(rs.getString("EMAIL"))
 				.ROLE(rs.getString("ROLE"))
@@ -66,7 +66,7 @@ public class UsersDao implements UsersInterface {
 		System.out.println("회원가입 user dto 정보" + user.toString());
 		try (PreparedStatement pstmt = conn.prepareStatement(INSERT_USER_SQL)) {
 			pstmt.setString(1, user.getUserId());
-			pstmt.setString(2, user.getUsername()); 
+			pstmt.setString(2, user.getUserName()); 
 			pstmt.setString(3, user.getPassword());// Bcrypt 해시된 비밀번호
 			pstmt.setString(4, user.getEmail());
 			pstmt.setString(5, user.getROLE() != null ? user.getROLE() : "USER");
@@ -162,7 +162,7 @@ public class UsersDao implements UsersInterface {
 		int result = 0;
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setString(1, user.getUsername());
+			pstmt.setString(1, user.getUserName());
 			pstmt.setString(2, user.getEmail());
 
 			int paramIndex = 3;
@@ -206,7 +206,7 @@ public class UsersDao implements UsersInterface {
 			    Timestamp timestamp = rs.getTimestamp("CREATED_AT");
 				Users user = Users.builder()
 						.userId(rs.getString("userId"))
-						.username(rs.getString("username"))
+						.userName(rs.getString("userName"))
 						.email(rs.getString("email"))
 						.ROLE(rs.getString("ROLE"))
 						.isEmailVerified(rs.getBoolean("IS_EMAIL_VERIFIED"))

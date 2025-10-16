@@ -34,7 +34,7 @@ public class MapController extends HttpServlet {
 		Action action = null;
 		ActionForward forward = null;
 		if ("/post/create.do".equals("*.do")) {
-		    action = new PostCreateController(new PostDaoImpl());
+		   // action = new PostCreateController(new PostDaoImpl());
 		}
 
 		if (forward != null) {

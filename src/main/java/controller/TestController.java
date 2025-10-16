@@ -1,6 +1,12 @@
 package controller;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
+import com.google.gson.Gson;
 
 import action.Action;
 import action.ActionForward;
@@ -12,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.post.CreateTradePostSyncService;
 import service.post.GetPostViewService;
+import utils.AblyChatConfig;
+import utils.ConfigLoader;
 
 /**
  * Servlet implementation class FrontController
@@ -50,11 +58,12 @@ public class TestController extends HttpServlet {
 			//request에 postId parameter로 필요
 			action = new GetPostViewService();
 			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/ .test")) {
+		} else if (urlCommand.equals("/chat.test")) {
 			// 홈페이지 이동 view 경로
+			setAblyConfigToRequest(request);
 			forward = new ActionForward();
 			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/views/board/board_write.jsp");
+			forward.setPath("/public/schedule-chat-example.jsp");
 		}
 
 		if (forward != null) {
@@ -77,6 +86,38 @@ public class TestController extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		doProcess(request, response);
+	}
+	
+	private void setAblyConfigToRequest(HttpServletRequest request) {
+	    // 🚨 디버깅: ServletContext 확인
+	    System.out.println("[DEBUG] ServletContext: " + getServletContext());
+	    
+	    Optional<Properties> configOpt = AblyChatConfig.getAblyConfig(getServletContext());
+	    
+	    // 🚨 디버깅: Properties 로드 여부 확인
+	    System.out.println("[DEBUG] ably Config 로드 여부: " + configOpt.isPresent());
+
+	    if (configOpt.isPresent()) {
+	        Properties props = configOpt.get();
+	        
+	        System.out.println(props);
+	        
+	        // 🚨 디버깅: Properties 내용 확인 (apiKey는 일부만)
+	        System.out.println("[DEBUG] pubKey 존재: " + (props.getProperty("ably.pubkey") != null));
+//	        System.out.println("[DEBUG] authDomain: " + props.getProperty("firebase.authDomain"));
+	        
+	        Map<String, String> AblyConfigMap = new HashMap<>();
+	        AblyConfigMap.put("pubKey", props.getProperty("ably.pubkey"));
+
+	        String configJson = new Gson().toJson(AblyConfigMap);
+	        
+	        System.out.println(configJson);
+	        request.setAttribute("ablyConfigJson", configJson);
+//	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
+	    } else {
+	        request.setAttribute("ablyConfigJson", "{}");
+//	        System.err.println("[ERROR] Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
+	    }
 	}
 
 }

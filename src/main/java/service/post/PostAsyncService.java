@@ -12,11 +12,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import dao.ChatDao;
 import dao.PostDao;
+import dao.UsersDao;
 import dto.Post;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import utils.ConnectionPoolHelper;
 
 public class PostAsyncService {
 
@@ -65,7 +68,9 @@ public class PostAsyncService {
 					JsonObject jsonObject = gson.fromJson(jsonData, JsonObject.class);
 					JsonObject contentObj = jsonObject.getAsJsonObject("content");
 					JsonArray contentArray = contentObj.getAsJsonArray("content");
-					parseAndSaveCustomNodes(contentArray, postId);
+					UsersDao user = new UsersDao();
+					
+					parseAndSaveCustomNodes(contentArray, postId, user.selectUserByUserId(ConnectionPoolHelper.getConnection() ,post.getUserId()).orElse(null).getUserName());
 				}
 
 				// 4. JSON 응답 결과 설정
@@ -73,6 +78,10 @@ public class PostAsyncService {
 				if (postId > 0) {
 					msg = "insert success";
 					String url = request.getContextPath() + "/post-detail.post?postId=" + postId; // 생성된 상세 페이지
+					
+					//TODO 게시글 작성되었을 시 게시자 채팅참가.
+					ChatDao chat = new ChatDao();
+					chat.insertChatParticipant(postId, post.getUserId());
 
 					// 성공 시 JSON 응답 Map 구성
 					responseMap.put("status", "success");
@@ -230,7 +239,7 @@ public class PostAsyncService {
 	    }); // executor.execute() 끝
 	}
 
-	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
+	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId, String userName) {
 		PostDao dao = new PostDao();
 
 		for (JsonElement element : contentArray) {
@@ -246,6 +255,14 @@ public class PostAsyncService {
 			case "scheduleBlock":
 				JsonObject schedAttrs = node.getAsJsonObject("attrs");
 				dao.insertSchedule(postId, schedAttrs);
+				//TODO 게시글 작성되었을 시 게시자 채팅참가.
+				ChatDao chat = new ChatDao();
+				try {
+					chat.insertChatParticipant(postId, userName);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				break;
 
 			case "image":
@@ -261,7 +278,7 @@ public class PostAsyncService {
 			}
 			// 하위 content 안에 nested node가 있으면 재귀 탐색
 			if (node.has("content")) {
-				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId);
+				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId, userName);
 			}
 		}
 	}
