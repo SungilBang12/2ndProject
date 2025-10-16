@@ -64,8 +64,13 @@ public class PostViewController extends HttpServlet {
             System.out.println(">>> 게시글 생성 처리 (Synchronous)");
             action = new CreatePostService(); // Use the new service
             forward = action.excute(request, response);
-        } 
-        else {
+        } else if (urlCommand.equals("/post-list-view.post")) {
+            System.out.println(">>> 글 리스트");
+            forward = new ActionForward();
+            forward.setRedirect(false);
+            forward.setPath("/WEB-INF/view/post/page-list-view.jsp");
+            
+        } else {
             System.out.println(">>> 매칭되는 URL이 없습니다: " + urlCommand);
         }
 

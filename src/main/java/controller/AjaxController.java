@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import com.google.gson.JsonObject;
+
+import service.post.PostListAsyncService;
 import service.post.PostListService;
 import service.post.PostSearchService;
 
@@ -50,6 +52,10 @@ public class AjaxController extends HttpServlet {
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(result.toString());
             return;
+        } else if(urlCommand.equals("/postList2.async")) {
+        	System.out.println("[AjaxController] 요청: " + urlCommand);
+        	new PostListAsyncService().handle(request, response);
+        	return;
         }
 
         // 기타 비동기 서비스 (댓글 등)
