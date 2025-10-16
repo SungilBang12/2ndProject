@@ -20,13 +20,14 @@ import service.chat.ChatService;
 public class ChatJoinServlet extends HttpServlet {
     private ChatService service = new ChatService();
 
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    	System.out.println("채팅 요청");
         int postId = Integer.parseInt(req.getParameter("postId"));
         String userId = (String) req.getSession().getAttribute("userId");
 
         ChatJoinResponse result = service.joinChat(new ChatJoinRequest(postId, userId));
 
-        resp.setContentType("application/json;charset=UTF-8");
-        new Gson().toJson(result, resp.getWriter());
+        res.setContentType("application/json;charset=UTF-8");
+        new Gson().toJson(result, res.getWriter());
     }
 }
