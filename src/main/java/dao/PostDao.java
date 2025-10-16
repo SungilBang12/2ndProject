@@ -683,7 +683,7 @@ public class PostDao {
 		}
 	}
 
-	private void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
+	public void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
 		PostDao dao = new PostDao();
 
 		for (JsonElement element : contentArray) {
@@ -719,5 +719,23 @@ public class PostDao {
 				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId);
 			}
 		}
+	}
+	
+	public int getListIdByPostId(int postId) {
+	    String sql = "SELECT LIST_ID FROM POST WHERE POST_ID = ?";
+	    try (Connection conn = ConnectionPoolHelper.getConnection();
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        
+	        pstmt.setInt(1, postId);
+	        
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	            if (rs.next()) {
+	                return rs.getInt("LIST_ID");
+	            }
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return 0;
 	}
 }

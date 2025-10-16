@@ -17,6 +17,7 @@ public class GetPostViewService implements Action {
 
         try {
             // 1️⃣ 요청 파라미터 받기
+
             String postIdParam = request.getParameter("postId");
 
             if (postIdParam == null || postIdParam.isEmpty()) {
@@ -42,7 +43,7 @@ public class GetPostViewService implements Action {
             // 4️⃣ 페이지 이동 설정
             forward = new ActionForward();
             forward.setRedirect(false); // forward 방식
-            forward.setPath("/public/post-detail.jsp"); // ✅ 상세 보기 JSP 경로
+            forward.setPath("/public/post-detail.jsp"); // ✅ 상세 보기 페이지 JSP 경로
 
         } catch (Exception e) {
             e.printStackTrace();

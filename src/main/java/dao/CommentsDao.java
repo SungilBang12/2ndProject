@@ -42,6 +42,8 @@ public class CommentsDao {
 
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+        	
+            conn.setAutoCommit(false);
 
             ps.setInt(1, postId);
             ps.setString(2, userId);
@@ -79,6 +81,8 @@ public class CommentsDao {
         List<Comments> list = new ArrayList<>();
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(base)) {
+            conn.setAutoCommit(false);
+
 
             ps.setInt(1, postId);
             ps.setInt(2, end);
@@ -99,6 +103,8 @@ public class CommentsDao {
         final String sql = "SELECT COUNT(*) FROM COMMENTS WHERE POST_ID = ?";
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
+
             ps.setInt(1, postId);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -112,6 +118,8 @@ public class CommentsDao {
         final String sql = "SELECT COMMENT_ID, POST_ID, USER_ID, CONTENT, CREATED_AT FROM COMMENTS WHERE COMMENT_ID = ?";
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
+
             ps.setInt(1, commentId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return map(rs);
@@ -138,6 +146,8 @@ public class CommentsDao {
         final String sql = "UPDATE COMMENTS SET CONTENT = ? WHERE COMMENT_ID = ? AND USER_ID = ?";
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
+
             ps.setString(1, GSON.toJson(json));
             ps.setInt(2, commentId);
             ps.setString(3, userId);
@@ -161,6 +171,8 @@ public class CommentsDao {
         final String sql = "UPDATE COMMENTS SET CONTENT = ? WHERE COMMENT_ID = ? AND USER_ID = ?";
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
+
             ps.setString(1, GSON.toJson(json));
             ps.setInt(2, commentId);
             ps.setString(3, userId);

@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
+import action.ActionForward;
 import dto.Users;
 
 // Tomcat 10.1 (Servlet 6.0) 환경 호환을 위해 javax를 jakarta로 변경
@@ -18,6 +19,10 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import service.post.CreatePostService;
+import service.post.GetPostEditFormService;
+import service.post.GetPostViewService;
+import service.post.UpdatePostService;
 
 /**
  * 사용자 인증(Authentication) 및 인가(Authorization)를 처리하는 필터입니다.
@@ -38,15 +43,44 @@ public class AuthFilter implements Filter {
         // 이 경로는 앞에서 LoginCheckFilter를 통해 별도 처리할 수 있지만, 여기서는 AuthFilter에 통합 처리합니다.
         pageRoles.put("/users/myInfo", "USER");
         pageRoles.put("/users/update", "USER");
-		pageRoles.put("/users/myPosts", "USER");
-		pageRoles.put("/users/myComments", "USER");
-		pageRoles.put("/editor.post", "USER");
-		pageRoles.put("/ssp.post", "USER");
-		pageRoles.put("/post-edit-form.post", "USER");
+		pageRoles.put("/users/myPosts", "USER,ADMIN");
+		pageRoles.put("/users/myComments", "USER,ADMIN");
+		pageRoles.put("/users/logout", "USER,ADMIN");
+		
+		// --- 동기(Synchronous) 게시글 처리 ---
+        // 게시글 작성 폼 조회 (작성하려면 USER여야 함)
+        pageRoles.put("/editor.post", "USER");
+        // 게시글 상세 조회 (일반적으로 로그인 필요)
+        pageRoles.put("/post-detail.post", "USER,ADMIN"); 
+        // 게시글 수정 폼 조회
+        pageRoles.put("/post-edit-form.post", "USER");
+        // 게시글 수정 처리
+        pageRoles.put("/update.post", "USER");
+        // 노을 페이지 (일반적으로 게시판 관련 접근 시 로그인 필요)
+        pageRoles.put("/ssp.post", "USER");
+        // 게시글 생성 처리
+        pageRoles.put("/create.post", "USER");
+        
+     // --- 비동기(Async) 게시글 처리 ---
+        // 비동기 게시글 생성
+        pageRoles.put("/create.postasync", "USER");
+        // 비동기 게시글 수정
+        pageRoles.put("/update.postasync", "USER");
+        // 비동기 게시글 삭제
+        pageRoles.put("/delete.postasync", "USER,ADMIN");
+
+        // --- 비동기(Async) 댓글 처리 ---
+        // 댓글 생성
+        pageRoles.put("/CommentsCreate.async", "USER");
+        // 댓글 수정
+        pageRoles.put("/CommentsUpdate.async", "USER");
+        // 댓글 삭제
+        pageRoles.put("/CommentsDelete.async", "USER,ADMIN");
+
+		
 		pageRoles.put("/admin/editor", "ADMIN");
 		// /admin/users (사용자 관리 페이지)는 "ADMIN" 권한이 필요합니다.
 		pageRoles.put("/admin/users", "ADMIN");
-		
 	}
 
 	@Override
