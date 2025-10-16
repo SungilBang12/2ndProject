@@ -133,6 +133,19 @@
         `;
       }).join('');
 
+      // ✅ 게시글 개수 문구 표시
+      let infoLabel = document.querySelector(".post-count");
+      if (infoLabel) infoLabel.remove();
+
+      const sortBar = document.querySelector(".sort-bar");
+      const countSpan = document.createElement("span");
+      countSpan.className = "post-count";
+      countSpan.innerHTML = data.countLabel; // 서버에서 내려온 문구 그대로 표시
+      countSpan.style.marginLeft = "16px";
+      countSpan.style.fontWeight = "500";
+      sortBar.appendChild(countSpan);
+
+      // ✅ 페이지 버튼 상태 갱신
       prevBtn.disabled = (window.currentPage === 1);
       nextBtn.disabled = (window.currentPage === totalPages);
     } catch (err) {
@@ -161,5 +174,9 @@
 
 </body>
 </html>
+
+
+
+
 
 
