@@ -130,7 +130,7 @@ public class UsersController extends HttpServlet {
 			user.setPassword(null);
 
 			// 새 세션에 사용자 정보 저장 (비밀번호는 저장하지 않음)
-			session.setAttribute("loggedInUser", user);
+			session.setAttribute("user", user);
 			session.getId();
 			System.out.println("로그인 성공");
 			// 메인 페이지로 리다이렉트
