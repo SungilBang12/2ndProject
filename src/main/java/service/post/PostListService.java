@@ -15,6 +15,7 @@ public class PostListService {
         List<Post> posts;
         int dataCount;
 
+        // ✅ 검색어 여부에 따라 분기
         if (hasQuery) {
             posts = dao.getPagedPostsByKeyword(sort, page, limit, query);
             dataCount = dao.getSearchPostCount(query);
@@ -43,14 +44,23 @@ public class PostListService {
 
         JsonObject result = new JsonObject();
         result.addProperty("currentPage", page);
-        result.addProperty("dataCount", dataCount);
+        result.addProperty("dataCount", dataCount);  // ✅ 전체 or 검색 결과 개수
         result.addProperty("pageSize", limit);
         result.addProperty("totalPages", totalPages);
+        result.addProperty("hasQuery", hasQuery);    // ✅ 검색 여부 전달
+        result.addProperty("query", hasQuery ? query : "");
         result.add("posts", arr);
+
+        // ✅ 프론트에서 바로 표시할 수 있게 문구도 함께 전달
+        String countLabel = hasQuery
+                ? String.format("\"%s\" 관련 게시글 %d개", query, dataCount)
+                : String.format("전체 게시글 %d개", dataCount);
+        result.addProperty("countLabel", countLabel);
 
         return result;
     }
 }
+
 
 
 
