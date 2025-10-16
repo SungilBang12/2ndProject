@@ -56,6 +56,15 @@ public class AppInitializer implements ServletContextListener {
             System.err.println("Firebase 설정 파일 로드 실패!");
             e.printStackTrace();
         }
+     // 이로써 API Key는 코드 외부에서 로드되어 메모리에만 존재합니다.
+        try {
+            Properties ablyConfig = loadProperties(ctx, "/META-INF/keys/ably-chat-config.properties");
+            ctx.setAttribute("ablyConfig", ablyConfig);
+            System.out.println("ably 설정 로드 완료: ServletContext에 저장");
+        } catch (IOException e) {
+            System.err.println("ably 설정 파일 로드 실패!");
+            e.printStackTrace();
+        }
     }
 
     /**
