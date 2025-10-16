@@ -57,45 +57,58 @@
     </div>
   </main>
 
-  <jsp:include page="/WEB-INF/include/footer.jsp" />
+<script>
+(function(){
+  const contextPath = "<c:url value='/'/>";
+  const grid = document.getElementById("boardGrid");
+  const sortSelect = document.getElementById("sortSelect");
+  const limitSelect = document.getElementById("limitSelect");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const curPageEl = document.getElementById("curPage");
+  const totalPagesEl = document.getElementById("totalPages");
 
-  <script>
-  (function(){
-    const contextPath = "<c:url value='/'/>";
-    const grid = document.getElementById("boardGrid");
-    const sortSelect = document.getElementById("sortSelect");
-    const limitSelect = document.getElementById("limitSelect");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const curPageEl = document.getElementById("curPage");
-    const totalPagesEl = document.getElementById("totalPages");
+  // ✅ 전역 상태
+  window.currentPage = 1;
+  window.currentQuery = "";
+  let totalPages = 1;
 
-    // ✅ 전역 상태
-    window.currentPage = 1;
-    window.currentQuery = "";
-    let totalPages = 1;
+  // ✅ 하이라이트 함수
+  function highlightText(text, query) {
+    if (!query || !text) return text;
+    const regex = new RegExp(`(${query})`, "gi");
+    return text.replace(regex, "<mark>$1</mark>");
+  }
 
-    // ✅ 게시글 로드 함수 (검색·정렬·페이지 통합)
-    window.loadPosts = async function() {
-      const sort = sortSelect.value;
-      const limit = limitSelect.value;
-      const query = window.currentQuery;
+  // ✅ 게시글 로드 함수
+  window.loadPosts = async function() {
+    const sort = sortSelect.value;
+    const limit = limitSelect.value;
+    const query = window.currentQuery;
 
-      grid.innerHTML = '<div class="loading">로딩 중...</div>';
-      try {
-        let url = `${contextPath}postList.async?sort=${sort}&limit=${limit}&page=${window.currentPage}`;
-        if (query) url += `&q=${encodeURIComponent(query)}`;
+    grid.innerHTML = '<div class="loading">로딩 중...</div>';
+    try {
+      let url = `${contextPath}postList.async?sort=${sort}&limit=${limit}&page=${window.currentPage}`;
+      if (query) url += `&q=${encodeURIComponent(query)}`;
 
-        const res = await fetch(url);
-        const data = await res.json();
+      const res = await fetch(url);
+      const data = await res.json();
 
-        totalPages = data.totalPages;
-        window.currentPage = data.currentPage;
+      totalPages = data.totalPages;
+      window.currentPage = data.currentPage;
 
-        curPageEl.textContent = window.currentPage;
-        totalPagesEl.textContent = totalPages;
+      curPageEl.textContent = window.currentPage;
+      totalPagesEl.textContent = totalPages;
 
-        grid.innerHTML = data.posts.map(p => `
+      // ✅ 게시글 렌더링 + 검색어 하이라이트
+      grid.innerHTML = data.posts.map(p => {
+        const title = query ? highlightText(p.title || "제목 없음", query) : (p.title || "제목 없음");
+        const shortContentRaw = p.content
+          ? (p.content.length > 120 ? p.content.substring(0, 120) + "..." : p.content)
+          : "내용 없음";
+        const shortContent = query ? highlightText(shortContentRaw, query) : shortContentRaw;
+
+        return `
           <article class="post-card" data-id="${p.postId}">
             <div class="post-head">
               <button class="monogram-btn ${p.postType ? p.postType.toLowerCase() : ''}" type="button">
@@ -103,12 +116,12 @@
               </button>
               <div class="post-title">
                 <a href="post-detail.post?postId=${p.postId}&categoryId=${p.categoryId}&postTypeId=${p.postTypeId}">
-                  ${p.title || "제목 없음"}
+                  ${title}
                 </a>
               </div>
             </div>
             <div class="post-body">
-              <div class="post-content">${p.content ? p.content.substring(0, 120) + (p.content.length > 120 ? "..." : "") : "내용 없음"}</div>
+              <div class="post-content">${shortContent}</div>
               <div class="meta">
                 <span>${p.category || "카테고리 없음"}</span> · 
                 <span>${p.userId || "익명"}</span> · 
@@ -117,33 +130,35 @@
               </div>
             </div>
           </article>
-        `).join('');
+        `;
+      }).join('');
 
-        prevBtn.disabled = (window.currentPage === 1);
-        nextBtn.disabled = (window.currentPage === totalPages);
-      } catch (err) {
-        console.error(err);
-        grid.innerHTML = '<div class="error">⚠️ 게시글을 불러오지 못했습니다.</div>';
-      }
-    };
+      prevBtn.disabled = (window.currentPage === 1);
+      nextBtn.disabled = (window.currentPage === totalPages);
+    } catch (err) {
+      console.error(err);
+      grid.innerHTML = '<div class="error">⚠️ 게시글을 불러오지 못했습니다.</div>';
+    }
+  };
 
-    prevBtn.addEventListener("click", () => {
-      if (window.currentPage > 1) { window.currentPage--; loadPosts(); }
-    });
-    nextBtn.addEventListener("click", () => {
-      if (window.currentPage < totalPages) { window.currentPage++; loadPosts(); }
-    });
-    sortSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
-    limitSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
+  prevBtn.addEventListener("click", () => {
+    if (window.currentPage > 1) { window.currentPage--; loadPosts(); }
+  });
+  nextBtn.addEventListener("click", () => {
+    if (window.currentPage < totalPages) { window.currentPage++; loadPosts(); }
+  });
+  sortSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
+  limitSelect.addEventListener("change", () => { window.currentPage = 1; loadPosts(); });
 
-    document.getElementById("writeBtn").addEventListener("click", () => {
-      window.location.href = `${contextPath}editor.post`;
-    });
+  document.getElementById("writeBtn").addEventListener("click", () => {
+    window.location.href = `${contextPath}editor.post`;
+  });
 
-    // ✅ 최초 로드
-    loadPosts();
-  })();
-  </script>
+  // ✅ 최초 로드
+  loadPosts();
+})();
+</script>
+
 </body>
 </html>
 
