@@ -57,8 +57,6 @@
     </div>
   </main>
 
-  <jsp:include page="/WEB-INF/include/footer.jsp" />
-
   <script>
   (function(){
     const contextPath = "<c:url value='/'/>";
