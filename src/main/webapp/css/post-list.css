@@ -305,6 +305,47 @@ mark {
   padding: 0 2px;
 }
 
+/* ✅ 전체 게시글 수 표시 영역 */
+.post-count-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin: 4px 0 10px 14px;
+}
+
+.post-count {
+  font-weight: 600;
+  font-size: 15px;
+  color: #3a2b3f;
+}
+
+/* ✅ 게시글 수 + 정렬바 한 줄 정렬 */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: linear-gradient(to right, #fff6f1, #fff1f7);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  font-family: "Poppins", "Noto Sans KR", sans-serif;
+}
+
+.sort-bar .post-count {
+  font-weight: 600;
+  font-size: 15px;
+  color: #3a2b3f;
+}
+
+.sort-bar .sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
 
 
 
