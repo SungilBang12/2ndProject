@@ -16,7 +16,6 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.post.CreateTradePostSyncService;
 import service.post.GetPostViewService;
 import utils.AblyChatConfig;
 import utils.ConfigLoader;
@@ -44,21 +43,7 @@ public class TestController extends HttpServlet {
 		// 요청하기
 		Action action = null;
 		ActionForward forward = null;
-		if (urlCommand.equals("/editor-create.test")) {
-			action = new CreateTradePostSyncService();
-			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/editor.test")) {
-			// 홈페이지 이동 view 경로
-			System.out.println("경로이동");
-			forward = new ActionForward();
-			forward.setRedirect(false);
-			forward.setPath("/WEB-INF/view/post/post-trade-create.jsp");
-		} else if (urlCommand.equals("/post-detail.test")) {
-			
-			//request에 postId parameter로 필요
-			action = new GetPostViewService();
-			forward = action.excute(request, response);
-		} else if (urlCommand.equals("/chat.test")) {
+		if (urlCommand.equals("/chat.test")) {
 			// 홈페이지 이동 view 경로
 			setAblyConfigToRequest(request);
 			forward = new ActionForward();
