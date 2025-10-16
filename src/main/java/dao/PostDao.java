@@ -13,6 +13,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import dto.Post;
+import dto.PostSummary;
+import dto.Post;
 import utils.ConnectionPoolHelper;
 import utils.s3.R2Helper;
 
@@ -714,12 +716,22 @@ public class PostDao {
 			// 다른 블록이 추가되면 여기에 case 추가
 			}
 
+			
+			
+		
 			// 하위 content 안에 nested node가 있으면 재귀 탐색
 			if (node.has("content")) {
 				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId);
 			}
 		}
 	}
+	
+	 private Connection getConn() throws SQLException {
+	        // TODO: 커넥션 풀/DS로 교체
+	        // return dataSource.getConnection();
+	        throw new UnsupportedOperationException("Implement getConn()");
+	    }
+
 	
 	public int getListIdByPostId(int postId) {
 	    String sql = "SELECT LIST_ID FROM POST WHERE POST_ID = ?";
@@ -737,5 +749,194 @@ public class PostDao {
 	        e.printStackTrace();
 	    }
 	    return 0;
+	}
+	
+	// ✅ Oracle POST 테이블 단독, CLOB 검색(dbms_lob.instr) 사용
+	public int countPosts(String q, Integer listId){
+	    StringBuilder sql = new StringBuilder(
+	        "SELECT COUNT(*) " +
+	        "FROM POST p " +
+	        "WHERE 1=1 "
+	    );
+	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
+	    if (q != null && !q.isBlank()) {
+	        sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
+	    }
+
+	    try (Connection con = ConnectionPoolHelper.getConnection();
+	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+	        int idx = 1;
+	        if (listId != null) ps.setInt(idx++, listId);
+	        if (q != null && !q.isBlank()){
+	            String like = "%" + q.toLowerCase() + "%";
+	            ps.setString(idx++, like);  // TITLE LIKE
+	            ps.setString(idx++, q);     // CONTENT CLOB INSTR
+	        }
+
+	        try (ResultSet rs = ps.executeQuery()){
+	            if (rs.next()) return rs.getInt(1);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return 0;
+	}
+
+	// ✅ Oracle OFFSET/FETCH 페이지네이션, POST 테이블만 사용, 정렬: newest|views|oldest
+	public List<Post> listPosts(String sort, int limit, int offset, String q, Integer listId){
+	    String orderBy;
+	    switch (sort == null ? "newest" : sort) {
+	        case "views":  orderBy = "p.HIT DESC, p.CREATED_AT DESC"; break;
+	        case "oldest": orderBy = "p.CREATED_AT ASC";              break;
+	        default:       orderBy = "p.CREATED_AT DESC";             break; // newest
+	    }
+
+	    StringBuilder sql = new StringBuilder(
+	        "SELECT " +
+	        "  p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, p.CONTENT, p.HIT, " +
+	        "  p.CREATED_AT, p.UPDATED_AT " +
+	        "FROM POST p " +
+	        "WHERE 1=1 "
+	    );
+	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
+	    if (q != null && !q.isBlank()) {
+	        sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
+	    }
+	    sql.append("ORDER BY ").append(orderBy).append(" ");
+	    sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+	    List<Post> list = new ArrayList<>();
+	    try (Connection con = ConnectionPoolHelper.getConnection();
+	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+	        int idx = 1;
+	        if (listId != null) ps.setInt(idx++, listId);
+	        if (q != null && !q.isBlank()){
+	            String like = "%" + q.toLowerCase() + "%";
+	            ps.setString(idx++, like);  // TITLE LIKE
+	            ps.setString(idx++, q);     // CONTENT CLOB INSTR
+	        }
+	        ps.setInt(idx++, offset);
+	        ps.setInt(idx,   limit);
+
+	        try (ResultSet rs = ps.executeQuery()){
+	            while (rs.next()){
+	                Post p = new Post();
+	                p.setPostId(rs.getInt("POST_ID"));
+	                p.setUserId(rs.getString("USER_ID"));
+
+	                int li = rs.getInt("LIST_ID");
+	                if (!rs.wasNull()) p.setListId(li);
+
+	                p.setTitle(rs.getString("TITLE"));
+	                // CONTENT이 CLOB이어도 Oracle JDBC는 getString 가능 (대용량/성능 이슈는 별도 고려)
+	                p.setContent(rs.getString("CONTENT"));
+
+	                int hit = rs.getInt("HIT");
+	                if (!rs.wasNull()) p.setHit(hit);
+
+	                // createdAt / updatedAt: DTO 타입에 맞춰 변환 (네 mapRowToPost가 LocalDate 사용 중)
+	                java.sql.Date created = rs.getDate("CREATED_AT");
+	                if (created != null) p.setCreatedAt(created.toLocalDate());
+
+	                java.sql.Date updated = rs.getDate("UPDATED_AT");
+	                if (updated != null) p.setUpdatedAt(updated.toLocalDate());
+
+	                list.add(p);
+	            }
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return list;
+	}
+
+	
+	// ✅ Oracle 11g 호환 PostSummary 조회 (JOIN 포함)
+	public List<PostSummary> listPostSummaries(String sort, int limit, int offset, String q, Integer listId){
+	    String orderBy;
+	    switch (sort == null ? "newest" : sort) {
+	        case "views":  orderBy = "p.HIT DESC, p.CREATED_AT DESC"; break;
+	        case "oldest": orderBy = "p.CREATED_AT ASC";              break;
+	        default:       orderBy = "p.CREATED_AT DESC";             break;
+	    }
+
+	    // ✅ ROWNUM 방식 페이징 + JOIN으로 카테고리/타입 정보 포함
+	    int startRow = offset + 1;
+	    int endRow = offset + limit;
+
+	    StringBuilder sql = new StringBuilder(
+	        "SELECT * FROM ( " +
+	        "  SELECT ROWNUM AS rnum, inner_query.* FROM ( " +
+	        "    SELECT " +
+	        "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, " +
+	        "      SUBSTR(p.CONTENT, 1, 200) AS CONTENT, " +
+	        "      p.HIT, " +
+	        "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, " +
+	        "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, " +
+	        "      c.CATEGORY_NAME AS CATEGORY, " +
+	        "      pt.TYPE_NAME AS POST_TYPE " +
+	        "    FROM POST p " +
+	        "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID " +
+	        "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID " +
+	        "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID " +
+	        "    WHERE 1=1 "
+	    );
+	    
+	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
+	    if (q != null && !q.isBlank()) {
+	        sql.append("AND (LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(LOWER(p.CONTENT), LOWER(?)) > 0) ");
+	    }
+	    
+	    sql.append("    ORDER BY ").append(orderBy).append(" ");
+	    sql.append("  ) inner_query ");
+	    sql.append("  WHERE ROWNUM <= ? ");
+	    sql.append(") WHERE rnum >= ?");
+
+	    List<PostSummary> list = new ArrayList<>();
+	    try (Connection con = ConnectionPoolHelper.getConnection();
+	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+	        int idx = 1;
+	        if (listId != null) ps.setInt(idx++, listId);
+	        if (q != null && !q.isBlank()){
+	            String like = "%" + q.toLowerCase() + "%";
+	            ps.setString(idx++, like);
+	            ps.setString(idx++, q);
+	        }
+	        ps.setInt(idx++, endRow);
+	        ps.setInt(idx,   startRow);
+
+	        try (ResultSet rs = ps.executeQuery()){
+	            while (rs.next()){
+	                PostSummary p = PostSummary.builder()
+	                    .postId(rs.getInt("POST_ID"))
+	                    .userId(rs.getString("USER_ID"))
+	                    .title(rs.getString("TITLE"))
+	                    .content(rs.getString("CONTENT"))
+	                    .hit(rs.getInt("HIT"))
+	                    .createdAt(rs.getString("CREATED_AT"))
+	                    .category(rs.getString("CATEGORY"))
+	                    .postType(rs.getString("POST_TYPE"))
+	                    .build();
+	                
+	                // NULL 체크
+	                int li = rs.getInt("LIST_ID");
+	                if (!rs.wasNull()) p.setListId(li);
+	                
+	                int catId = rs.getInt("CATEGORY_ID");
+	                if (!rs.wasNull()) p.setCategoryId(catId);
+	                
+	                int typeId = rs.getInt("POST_TYPE_ID");
+	                if (!rs.wasNull()) p.setPostTypeId(typeId);
+	                
+	                list.add(p);
+	            }
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return list;
 	}
 }
