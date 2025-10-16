@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
+
 <!-- Sidebar -->
 <nav class="sidebar" id="sidebar" aria-label="사이드바 내비게이션">
   <div class="menu">
@@ -18,18 +19,10 @@
 
   <!-- All -->
 <section class="accordion" id="acc-all">
-  <button
-    id="acc-all-btn"
-    type="button"
-    aria-controls="acc-all-panel"
-    aria-expanded="false"
-    onclick="toggleAcc('acc-all','acc-all-btn')">
-    <a href="<c:url value='/post-list-view.post'>
-               <c:param name='listId' value='0'/>
-               <c:param name='openAcc' value='acc-all'/>
-             </c:url>">All</a>
-  </button>
+  
 </section>
+
+
 
 <!-- Sunset -->
 <section class="accordion" id="acc-sunset">
@@ -42,10 +35,14 @@
     Sunset <span class="caret">▾</span>
   </button>
   <div id="acc-sunset-panel" class="panel" role="region" aria-label="Sunset 카테고리">
-    <a href="<c:url value='/post-list-view.post'>
-               <c:param name='listId' value='1'/>
-               <c:param name='openAcc' value='acc-sunset'/>
-             </c:url>">노을</a>
+    <button
+    id="acc-all-btn"
+    type="button"
+    aria-controls="acc-all-panel"
+    aria-expanded="false"
+    onclick="toggleAcc('acc-all','acc-all-btn')">
+    <a href="<c:url value='/sunset.jsp'/>">노을</a>
+  </button>
     <a href="<c:url value='/post-list-view.post'>
                <c:param name='listId' value='2'/>
                <c:param name='openAcc' value='acc-sunset'/>
