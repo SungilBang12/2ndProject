@@ -9,7 +9,7 @@
   <title>노을 맛집 - 전체글 게시판</title>
 
   <link rel="stylesheet" href="<c:url value='/css/style.css'/>?v=6">
-  <link rel="stylesheet" href="<c:url value='/css/post-list.css'/>?v=2">
+  <link rel="stylesheet" href="<c:url value='/css/post-list.css'/>?v=3">
   <link rel="icon" href="<c:url value='/images/favicon.ico'/>?v=1">
 </head>
 
@@ -26,20 +26,25 @@
         <h1 class="board-title">전체 게시판</h1>
       </header>
 
+      <!-- ✅ 게시글 개수 + 정렬바 한 줄로 -->
       <div class="sort-bar">
-        <label for="sortSelect">정렬 기준:</label>
-        <select id="sortSelect" class="sort-select">
-          <option value="newest" selected>최신순</option>
-          <option value="views">조회수순</option>
-          <option value="oldest">오래된순</option>
-        </select>
+        <span class="post-count">전체 게시글 0개</span>
 
-        <label for="limitSelect" style="margin-left: 12px;">표시 개수:</label>
-        <select id="limitSelect" class="sort-select">
-          <option value="5">5개</option>
-          <option value="10" selected>10개</option>
-          <option value="15">15개</option>
-        </select>
+        <div class="sort-controls">
+          <label for="sortSelect">정렬 기준:</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="newest" selected>최신순</option>
+            <option value="views">조회수순</option>
+            <option value="oldest">오래된순</option>
+          </select>
+
+          <label for="limitSelect" style="margin-left: 12px;">표시 개수:</label>
+          <select id="limitSelect" class="sort-select">
+            <option value="5">5개</option>
+            <option value="10" selected>10개</option>
+            <option value="15">15개</option>
+          </select>
+        </div>
       </div>
 
       <main class="board-main">
@@ -67,13 +72,14 @@
   const nextBtn = document.getElementById("nextBtn");
   const curPageEl = document.getElementById("curPage");
   const totalPagesEl = document.getElementById("totalPages");
+  const countSpan = document.querySelector(".post-count");
 
   // ✅ 전역 상태
   window.currentPage = 1;
   window.currentQuery = "";
   let totalPages = 1;
 
-  // ✅ 하이라이트 함수
+  // ✅ 검색어 하이라이트 함수
   function highlightText(text, query) {
     if (!query || !text) return text;
     const regex = new RegExp(`(${query})`, "gi");
@@ -100,7 +106,7 @@
       curPageEl.textContent = window.currentPage;
       totalPagesEl.textContent = totalPages;
 
-      // ✅ 게시글 렌더링 + 검색어 하이라이트
+      // ✅ 게시글 렌더링 + 검색어 하이라이트 적용
       grid.innerHTML = data.posts.map(p => {
         const title = query ? highlightText(p.title || "제목 없음", query) : (p.title || "제목 없음");
         const shortContentRaw = p.content
@@ -133,19 +139,10 @@
         `;
       }).join('');
 
-      // ✅ 게시글 개수 문구 표시
-      let infoLabel = document.querySelector(".post-count");
-      if (infoLabel) infoLabel.remove();
+      // ✅ 게시글 개수 갱신
+      countSpan.textContent = data.countLabel;
 
-      const sortBar = document.querySelector(".sort-bar");
-      const countSpan = document.createElement("span");
-      countSpan.className = "post-count";
-      countSpan.innerHTML = data.countLabel; // 서버에서 내려온 문구 그대로 표시
-      countSpan.style.marginLeft = "16px";
-      countSpan.style.fontWeight = "500";
-      sortBar.appendChild(countSpan);
-
-      // ✅ 페이지 버튼 상태 갱신
+      // ✅ 페이지 버튼 상태
       prevBtn.disabled = (window.currentPage === 1);
       nextBtn.disabled = (window.currentPage === totalPages);
     } catch (err) {
@@ -154,6 +151,7 @@
     }
   };
 
+  // ✅ 이벤트 등록
   prevBtn.addEventListener("click", () => {
     if (window.currentPage > 1) { window.currentPage--; loadPosts(); }
   });
@@ -174,6 +172,7 @@
 
 </body>
 </html>
+
 
 
 
