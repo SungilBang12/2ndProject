@@ -298,6 +298,12 @@
 .monogram-btn.meeting::before {
   background:conic-gradient(#ce8af7,#9d55f1,#6a0d83,#9d55f1,#ce8af7);
 }
+mark {
+  background: #fff3a0;
+  color: #000;
+  border-radius: 3px;
+  padding: 0 2px;
+}
 
 
 
