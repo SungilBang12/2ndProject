@@ -66,7 +66,7 @@ public class UsersService {
 			String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
 
 			// 삽입할 사용자 정보 DTO 생성 및 해시된 비밀번호 설정
-			Users userToInsert = Users.builder().userId(user.getUserId()).username(user.getUsername())
+			Users userToInsert = Users.builder().userId(user.getUserId()).userName(user.getUserName())
 					.password(hashedPassword) // 해시된 비밀번호 사용
 					.email(user.getEmail()).ROLE(user.getROLE() != null ? user.getROLE() : "USER").isEmailVerified(true) // 이메일
 					// Firebase UID는 Controller에서 설정되어 넘어와야 함 (현재는 user DTO에 설정되어 있다고 가정)

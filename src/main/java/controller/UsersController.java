@@ -177,7 +177,7 @@ public class UsersController extends HttpServlet {
 	        }
 
 	        // 3. 사용자 객체 생성
-	        Users user = Users.builder().userId(userId).username(username).password(password).email(email).ROLE("USER")
+	        Users user = Users.builder().userId(userId).userName(username).password(password).email(email).ROLE("USER")
 	                .isEmailVerified(true) // DB에 저장할 때 인증 상태 반영
 	                .build();
 
