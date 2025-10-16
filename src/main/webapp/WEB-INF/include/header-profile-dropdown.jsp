@@ -7,7 +7,7 @@
     🚨 Controller에서 session.setAttribute("loggedInUser", user); 로 저장했으므로,
     세션 변수 이름을 "loggedInUser"로 변경하여 접근합니다.
 --%>
-<c:set var="user" value="${sessionScope.loggedInUser}" />
+<c:set var="user" value="${sessionScope.user}" />
 <c:set var="isLoggedIn" value="${user != null}" />
 <c:set var="userName" value="${user.userName}" />
 <c:set var="userId" value="${user.userId}" />
@@ -71,7 +71,6 @@
 						</div>
 						<div class="meta">
 							<strong class="name"><c:out value="${userName}" /></strong>
-							<input type="hidden" id="userId" value="${userName}">
 							<input type="hidden" id="userName" value="${user.userName}" />
 							<input type="hidden" id="userId" value="${user.userId}" />
 							<div class="sub">
