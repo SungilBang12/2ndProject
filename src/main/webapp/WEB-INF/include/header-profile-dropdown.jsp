@@ -9,8 +9,12 @@
 --%>
 <c:set var="user" value="${sessionScope.loggedInUser}" />
 <c:set var="isLoggedIn" value="${user != null}" />
-<c:set var="userName" value="${user.username}" />
+<c:set var="userName" value="${user.userName}" />
+<c:set var="userId" value="${user.userId}" />
 <c:set var="userEmail" value="${user.email}" />
+<!-- 게시글 정보 -->
+<input type="hidden" id="isLoggedIn" value="${userName}">
+
 
 <link rel="stylesheet"
 	href="<c:url value='/css/header-profile-dropdown.css'/>" />
@@ -67,6 +71,9 @@
 						</div>
 						<div class="meta">
 							<strong class="name"><c:out value="${userName}" /></strong>
+							<input type="hidden" id="userId" value="${userName}">
+							<input type="hidden" id="userName" value="${user.userName}" />
+							<input type="hidden" id="userId" value="${user.userId}" />
 							<div class="sub">
 								<c:out value="${userEmail}" />
 							</div>

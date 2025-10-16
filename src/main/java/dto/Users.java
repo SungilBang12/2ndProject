@@ -18,7 +18,7 @@ public class Users {
     // DB의 Primary Key (auto-increment)가 있다면 Long id를 추가하는 것이 일반적이나,
     // 여기서는 userId를 PK 겸 식별자로 사용한다고 가정합니다.
 	private String userId;
-	private String username;
+	private String userName;
 	private String password;
 	private String email;
 	private String ROLE; // 관리자(ADMIN), 일반 사용자(USER) 등의 역할
