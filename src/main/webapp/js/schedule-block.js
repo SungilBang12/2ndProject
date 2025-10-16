@@ -10,9 +10,10 @@ export const ScheduleBlock = Node.create({
 	addAttributes() {
 		return {
 			title: { default: "" },
-			date: { default: "" },
-			time: { default: "" },
-			people: { default: 0 },
+			meetDate: { default: "" },
+			meetTime: { default: "" },
+			currentPeople: { default: 0 },
+			maxPeople: { default: 2 }
 		};
 	},
 
@@ -82,37 +83,114 @@ export const ScheduleBlock = Node.create({
 			dom.dataset.type = "schedule-block";
 			dom.setAttribute("contenteditable", "false");
 
-			dom.innerHTML = `
-        <div class="schedule-title">📅 ${node.attrs.title}</div>
-        <div class="schedule-date">🕐 ${node.attrs.date} ${node.attrs.time ?? ""}</div>
-        <div class="schedule-info-item">👥 ${node.attrs.people}명 모집</div>
-        <div class="schedule-btns">
-          <button class="schedule-join-btn">참가하기</button>
-          <button class="schedule-cancel-btn">취소</button>
-        </div>
-      `;
+			// 편집 모드 판단: 현재 editor가 블록 수정 중이면 editMode = true
+			// 블록이 포커스되면 edit 모드라고 가정
+			const editMode = node.attrs.editMode === true;
 
-			// 드래그/드롭 방지
-			dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
-			dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
-			dom.addEventListener("keydown", e => e.stopPropagation());
-
-			// 참가 버튼
-			dom.querySelector(".schedule-join-btn").addEventListener("click", e => {
-				e.stopPropagation();
-				alert(`'${node.attrs.title}' 모임에 참가 신청 완료!`);
+			// Ably 구독
+			if (!window.ably) console.warn("Ably 미초기화");
+			const channel = window.ably?.channels.get(`schedule-${blockId}`);
+			// 실시간 참가자 동기화
+			channel.presence.subscribe(presence => {
+				currentPeople = presence.length;
+				currentPeopleSpan.textContent = currentPeople;
+				if (currentPeople >= maxPeople) {
+					joinBtn?.setAttribute("disabled", true);
+				} else {
+					joinBtn?.removeAttribute("disabled");
+				}
 			});
+			// DOM 구성
+			dom.innerHTML = `
+			     <div class="schedule-title">📅 ${node.attrs.title}</div>
+			     <div class="schedule-date">🕐 ${node.attrs.meetDate} ${node.attrs.meetTime}</div>
+			     <div class="schedule-info-item">👥 <span class="currentPeople">${currentPeople}</span>/${maxPeople}명 모집</div>
+			     <div class="schedule-btns" style="display:flex; justify-content: ${editMode ? "flex-end" : "space-between"};">
+			       ${!editMode ? '<button class="schedule-join-btn">참가하기</button>' : ''}
+			       <button class="schedule-cancel-btn">취소</button>
+			     </div>
+			`;
+			const joinBtn = dom.querySelector(".schedule-join-btn");
+			const cancelBtn = dom.querySelector(".schedule-cancel-btn");
+			const currentPeopleSpan = dom.querySelector(".currentPeople");
+
+
+			if (channel) {
+				// 이미 참가 상태이면 버튼 비활성화
+				let joined = false;
+				channel.presence.get((err, members) => {
+					if (err) return console.error(err);
+					currentPeople = members.length;
+					currentPeopleSpan.textContent = currentPeople;
+					if (currentPeople >= maxPeople) joinBtn?.setAttribute("disabled", true);
+				});
+			}
+
+			// 참가하기 버튼 이벤트 (편집 모드에서는 없음)
+			if (joinBtn) {
+				joinBtn.addEventListener("click", e => {
+					e.stopPropagation();
+					alert(`'${node.attrs.title}' 모임에 참가 신청 완료!`);
+				});
+			}
 
 			// 취소 버튼
-			dom.querySelector(".schedule-cancel-btn").addEventListener("click", e => {
+			cancelBtn.addEventListener("click", e => {
 				e.stopPropagation();
+
+				// 참가자 1명 이상(참가자가 있는 상태) 확인 필요
+				const reallyDelete = currentPeople > 1
+					? confirm("참가자가 1명입니다. 정말 삭제하시겠습니까?") && confirm("정말로 삭제하시겠습니까?")
+					: confirm("블록을 삭제하시겠습니까?");
+
+				if (!reallyDelete) return;
+
 				const pos = getPos();
-				if (pos != null && editor) {
+				if (pos != null) {
 					editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
 				}
+
+				// Ably 참가 상태 제거
+				if (channel) channel.presence.leave();
 			});
 
 			return { dom, contentDOM: null };
 		};
+
+		return { dom, contentDOM: null };
+
+
+		// 드래그/드롭 방지
+		dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
+		dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
+		dom.addEventListener("keydown", e => e.stopPropagation());
+
+		// 참가 버튼
+		dom.querySelector(".schedule-join-btn").addEventListener("click", e => {
+			e.stopPropagation();
+			alert(`'${node.attrs.title}' 모임에 참가 신청 완료!`);
+		});
+
+		// 취소 버튼
+		cancelBtn.addEventListener("click", e => {
+			e.stopPropagation();
+
+			// 참가자 1명인 상태라면 두 번 확인
+			const reallyDelete = currentPeople <= 1
+				? confirm("참가자가 1명입니다. 정말 삭제하시겠습니까?") && confirm("정말로 삭제하시겠습니까?")
+				: confirm("블록을 삭제하시겠습니까?");
+
+			if (!reallyDelete) return;
+
+			const pos = getPos();
+			if (pos != null) {
+				editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+			}
+
+			// Ably 참가 상태 제거
+			if (channel) channel.presence.leave();
+		});
+
+		return { dom, contentDOM: null };
 	},
-});
+})

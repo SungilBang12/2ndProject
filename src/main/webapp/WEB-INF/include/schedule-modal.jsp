@@ -14,8 +14,10 @@
     <button id="scheduleConfirmBtn">삽입</button>
   </div>
 </div>
-
+<script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 <script type="module">
 import * as ScheduleModal from "./js/schedule-modal.js";
 window.openScheduleModal = ScheduleModal.openModal;
 </script>
+
+

@@ -538,12 +538,12 @@ body {
         </div>
         
         <!-- 댓글 작성 폼 -->
-        <c:if test="${not empty sessionScope.userId}">
+        <c:if test="${not empty sessionScope.user}">
             <div class="comment-write-form">
                 <div class="write-form-header">
                     <img src="${pageContext.request.contextPath}/images/default-avatar.png" 
                          alt="프로필" class="profile-img">
-                    <span class="author-name">${sessionScope.userId}</span>
+                    <span class="author-name">${sessionScope.user.userId}</span>
                 </div>
                 
                 <!-- 댓글 Toolbar -->
@@ -587,7 +587,7 @@ body {
             </div>
         </c:if>
         
-        <c:if test="${empty sessionScope.userId}">
+        <c:if test="${empty sessionScope.user}">
             <div class="comment-write-form" style="text-align: center; padding: 30px;">
                 <p style="color: #999; margin-bottom: 15px;">댓글을 작성하려면 로그인이 필요합니다.</p>
                 <a href="${pageContext.request.contextPath}/login.jsp" 
