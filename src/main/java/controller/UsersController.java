@@ -64,7 +64,6 @@ public class UsersController extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		String pathInfo = request.getPathInfo();
-
 		// 간단한 페이지 이동 처리
 		if ("/login".equals(pathInfo)) {
 			request.getRequestDispatcher("/WEB-INF/view/login.jsp").forward(request, response);
@@ -74,16 +73,12 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/join.jsp").forward(request, response);
 		} else if ("/myInfo".equals(pathInfo)) { // 🚨 내 정보 수정
 			request.getRequestDispatcher("/WEB-INF/view/users/myInfo.jsp").forward(request, response);
-		} else if ("/myPosts".equals(pathInfo)) { // 🚨 내가 단 게시글
+		} else if ("/myPosts".equals(pathInfo)) { // 🚨 내가 단 사진
 			request.getRequestDispatcher("/WEB-INF/view/users/myPosts.jsp").forward(request, response);
 		} else if ("/myComments".equals(pathInfo)) { // 🚨 내가 단 댓글 보기
 			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
 		} else if ("/logout".equals(pathInfo)) {
 			handleLogout(request, response);
-		} else if ("/admin/users".equals(pathInfo)) {
-			// 필터에서 ADMIN 권한 체크 완료 후 여기로 진입함
-			// 여기서는 사용자 목록 조회 로직이 필요
-			request.getRequestDispatcher("/WEB-INF/view/admin/user_management.jsp").forward(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
@@ -129,6 +124,10 @@ public class UsersController extends HttpServlet {
 			HttpSession session = request.getSession(true);
 			session.invalidate(); // 기존 세션 무효화
 			session = request.getSession(true); // 새로운 세션 생성
+			
+			System.out.println("로그인 정보 = 비밀번호 확인" + user);
+			// 패스워드 제거
+			user.setPassword(null);
 
 			// 새 세션에 사용자 정보 저장 (비밀번호는 저장하지 않음)
 			session.setAttribute("loggedInUser", user);
