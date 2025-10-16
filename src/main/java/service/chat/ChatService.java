@@ -14,11 +14,16 @@ public class ChatService {
 	public ChatJoinResponse joinChat(ChatJoinRequest req) {
 		ChatJoinResponse res = null;
 		try {
+			System.out.println(req.getPostId());
+			System.out.println(req.getClass());
 			SchedulePostDto post = dao.getSchedulePost(req.getPostId());
+			
+			System.out.println("프론트 채팅 join 요청사항" + post);
 
 			if (post == null)
 				return new ChatJoinResponse(false, "게시글 없음", null, 0, 0);
 
+			System.out.println("게시글 있음" + post);
 			if (dao.isAlreadyJoined(req.getPostId(), req.getUserId()))
 				return new ChatJoinResponse(true, "이미 참가 중", "channel-" + req.getPostId(), post.getCurrentPeople(),
 						post.getMaxPeople());
@@ -35,6 +40,7 @@ public class ChatService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		System.out.println("채팅 참가 널값 반환");
 		return res;
 	}
 }
