@@ -4,8 +4,10 @@ import StarterKit from "https://esm.sh/@tiptap/starter-kit";
 import { TextStyleKit } from "https://esm.sh/@tiptap/extension-text-style";
 import Highlight from "https://esm.sh/@tiptap/extension-highlight";
 import { KakaoMapNode } from "./node-extensions.js";
-import { ScheduleBlock } from "./schedule-block.js";
 import Image from "https://esm.sh/@tiptap/extension-image";
+import { ScheduleBlock } from "./schedule-block.js";
+import { openScheduleModal } from "./schedule-modal.js";
+
 // ✨ 제거: import { openKakaoMapModal } from "./kakaomap.js"; 
 // kakaomap.js가 window.openKakaoMapModal로 직접 등록됩니다
 
@@ -15,6 +17,7 @@ export function initEditor(boardEl, toolbarEl, initialContent) {
 		element: boardEl,
 		extensions: [
 			StarterKit.configure({
+				Document: false,
 				// Configure an included extension
 				Link: {
 					openOnClick: false,
@@ -38,6 +41,8 @@ export function initEditor(boardEl, toolbarEl, initialContent) {
 			updateButtonStates(editor, toolbarEl);
 		}
 	});
+	window.openScheduleModal = openScheduleModal;
+	window.currentEditor = editor;
 
 	if (!toolbarEl) return editor;
 
