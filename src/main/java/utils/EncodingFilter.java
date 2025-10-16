@@ -47,18 +47,20 @@ public class EncodingFilter implements Filter {
 			res.setCharacterEncoding(this.encoding);
 		}
 		
+	
 		// 세션정보 생성 후 모든 페이지 전달
 		HttpServletRequest httpRequest = (HttpServletRequest) req;
 	    HttpSession session = httpRequest.getSession(false); // 세션이 없으면 새로 생성하지 않음
 
 	    // 2. 세션에 사용자 정보가 있는지 확인
 	    if (session != null) {
-	        Users loggedInUser = (Users) session.getAttribute("user"); // "user" 키 사용 가정
+	        Users user = (Users) session.getAttribute("user"); // "user" 키 사용 가정
 	        
 	        // 3. request 영역에 사용자 정보를 다시 담아줌
 	        // 이렇게 하면 JSP에서 ${requestScope.user} 또는 ${user}로 접근 가능
-	        if (loggedInUser != null) {
-	            req.setAttribute("user", loggedInUser);
+	        if (user != null) {
+	        	System.out.println("세션 담아서 리퀘스트 전송");
+	            req.setAttribute("user", user);
 	        }
 	    }
 		
