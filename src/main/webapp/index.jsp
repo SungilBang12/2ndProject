@@ -378,7 +378,10 @@
       <div id="top10-fallback" class="hs-empty" style="display:none;">인기 글을 불러오는 중입니다…</div>
     </div>
 
-    <div class="slot-extra"></div>
+    <div class="slot-extra">
+      <jsp:include page="/WEB-INF/include/chat.jsp"></jsp:include>
+
+    </div>
   </main>
 
   <script>

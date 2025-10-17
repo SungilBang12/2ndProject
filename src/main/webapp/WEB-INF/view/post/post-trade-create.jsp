@@ -49,6 +49,8 @@
         <!-- 우측 여유 공간 -->
         <div class="slot-extra">
             <!-- 필요 시 우측 칼럼 컨텐츠 -->
+            <jsp:include page="/WEB-INF/include/chat.jsp"></jsp:include>
+
         </div>
     </main>
 </body>

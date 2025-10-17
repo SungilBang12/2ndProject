@@ -56,7 +56,9 @@
     </div>
   </div>
 
-  <div class="slot-extra"></div>
+  <div class="slot-extra">
+    <jsp:include page="/WEB-INF/include/chat.jsp"></jsp:include>
+  </div>
 </main>
 
 <script>
