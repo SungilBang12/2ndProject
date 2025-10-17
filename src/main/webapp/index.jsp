@@ -427,46 +427,51 @@
       }
     }
 
-    // ===== 지도 포함 여부 (기존 로직 유지) =====
+ // ===== 지도 포함 여부 (hasMap 함수 수정) =====
     function hasMap(p){
-      if (!p) return false;
-      if ((p.maps && p.maps.length) || (p.mapList && p.mapList.length)) return true;
+        if (!p) return false;
+        // 1. Post 객체 자체의 mapList/maps 속성 체크 (JSON 파싱 전에 체크)
+        if ((p.maps && p.maps.length) || (p.mapList && p.mapList.length)) return true;
 
-      const content = p.content;
-      if (!content) return false;
+        const content = p.content;
+        if (!content) return false;
 
-      if (typeof content === 'string') {
-        // 문자열이면 간단 키워드 체크 + 안전 파싱 후 탐색 시도
-        if (/kakao|map|lat|lng|latitude|longitude/i.test(content)) return true;
-        const json = safeParseJSON(content);
-        if (!json) return false;
-        let found=false;
-        (function walk(node){
-          if (found) return;
-          if (Array.isArray(node)){ node.forEach(walk); return; }
-          if (!node || typeof node !== 'object') return;
-          if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
-          if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
-          if (node.content) walk(node.content);
-        })(json);
-        return found;
-      }
+        // 2. content가 문자열일 경우, 키워드 체크를 제거하고 JSON 파싱만 시도
+        if (typeof content === 'string') {
+            // 🚨 이 라인을 제거하거나 주석 처리하세요. (오탐의 주범)
+            // if (/kakao|map|lat|lng|latitude|longitude/i.test(content)) return true;
 
-      // 객체
-      try{
-        let found=false;
-        (function walk(node){
-          if (found) return;
-          if (Array.isArray(node)){ node.forEach(walk); return; }
-          if (!node || typeof node !== 'object') return;
-          if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
-          if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
-          if (node.content) walk(node.content);
-        })(content);
-        return found;
-      }catch(_){ return false; }
+            const json = safeParseJSON(content);
+            if (!json) return false; // JSON이 아니면 지도가 없는 것으로 확정
+
+            let found=false;
+            (function walk(node){
+                if (found) return;
+                if (Array.isArray(node)){ node.forEach(walk); return; }
+                if (!node || typeof node !== 'object') return;
+                // 지도의 고유 타입 체크
+                if (node.type && /kakao-map|map|place|location/i.test(node.type)) { found=true; return; }
+                if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
+                if (node.content) walk(node.content);
+            })(json);
+            return found;
+        }
+
+        // 3. content가 이미 객체인 경우 (기존 JSON 탐색 로직 유지)
+        // (여기서는 수정할 필요 없음)
+        try{
+            let found=false;
+            (function walk(node){
+                if (found) return;
+                if (Array.isArray(node)){ node.forEach(walk); return; }
+                if (!node || typeof node !== 'object') return;
+                if (node.type && /kakao-map|map|place|location/i.test(node.type)) { found=true; return; }
+                if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
+                if (node.content) walk(node.content);
+            })(content);
+            return found;
+        }catch(_){ return false; }
     }
-
     function esc(s){ return (s==null?'':String(s))
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') }

@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>${not empty post ? '게시글 수정' : '게시글 작성'} - Sunset Community</title>
+  <title>게시글 수정</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -495,32 +495,7 @@
 <!-- ★ Front Controller로 제출 -->
 <form action="<c:url value='${isEditMode ? "/update.post" : "/create.post"}'/>" method="post" onsubmit="return prepareAndSubmit()">
   <div class="container">
-
-    <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <h1 class="page-title">
-        <c:choose>
-          <c:when test="${isEditMode}">
-            게시글 수정
-            <span class="edit-mode-badge">✏️ Edit Mode</span>
-          </c:when>
-          <c:otherwise>
-            새 게시글 작성
-          </c:otherwise>
-        </c:choose>
-      </h1>
-      <p class="page-subtitle">
-        <c:choose>
-          <c:when test="${isEditMode}">
-            내용을 수정하고 저장하세요 ✨
-          </c:when>
-          <c:otherwise>
-            커뮤니티와 당신의 이야기를 공유하세요 ✨
-          </c:otherwise>
-        </c:choose>
-      </p>
-    </div>
-
+  
     <!-- 수정 모드일 때 postId 전달 -->
     <c:if test="${isEditMode}">
       <input type="hidden" name="postId" value="${post.postId}" />
@@ -533,6 +508,7 @@
       </label>
       <select id="listId" name="listId" class="form-control" required>
         <option value="">-- 카테고리를 선택하세요 --</option>
+        <option value="9" ${(isEditMode && post.listId == 9) || (!isEditMode && param.listId == '9') ? 'selected' : ''}>※공지※</option>
         <option value="1" ${(isEditMode && post.listId == 1) || (!isEditMode && param.listId == '1') ? 'selected' : ''}>🌅 노을</option>
         <option value="2" ${(isEditMode && post.listId == 2) || (!isEditMode && param.listId == '2') ? 'selected' : ''}>🍽️ 맛집 추천</option>
         <option value="3" ${(isEditMode && post.listId == 3) || (!isEditMode && param.listId == '3') ? 'selected' : ''}>⭐ 맛집 후기</option>
@@ -652,6 +628,7 @@
   // 카테고리별 사용 가능한 기능 매핑
   // ========================================
   const CATEGORY_FEATURES = {
+	'9' : ['image', 'map', 'schedule'], // 공지
     '1': ['image'],                  // 노을
     '2': ['image', 'map'],           // 맛집 추천
     '3': ['image'],                  // 맛집 후기

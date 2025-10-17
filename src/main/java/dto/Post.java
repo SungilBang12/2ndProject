@@ -24,4 +24,3 @@ public class Post {
     Integer postTypeId;   // POST_TYPE.TYPE_ID
     Integer categoryId;   // CATEGORY.CATEGORY_ID
 }
-

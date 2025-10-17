@@ -1,11 +1,10 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>게시글 작성 - Sunset Community</title>
+  <title>게시글 작성</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -475,13 +474,6 @@
 
 <form action="<c:url value='/create.post'/>" method="post" onsubmit="return prepareAndSubmit()">
   <div class="container">
-
-    <!-- 페이지 헤더 -->
-    <div class="page-header">
-      <h1 class="page-title">새 게시글 작성</h1>
-      <p class="page-subtitle">커뮤니티와 당신의 이야기를 공유하세요 ✨</p>
-    </div>
-
     <!-- 카테고리 선택 -->
     <div class="form-group">
       <label for="listId">
@@ -489,6 +481,7 @@
       </label>
       <select id="listId" name="listId" class="form-control" required>
         <option value="">-- 카테고리를 선택하세요 --</option>
+        <option value="9" ${param.listId == '9' ? 'selected' : ''}>※공지※</option>
         <option value="1" ${param.listId == '1' ? 'selected' : ''}>🌅 노을</option>
         <option value="2" ${param.listId == '2' ? 'selected' : ''}>🍽️ 맛집 추천</option>
         <option value="3" ${param.listId == '3' ? 'selected' : ''}>⭐ 맛집 후기</option>
@@ -605,6 +598,7 @@
   // 카테고리별 사용 가능한 기능 매핑
   // ========================================
   const CATEGORY_FEATURES = {
+	'9' : ['image', 'map', 'schedule'], // 공지
     '1': ['image'],                  // 노을
     '2': ['image', 'map'],           // 맛집 추천
     '3': ['image'],                  // 맛집 후기
@@ -624,9 +618,9 @@
 
   // ✅ URL 파라미터에서 listId 가져오기
   const urlParams = new URLSearchParams(window.location.search);
-  const initialListId = urlParams.get('listId') || '${param.listId}' || '';
+  const initiallistId = urlParams.get('listId') || '${param.listId}' || '';
   
-  console.log('초기 listId:', initialListId);
+  console.log('초기 listId:', initiallistId);
 
   // ========================================
   // 에디터 초기화
@@ -699,10 +693,10 @@ if (isEditMode) {
   }
 
   // ✅ 초기 카테고리가 있으면 툴바 기능 활성화
-  if (initialListId) {
-    currentCategory = initialListId;
-    updateToolbarFeatures(initialListId);
-    console.log('초기 툴바 기능 활성화:', initialListId);
+  if (initiallistId) {
+    currentCategory = initiallistId;
+    updateToolbarFeatures(initiallistId);
+    console.log('초기 툴바 기능 활성화:', initiallistId);
   } else {
     // 초기엔 emoji/link만
     updateToolbarFeatures('');
@@ -733,7 +727,7 @@ if (isEditMode) {
     const titleValue = document.getElementById('title').value.trim();
     const hasContent = hasContentChanged || !!titleValue;
 
-    // ✅ 초기 로드 시(currentCategory가 initialListId와 같을 때)는 확인 안 함
+    // ✅ 초기 로드 시(currentCategory가 initiallistId와 같을 때)는 확인 안 함
     if (currentCategory && currentCategory !== newCategory && hasContent) {
       if (!confirm('현재까지의 작성 내용이 모두 삭제됩니다. 그래도 진행하시겠습니까?')) {
         e.target.value = currentCategory; // 되돌리기
@@ -754,7 +748,7 @@ if (isEditMode) {
   // ========================================
   // 폼 제출 전에 TipTap JSON 주입 + 유효성 검사
   // ========================================
-  window.prepareAndSubmit = function () {
+window.prepareAndSubmit = function () {
     if (!editor) { alert("에디터가 초기화되지 않았습니다."); return false; }
 
     const title  = document.getElementById('title').value.trim();
@@ -770,8 +764,14 @@ if (isEditMode) {
 
     // ★ 서버는 문자열 JSON을 기대
     document.getElementById('content').value = JSON.stringify(contentData);
+    
+    // 💡 추가할 핵심 코드: 폼 제출 직전에 변경 플래그를 false로 설정합니다.
+    // 이 코드가 실행되면, 서버 응답(리다이렉트)이 오기 전에 브라우저가
+    // 페이지를 벗어나는 것을 안전하다고 판단하여 경고를 띄우지 않습니다.
+    hasContentChanged = false; 
+    
     return true; // 제출 진행
-  };
+};
 
   // ========================================
   // 취소
@@ -781,8 +781,8 @@ if (isEditMode) {
       hasContentChanged = false;
       
       // ✅ listId가 있으면 해당 리스트로 돌아가기
-      if (initialListId) {
-        window.location.href = "<c:url value='/post-list'/>?listId=" + initialListId;
+      if (initiallistId) {
+        window.location.href = "<c:url value='/post-list'/>?listId=" + initiallistId;
       } else {
         window.location.href = "<c:url value='/meeting-gather.jsp'/>";
       }

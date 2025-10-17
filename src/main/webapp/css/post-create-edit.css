@@ -6,6 +6,23 @@
 	margin: 0 auto;
 }
 
+/* ---------------- Page Header (뒤로가기 버튼 배치) ---------------- */
+.page-header {
+    display: flex;
+    justify-content: space-between; /* 제목과 버튼을 양 끝으로 분리 */
+    align-items: center; /* 수직 중앙 정렬 */
+    margin-bottom: 24px; /* 아래쪽 여백 추가 */
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0; /* 제목과 컨텐츠 분리선 */
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
 /* ---------------- Toolbar ---------------- */
 .toolbar {
 	display: flex;
@@ -151,6 +168,34 @@
 
 .btn-danger:hover {
 	background: #c82333;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: #f9fafb;
+  color: #374151;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+  color: #1f2937;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn:active {
+  background-color: #d1d5db;
+  transform: translateY(1px);
 }
 
 /* ---------------- Kakao Map ---------------- pointer-events: none; 사용해서 drop cursor 탐지 적용*/
