@@ -2,18 +2,19 @@
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 
-<button data-cmd="image">🖼️ 이미지</button>
-<div id="imageModal" class="modal">
-  <div class="modal-content">
-    <span class="modal-close" id="imageModalClose">&times;</span>
-    <h3>이미지 업로드 / 드래그 & 드롭</h3>
-    <input type="file" id="imageFileInput" multiple accept="image/*"/>
-    <div id="imagePreviewContainer" class="image-preview-container"></div>
-    <button id="imageConfirmBtn">삽입</button>
-  </div>
-</div>
+<button type="button" data-cmd="image" onclick="event.preventDefault(); openImageModal(window.currentEditor);">🖼️ 이미지</button>
 
 <script type="module">
-import * as ImageModal from "./js/image-modal.js";
-window.openImageModal = ImageModal.openModal;
+import * as ImageModal from "${pageContext.request.contextPath}/js/image-modal.js";
+
+// 전역 함수로 등록
+window.openImageModal = function(editor) {
+  if (!editor) {
+    console.error('에디터가 초기화되지 않았습니다.');
+    return;
+  }
+  ImageModal.openModal(editor);
+};
+
+console.log('이미지 모달 스크립트 로드 완료');
 </script>

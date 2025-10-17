@@ -44,6 +44,9 @@
       document.getElementById("board"),
       document.getElementById("toolbar")
   );
+  
+  // ✅ 전역 변수로 에디터 등록 (이미지 모달 등에서 사용)
+  window.currentEditor = editor;
 
 window.savePost = function() {
     const content = editor.getJSON();

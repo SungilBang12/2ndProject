@@ -75,19 +75,29 @@ export function openScheduleModal(editor, node = null, pos = null, mode = "creat
 		let postId = window.getPostIdFromUrl;
 		const attrs = { title, meetDate, meetTime, currentPeople, maxPeople , postId};
 
-		if (mode === "edit" && node && pos != null) {
-			editor.chain().focus().command(({ tr }) => {
-				tr.setNodeMarkup(pos, null, attrs);
-				return true;
-			}).run();
-		} else {
-			editor.chain().focus().insertContentAt(0, {
+	if (mode === "edit" && node && pos != null) {
+		editor.chain().focus().command(({ tr }) => {
+			tr.setNodeMarkup(pos, null, attrs);
+			return true;
+		}).run();
+	} else {
+		// ✅ 새 스케줄 삽입 - 현재 커서 위치 또는 문서 끝에 삽입
+		const { from } = editor.state.selection;
+		const docSize = editor.state.doc.content.size;
+		
+		// 커서 위치가 유효하면 그 위치에, 아니면 문서 끝에 삽입
+		const insertPos = from > 0 && from < docSize ? from : docSize - 1;
+		
+		editor.chain()
+			.insertContentAt(insertPos, {
 				type: "scheduleBlock",
 				attrs
-			}).run();
-		}
+			})
+			.focus(insertPos + 1)
+			.run();
+	}
 
-		closeModal();
+	closeModal();
 	};
 
 

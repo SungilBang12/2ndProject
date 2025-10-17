@@ -3,7 +3,92 @@
 
 <!-- Kakao Map API -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c72248c25fcfe17e7a6934e08908d1f4&libraries=services"></script>
+<script>
+//✅ 전역 contextPath 설정
+window.contextPath = "<c:out value='${pageContext.request.contextPath}'/>";
+console.log("=== 전역 contextPath 설정:", window.contextPath);
 
+//✅ 전역 postId 설정
+window.getPostIdFromUrl = function() {
+  const params = new URLSearchParams(window.location.search);
+  const postId = params.get("postId");
+  console.log("=== URL에서 추출한 postId:", postId);
+  return postId ? parseInt(postId, 10) : null;
+};
+
+window.currentPostId = window.getPostIdFromUrl();
+console.log("=== 전역 postId 설정:", window.currentPostId);
+
+//✅ 전역 수정 함수
+window.editPost = function() {
+  console.log("=== editPost 함수 호출 ===");
+  
+  const postId = window.currentPostId || document.getElementById('hiddenPostId')?.value;
+  const contextPath = window.contextPath;
+  
+  console.log("postId:", postId);
+  console.log("contextPath:", contextPath);
+  
+  if (!postId || isNaN(postId) || postId <= 0) {
+      alert("게시글 번호 정보가 누락되었습니다.");
+      console.error("유효하지 않은 postId:", postId);
+      return;
+  }
+  
+
+  
+  const editUrl = contextPath + "/post-edit-form.post?postId=" + postId;
+  console.log("=== 이동할 URL:", editUrl);
+  
+  window.location.href = editUrl;
+};
+
+//✅ 전역 삭제 함수
+window.deletePost = function() {
+  console.log("=== deletePost 함수 호출 ===");
+  
+  const postId = window.currentPostId || document.getElementById('hiddenPostId')?.value;
+  const contextPath = window.contextPath;
+  
+  console.log("postId:", postId);
+  
+  if (!postId || isNaN(postId) || postId <= 0) {
+      alert("게시글 번호 정보가 누락되었습니다.");
+      return;
+  }
+
+  if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+  $.ajax({
+  	  url: "<c:url value='/delete.postasync'/>",
+  	  type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({ postId: parseInt(postId) }),
+      dataType: "json",
+      success: function(result) {
+          if (result.status === "success") {
+              alert("게시글이 성공적으로 삭제되었습니다.");
+              
+              const previousUrl = document.referrer;
+              const redirectUrl = (previousUrl && previousUrl !== window.location.href) 
+                  ? previousUrl 
+                  : contextPath + "/index.jsp";
+              
+              window.location.href = redirectUrl;
+          } else {
+              alert("삭제 실패: " + (result.message || "알 수 없는 오류"));
+          }
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+          console.error("AJAX 오류:", textStatus, errorThrown);
+          alert("서버 통신 오류로 삭제에 실패했습니다.");
+      }
+  });
+};
+
+console.log("=== 전역 함수 등록 완료 ===");
+
+</script>
 <!-- CSS -->
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/post-create-edit.css" />
 <style>
@@ -15,6 +100,14 @@
     min-height: 300px;
     line-height: 1.6;
     word-break: break-word;
+}
+
+.ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 8px 0;
+    display: block;
 }
 
 .post-header {
@@ -83,7 +176,7 @@
 <div id="board" class="ProseMirror"></div>
 
 <!-- 액션 버튼 (작성자만 표시) -->
-<c:if test="${not empty sessionScope.userId && sessionScope.userId == post.userId}">
+<c:if test="${not empty sessionScope.user.userId && sessionScope.user.userId == post.userId}">
     <div class="action-buttons">
         <button onclick="editPost()" class="btn btn-primary">수정</button>
         <button onclick="deletePost()" class="btn btn-danger">삭제</button>
@@ -99,8 +192,7 @@
 
 <!-- 스크립트 -->
 <script type="module">
-import { initViewer } from "${pageContext.request.contextPath}/js/editor-view.js";
-
+import { initViewer } from "<c:url value='/js/editor-view.js'/>";
 console.log("=== post-view.jsp 모듈 스크립트 실행 ===");
 
 // ===== 게시글 내용 로드 =====
@@ -123,4 +215,6 @@ try {
 // TipTap 뷰어 초기화
 const editor = initViewer(document.getElementById("board"), content);
 console.log("=== 에디터 초기화 완료 ===");
+
+
 </script>

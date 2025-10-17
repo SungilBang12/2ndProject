@@ -79,6 +79,8 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
 		} else if ("/myInfoEdit".equals(pathInfo)) { // 💡 추가: 정보 수정 페이지
 			request.getRequestDispatcher("/WEB-INF/view/users/myInfoEdit.jsp").forward(request, response);
+		} else if ("/myActivity".equals(pathInfo)) { // 💡 추가: 내 활동 내역 페이지
+			request.getRequestDispatcher("/WEB-INF/view/users/myActivity.jsp").forward(request, response);
 		} else if ("/logout".equals(pathInfo)) {
 			handleLogout(request, response);
 		} else {
