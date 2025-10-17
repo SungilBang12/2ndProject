@@ -7,7 +7,7 @@
 	href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
 
 <header class="site-header">
-	<a href="<c:url value='/'/>" class="home-btn home-btn--top"
+	<a href="<c:url value='/index.jsp'/>" class="home-btn home-btn--top"
 		aria-label="홈"></a>
 
 	<!-- ✅ 검색창 -->
