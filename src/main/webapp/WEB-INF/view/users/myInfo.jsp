@@ -3,14 +3,12 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions"%>
 
-<%-- 로그인 체크: 한글 쿼리를 헤더에 직접 넣지 않도록 ASCII 토큰 사용 --%>
 <c:if test="${empty sessionScope.user}">
   <c:redirect url="/users/login">
     <c:param name="error" value="login_required"/>
   </c:redirect>
 </c:if>
 
-<%-- 편의용 컨텍스트 경로 변수 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 <c:set var="user" value="${sessionScope.user}" />
 
@@ -20,582 +18,180 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>내 정보</title>
-
-  <link rel="stylesheet" href="${ctx}/css/app.css?v=2" />
+  <link rel="stylesheet" href="${ctx}/css/style.css?v=2" />
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
   <style>
-  /* ====== 전역 폰트 ====== */
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap');
-
-  /* ====== 메인 컨테이너 ====== */
-  .main.grid-14x5 {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 24px;
+  /* Sunset 다크톤 유지 */
+  body {
+    background: linear-gradient(to bottom, #0f0d0c, #1a1614);
+    color: #fff;
+    font-family: "Noto Sans KR", sans-serif;
+    margin: 0;
+    padding: 0;
   }
 
-  .slot-board {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
+  /* ✅ 헤더 공간 제거: 기존 style.css의 body::before 규칙 무시 */
+  html[data-fixed-header] body::before,
+  body::before {
+    display: none !important;
+    height: 0 !important;
+    content: none !important;
   }
 
-  /* ====== 프로필 카드 ====== */
+  html[data-fixed-header] {
+    scroll-padding-top: 0 !important;
+  }
+
   .user-profile-card {
-    background: linear-gradient(135deg, 
-      rgba(42, 31, 26, 0.6) 0%, 
-      rgba(26, 22, 20, 0.6) 100%
-    );
+    background: linear-gradient(145deg, rgba(30,24,22,0.85), rgba(20,16,14,0.85));
     border: 1px solid rgba(255, 139, 122, 0.2);
     border-radius: 16px;
-    padding: 32px;
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
   }
 
-  /* ====== 프로필 헤더 ====== */
   .profile-header {
     display: flex;
     align-items: center;
     gap: 24px;
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 2px solid rgba(255, 139, 122, 0.2);
+    border-bottom: 1px solid rgba(255,139,122,0.25);
+    padding-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   .profile-avatar {
-    width: 120px;
-    height: 120px;
+    width: 110px; height: 110px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 3rem;
-    font-weight: 700;
-    font-family: 'Noto Serif KR', serif;
-    box-shadow: 
-      0 8px 24px rgba(255, 107, 107, 0.4),
-      inset 0 -2px 8px rgba(0, 0, 0, 0.2),
-      inset 0 2px 8px rgba(255, 255, 255, 0.2);
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .profile-avatar::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-    animation: shimmer 3s infinite;
-  }
-
-  @keyframes shimmer {
-    0%, 100% { transform: translate(-30%, -30%); }
-    50% { transform: translate(30%, 30%); }
-  }
-
-  .profile-info {
-    flex: 1;
+    background: linear-gradient(145deg, #EEAF61, #EE5D6C);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; font-weight: 700; color: #fff;
+    box-shadow: 0 6px 24px rgba(255,139,122,0.35);
   }
 
   .profile-info h2 {
-    margin: 0 0 8px 0;
-    font-family: 'Noto Serif KR', serif;
-    font-size: 2rem;
-    font-weight: 700;
+    margin: 0 0 6px;
+    font-size: 1.8rem;
     color: #fff;
-    letter-spacing: -0.02em;
   }
 
   .profile-info .user-email {
-    color: rgba(229, 229, 229, 0.7);
-    font-size: 1rem;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 10px;
   }
 
-  .profile-info .user-email::before {
-    content: "✉️";
-  }
-
-  .profile-info .user-role {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
-    color: #fff;
+  .user-role {
+    display: inline-block;
+    padding: 6px 14px;
     border-radius: 20px;
-    font-size: 0.875rem;
+    background: linear-gradient(90deg, #FB9062, #EE5D6C);
+    color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    font-size: 0.9rem;
   }
 
-  .profile-info .user-role::before {
-    content: "👑";
-  }
-
-  /* ====== 통계 그리드 ====== */
   .profile-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
+    display: flex; gap: 16px; justify-content: space-between;
+    margin-bottom: 24px;
   }
 
   .stat-item {
-    text-align: center;
-    padding: 24px 20px;
-    background: linear-gradient(135deg, 
-      rgba(42, 31, 26, 0.5) 0%, 
-      rgba(26, 22, 20, 0.5) 100%
-    );
-    border: 1px solid rgba(255, 139, 122, 0.2);
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #FF6B6B 0%, #FF8B7A 100%);
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
-  }
-
-  .stat-item:hover {
-    transform: translateY(-4px);
-    border-color: rgba(255, 139, 122, 0.4);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .stat-item:hover::before {
-    transform: scaleX(1);
-  }
-
-  .stat-number {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #FF8B7A;
-    margin-bottom: 8px;
-    font-family: 'Noto Serif KR', serif;
-    text-shadow: 0 2px 8px rgba(255, 139, 122, 0.3);
-  }
-
-  .stat-label {
-    color: rgba(229, 229, 229, 0.7);
-    font-size: 0.95rem;
-    font-weight: 500;
-  }
-
-  /* ====== 액션 버튼 ====== */
-  .profile-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .profile-actions .btn {
     flex: 1;
-    min-width: 150px;
-    padding: 14px 24px;
-    border: none;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,139,122,0.15);
     border-radius: 10px;
-    cursor: pointer;
-    font-size: 15px;
+    text-align: center;
+    padding: 20px;
+    transition: all .25s;
+  }
+  .stat-item:hover { border-color: rgba(255,139,122,0.4); transform: translateY(-3px); }
+
+  .stat-number { color: #FB9062; font-size: 1.8rem; font-weight: 700; }
+  .stat-label { color: rgba(255,255,255,0.7); }
+
+  .profile-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-align: center;
     font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    transition: all .3s;
   }
-
   .btn-primary {
-    background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
+    background: linear-gradient(135deg, #EE5D6C, #FB9062);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
   }
-
-  .btn-primary::before {
-    content: "✏️";
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #FF8B7A 0%, #FFA07A 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.5);
-  }
-
+  .btn-primary:hover { filter: brightness(1.15); }
   .btn-secondary {
-    background: rgba(42, 31, 26, 0.6);
-    color: #e5e5e5;
-    border: 1px solid rgba(255, 139, 122, 0.3);
-  }
-
-  .btn-secondary::before {
-    content: "📊";
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 139, 122, 0.15);
-    border-color: rgba(255, 139, 122, 0.5);
-    color: #FF8B7A;
-    transform: translateY(-2px);
-  }
-
-  .btn-danger {
-    background: linear-gradient(135deg, #E53E3E 0%, #F56565 100%);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,139,122,0.2);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+  }
+  .btn-secondary:hover {
+    background: rgba(255,139,122,0.2);
   }
 
-  .btn-danger:hover {
-    background: linear-gradient(135deg, #F56565 0%, #FC8181 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(229, 62, 62, 0.5);
-  }
-
-  /* ====== 콘텐츠 그리드 (PC에서 2열) ====== */
   .content-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 24px;
   }
 
-  /* ====== 콘텐츠 섹션 ====== */
   .content-section {
-    background: linear-gradient(135deg, 
-      rgba(42, 31, 26, 0.5) 0%, 
-      rgba(26, 22, 20, 0.5) 100%
-    );
-    border: 1px solid rgba(255, 139, 122, 0.15);
-    border-radius: 16px;
-    padding: 28px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
+    background: linear-gradient(145deg, rgba(30,24,22,0.8), rgba(20,16,14,0.8));
+    border: 1px solid rgba(255,139,122,0.2);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
     min-height: 400px;
   }
 
   .content-section h3 {
-    margin: 0 0 20px 0;
-    font-family: 'Noto Serif KR', serif;
-    font-size: 1.5rem;
+    color: #FB9062;
+    border-bottom: 1px solid rgba(255,139,122,0.3);
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+    font-size: 1.3rem;
     font-weight: 700;
-    color: #FF8B7A;
-    border-bottom: 2px solid rgba(255, 139, 122, 0.3);
-    padding-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
   }
 
-  .content-section h3::before {
-    font-size: 1.3em;
+  .post-item, .comment-item {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 0;
   }
-
-  .content-section:nth-of-type(1) h3::before {
-    content: "📝";
-  }
-
-  .content-section:nth-of-type(2) h3::before {
-    content: "💬";
-  }
-
-  /* ====== 글/댓글 리스트 ====== */
-  .post-list,
-  .comment-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex: 1;
-  }
-
-  .post-item,
-  .comment-item {
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 139, 122, 0.1);
-    transition: all 0.3s ease;
-    border-radius: 8px;
-    margin-bottom: 8px;
-  }
-
-  .post-item:hover,
-  .comment-item:hover {
-    background: rgba(255, 139, 122, 0.08);
-    border-color: rgba(255, 139, 122, 0.2);
-    transform: translateX(4px);
-  }
-
-  .post-item:last-child,
-  .comment-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
+  .post-item:last-child, .comment-item:last-child { border-bottom: none; }
 
   .post-title {
-    font-weight: 600;
-    font-size: 1.05rem;
     color: #fff;
-    margin-bottom: 8px;
-    text-decoration: none;
-    display: block;
-    line-height: 1.5;
-    transition: color 0.3s ease;
+    font-weight: 500;
+  }
+  .post-title:hover { color: #FB9062; }
+
+  .post-meta, .comment-meta {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9rem;
   }
 
-  .post-title:hover {
-    color: #FF8B7A;
-  }
-
-  .post-meta,
-  .comment-meta {
-    font-size: 0.875rem;
-    color: rgba(229, 229, 229, 0.6);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .post-meta::before {
-    content: "👁️";
-  }
-
-  .comment-meta::before {
-    content: "📅";
-  }
-
-  /* ====== 빈 상태 / 로딩 ====== */
-  .empty-message,
-  .loading {
+  .empty-message {
     text-align: center;
-    padding: 48px 20px;
-    color: rgba(229, 229, 229, 0.5);
-    font-size: 1rem;
-    background: rgba(42, 31, 26, 0.3);
-    border: 2px dashed rgba(255, 139, 122, 0.2);
+    padding: 60px 20px;
+    color: rgba(255,255,255,0.4);
+    border: 2px dashed rgba(255,255,255,0.1);
     border-radius: 12px;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
   }
-
-  .loading {
-    color: #FF8B7A;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  .loading::before {
-    content: "⏳ ";
-    font-size: 1.2em;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-  }
-
-  .empty-message::before {
-    content: "📭";
-    display: block;
-    font-size: 3rem;
-    margin-bottom: 12px;
-  }
-
-  /* ====== 슬롯 네비 숨김 ====== */
-  .slot-nav:empty {
-    display: none;
-  }
-
-  /* ====== 태블릿 (768px ~ 1023px) ====== */
-  @media (min-width: 768px) {
-    .main.grid-14x5 {
-      padding: 32px;
-    }
-
-    .user-profile-card {
-      padding: 40px;
-    }
-
-    .profile-header {
-      gap: 32px;
-    }
-
-    .profile-avatar {
-      width: 140px;
-      height: 140px;
-      font-size: 3.5rem;
-    }
-
-    .profile-info h2 {
-      font-size: 2.25rem;
-    }
-
-    .stat-number {
-      font-size: 2.75rem;
-    }
-  }
-
-  /* ====== PC (1024px 이상) ====== */
-  @media (min-width: 1024px) {
-    .main.grid-14x5 {
-      padding: 40px;
-    }
-
-    /* 콘텐츠를 2열로 배치 */
-    .content-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .user-profile-card {
-      padding: 48px;
-    }
-
-    .profile-header {
-      gap: 40px;
-    }
-
-    .profile-avatar {
-      width: 160px;
-      height: 160px;
-      font-size: 4rem;
-    }
-
-    .profile-info h2 {
-      font-size: 2.5rem;
-    }
-
-    .profile-info .user-email {
-      font-size: 1.125rem;
-    }
-
-    .stat-number {
-      font-size: 3rem;
-    }
-
-    .stat-label {
-      font-size: 1rem;
-    }
-
-    .profile-actions .btn {
-      padding: 16px 32px;
-      font-size: 16px;
-    }
-
-    .content-section {
-      min-height: 500px;
-    }
-  }
-
-  /* ====== 대형 PC (1440px 이상) ====== */
-  @media (min-width: 1440px) {
-    .main.grid-14x5 {
-      padding: 48px;
-      max-width: 1600px;
-    }
-
-    .content-section {
-      min-height: 550px;
-    }
-  }
-
-  /* ====== 모바일 (767px 이하) ====== */
-  @media (max-width: 767px) {
-    .main.grid-14x5 {
-      padding: 16px;
-    }
-
-    .user-profile-card {
-      padding: 24px;
-    }
-
-    .profile-header {
-      flex-direction: column;
-      text-align: center;
-      gap: 16px;
-    }
-
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      font-size: 2.5rem;
-    }
-
-    .profile-info h2 {
-      font-size: 1.5rem;
-    }
-
-    .profile-info .user-email {
-      justify-content: center;
-    }
-
-    .profile-stats {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .stat-number {
-      font-size: 2rem;
-    }
-
-    .profile-actions {
-      flex-direction: column;
-    }
-
-    .profile-actions .btn {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .content-section {
-      padding: 20px;
-      min-height: 300px;
-    }
-
-    .content-section h3 {
-      font-size: 1.25rem;
-    }
-
-    .post-item,
-    .comment-item {
-      padding: 14px 16px;
-    }
-  }
-</style>
+  </style>
 </head>
+
 <body>
-
   <jsp:include page="/WEB-INF/include/header.jsp" />
-
   <main class="main grid-14x5">
-    <div class="slot-nav">
-      <%-- 필요 시 세로 내비를 활성화하세요 --%>
-      <%-- <jsp:include page="/WEB-INF/include/nav.jsp" /> --%>
-    </div>
-
+    <div class="slot-nav"><jsp:include page="/WEB-INF/include/nav.jsp" /></div>
     <div class="slot-board">
-      <!-- 사용자 프로필 카드 -->
       <div class="user-profile-card">
         <div class="profile-header">
           <div class="profile-avatar">
@@ -614,14 +210,8 @@
         </div>
 
         <div class="profile-stats">
-          <div class="stat-item">
-            <div class="stat-number" id="postCount">0</div>
-            <div class="stat-label">작성한 글</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" id="commentCount">0</div>
-            <div class="stat-label">작성한 댓글</div>
-          </div>
+          <div class="stat-item"><div class="stat-number" id="postCount">0</div><div class="stat-label">작성한 글</div></div>
+          <div class="stat-item"><div class="stat-number" id="commentCount">0</div><div class="stat-label">작성한 댓글</div></div>
           <div class="stat-item">
             <div class="stat-number">
               <c:if test="${not empty user.createdAt}">
@@ -639,15 +229,11 @@
         </div>
       </div>
 
-      <!-- 콘텐츠 그리드 (PC에서 2열) -->
       <div class="content-grid">
-        <!-- 최근 작성한 글 -->
         <div class="content-section">
           <h3>최근 작성한 글</h3>
           <div id="recentPostsContainer" class="loading">불러오는 중...</div>
         </div>
-
-        <!-- 최근 작성한 댓글 -->
         <div class="content-section">
           <h3>최근 작성한 댓글</h3>
           <div id="recentCommentsContainer" class="loading">불러오는 중...</div>
@@ -655,6 +241,10 @@
       </div>
     </div>
   </main>
+
+  <script src="${ctx}/js/user-profile.js"></script>
+</body>
+
 
   <script>
     // 컨텍스트 루트 전역 보장
@@ -720,7 +310,7 @@
       });
     }
 
- // 최근 작성한 글
+    // 최근 작성한 글
     function loadRecentPosts() {
       $.ajax({
         url: CTX + '/users/ajax/recentPosts',
@@ -732,7 +322,6 @@
         if (Array.isArray(data) && data.length > 0) {
           let html = '<ul class="post-list">';
           data.forEach(function(post) {
-            // ✅ URL 형식 변경: /post-detail.post?postId=X&listId=Y
             const postUrl = CTX + '/post-detail.post?postId=' + post.postId + 
                             (post.listId ? '&listId=' + post.listId : '');
             
@@ -750,37 +339,31 @@
       }).fail(function(jqXHR) { handleAjaxError(jqXHR, '#recentPostsContainer'); });
     }
 
- // ✅ 이중 JSON 구조에서 순수 텍스트 추출
+    // 이중 JSON 구조에서 순수 텍스트 추출
     function extractTextFromComment(contentRaw) {
       if (!contentRaw) return '';
       
       try {
-        // 1단계: 외부 JSON 파싱 {"text": "...", "edited": false, "deleted": false}
         let outerJson = contentRaw;
         if (typeof contentRaw === 'string') {
           outerJson = JSON.parse(contentRaw);
         }
         
-        // text 필드 추출
         let textField = outerJson.text || outerJson.contentJson || contentRaw;
         
-        // 2단계: TipTap JSON 파싱
         let tiptapJson = textField;
         if (typeof textField === 'string') {
           tiptapJson = JSON.parse(textField);
         }
         
-        // 3단계: TipTap 문서에서 텍스트 추출
         return extractTextFromTipTap(tiptapJson);
         
       } catch (e) {
         console.error('댓글 파싱 오류:', e, contentRaw);
         
-        // 파싱 실패 시 문자열에서 직접 추출 시도
         try {
           const match = contentRaw.match(/"text":"([^"]+)"/);
           if (match && match[1]) {
-            // 이스케이프된 문자 복원
             return match[1]
               .replace(/\\n/g, ' ')
               .replace(/\\"/g, '"')
@@ -803,32 +386,27 @@
       function extractText(node) {
         if (!node) return;
         
-        // 텍스트 노드
         if (node.type === 'text' && node.text) {
           text += node.text;
         }
         
-        // 이미지 노드
         if (node.type === 'image') {
           text += '[이미지] ';
         }
         
-        // 링크는 텍스트만 추출
         if (node.marks && Array.isArray(node.marks)) {
           const linkMark = node.marks.find(m => m.type === 'link');
           if (linkMark && node.text) {
             text += node.text;
-            return; // 링크 텍스트 처리 완료
+            return;
           }
         }
         
-        // 하위 content 재귀 처리
         if (node.content && Array.isArray(node.content)) {
           node.content.forEach(child => {
             extractText(child);
           });
           
-          // paragraph 끝에 공백 추가
           if (node.type === 'paragraph') {
             text += ' ';
           }
@@ -849,19 +427,12 @@
       }).done(function(data) {
         const $container = $('#recentCommentsContainer');
         
-        console.log('받은 댓글 데이터:', data); // 디버깅용
-        
         if (Array.isArray(data) && data.length > 0) {
           let html = '<ul class="comment-list">';
           
           data.forEach(function(comment) {
-            // ✅ 이중 JSON 구조에서 텍스트 추출
             const raw = comment.contentRaw || comment.content || '';
-            console.log('댓글 원본:', raw); // 디버깅용
-            
             const plainText = extractTextFromComment(raw);
-            console.log('추출된 텍스트:', plainText); // 디버깅용
-            
             const displayText = plainText.length > 100 
               ? plainText.substring(0, 100) + '...' 
               : plainText;
@@ -885,31 +456,6 @@
       }).fail(function(jqXHR) { 
         handleAjaxError(jqXHR, '#recentCommentsContainer'); 
       });
-    }
-
-    // 회원 탈퇴
-    function confirmDelete() {
-      if (confirm('정말로 회원 탈퇴하시겠습니까?\n\n탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다.')) {
-        const password = prompt('본인 확인을 위해 비밀번호를 입력해주세요:');
-        if (password) {
-          $.ajax({
-            url: CTX + '/users/ajax/delete',
-            type: 'POST',
-            data: { password: password },
-            dataType: 'json',
-            cache: false
-          }).done(function(res) {
-            if (res && res.success) {
-              alert('회원 탈퇴가 완료되었습니다.');
-              window.location.href = CTX + '/index.jsp';
-            } else {
-              alert((res && res.message) || '회원 탈퇴 처리 중 오류가 발생했습니다.');
-            }
-          }).fail(function() {
-            alert('회원 탈퇴 처리 중 오류가 발생했습니다.');
-          });
-        }
-      }
     }
   </script>
 </body>

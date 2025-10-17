@@ -265,7 +265,7 @@
   display: flex;
   gap: 12px;
   font-size: 13px;
-  color: var(--gray-600);
+  color: #b8bddf;
 }
 
 .post-meta span {
