@@ -170,9 +170,11 @@ html[data-fixed-header]{ scroll-padding-top: var(--site-header-h); }
 .hamburger14 .line1{ --dy:-6px; } .hamburger14 .line2{ --dy:0; } .hamburger14 .line3{ --dy:6px; }
 .hamburger14:hover .circle{ border-color:#ddd; } .hamburger14:hover .line{ background:#ddd; }
 #hamburger14-input:checked + label .circle{ transform:rotate(45deg); border-color:#ccc; }
-#hamburger14-input:checked + label .line1{ transform:translate(-50%,0) rotate(45deg); background:#ccc; }
+#hamburger14-input:checked + label .line1{ transform:translate(-0%,0) rotate(45deg); background:#ccc; }
 #hamburger14-input:checked + label .line2{ opacity:0; }
-#hamburger14-input:checked + label .line3{ transform:translate(-50%,0) rotate(-45deg); background:#ccc; }
+#hamburger14-input:checked + label .line3{ transform:translate(-0%,0) rotate(-45deg); background:#ccc; }
+
+
 
 /* ───────── 그리드 페이지(14×5) ───────── */
 .main.grid-14x5{ margin-left:0 !important;}
@@ -321,3 +323,43 @@ html[data-fixed-header]{ scroll-padding-top: var(--site-header-h); }
     body.sidebar-open .overlay{ display:block; }
   }
 }
+
+
+
+/* 1) 체크 타깃 라벨이 꼭 기준 박스가 되도록(혹시 class 다를 대비) */
+#hamburger14-input + label{
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+}
+
+/* 2) 햄버거 3줄: 좌우를 0으로 고정 + margin:auto로 '절대 중앙' */
+.hamburger14 .line{
+  position: absolute;
+  top: 50%;
+  left: 0; right: 0;           /* ← 좌우 중앙 강제 */
+  margin: 0 auto;              /* ← 가로 가운데 정렬 */
+  width: 24px; height: 2px;
+  background: #fff;
+  transform-origin: center;
+  transition: .3s;
+  transform: translateY(-50%) translateY(var(--dy)); /* 중앙 기준에서 위/아래로만 이동 */
+}
+
+/* 3) 체크 시 X: 가로 중앙 유지한 채 회전만 */
+#hamburger14-input:checked + label .line1{
+  left: 0; right: 0; margin: 0 auto;
+  transform: translateY(-50%) rotate(45deg);
+  background: #ccc;
+}
+#hamburger14-input:checked + label .line2{
+  opacity: 0;
+  transform: translateY(-50%) scaleX(0);
+}
+#hamburger14-input:checked + label .line3{
+  left: 0; right: 0; margin: 0 auto;
+  transform: translateY(-50%) rotate(-45deg);
+  background: #ccc;
+}
+
