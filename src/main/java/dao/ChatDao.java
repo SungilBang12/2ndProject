@@ -47,12 +47,13 @@ public class ChatDao {
 
     /** 🔹 이미 참여했는지 확인 */
     public boolean isAlreadyJoined(Connection conn, int postId, String userId) throws SQLException {
-        String sql = "SELECT 1 FROM chat_participants WHERE post_id = ? AND user_id = ? AND ROWNUM = 1";
+    	 String sql = "SELECT COUNT(*) FROM chat_participants WHERE post_id = ? AND user_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, postId);
             pstmt.setString(2, userId);
             try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next();
+            	return rs.next() && rs.getInt(1) > 0;
+
             }
         }
     }

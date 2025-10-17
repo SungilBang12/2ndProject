@@ -366,7 +366,7 @@ public class PostDao {
 	 *
 	 * @return 삭제된 POST 테이블의 행 수 (성공 시 1, 실패 시 0)
 	 */
-	public int deletePost(int postId) {
+	public int deletePost(int postId, String userId) {
 		int deletedRows = 0;
 		Connection conn = null;
 
@@ -384,6 +384,13 @@ public class PostDao {
 			try (PreparedStatement pstmtDate = conn.prepareStatement(deleteDateSql)) {
 				pstmtDate.setInt(1, postId);
 				pstmtDate.executeUpdate();
+				// 2. 채팅 참가자 제거
+			    ChatDao chat = new ChatDao();
+			    try {
+			        chat.leaveParticipant(ConnectionPoolHelper.getConnection(), postId, userId);
+			    } catch (SQLException e) {
+			        e.printStackTrace();
+			    }
 			}
 
 			// 2-2. IMAGE_DATA 테이블 삭제 (이미지 데이터)
@@ -662,7 +669,7 @@ public class PostDao {
 				dao.insertSchedule(postId, schedAttrs);
 				ChatDao chat = new ChatDao();
 				try {
-					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(), postId, userId);
+					chat.joinParticipant(ConnectionPoolHelper.getConnection(), postId, userId);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

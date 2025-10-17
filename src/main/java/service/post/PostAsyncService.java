@@ -18,9 +18,11 @@ import dao.ChatDao;
 import dao.PostDao;
 import dao.UsersDao;
 import dto.Post;
+import dto.Users;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import utils.ConnectionPoolHelper;
 
 public class PostAsyncService {
@@ -83,7 +85,6 @@ public class PostAsyncService {
 					
 					//TODO 게시글 작성되었을 시 게시자 채팅참가.
 					ChatDao chat = new ChatDao();
-					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(),postId, post.getUserId());
 
 					// 성공 시 JSON 응답 Map 구성
 					responseMap.put("status", "success");
@@ -202,9 +203,13 @@ public class PostAsyncService {
             // String userId = user != null ? user.getUserId() : null;
             
 
+    
+    	    HttpSession session = request.getSession(false); // 세션이 없으면 새로 생성하지 않음
+    	    Users user = (Users) session.getAttribute("user"); // "user" 키 사용 가정
+
             // 2. 동기 DAO 메서드 호출 (비동기 스레드 내에서 실행)
             // PostDao.deletePost는 트랜잭션을 포함한 동기 DB 삭제 로직입니다.
-            int deletedRows = postDao.deletePost(postId);
+            int deletedRows = postDao.deletePost(postId,user.getUserId());
 
 	            if (deletedRows > 0) {
 	                responseMap.put("status", "success");
@@ -261,7 +266,7 @@ public class PostAsyncService {
 				//TODO 게시글 작성되었을 시 게시자 채팅참가.
 				ChatDao chat = new ChatDao();
 				try {
-					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(),postId, userName);
+					chat.joinParticipant(ConnectionPoolHelper.getConnection(),postId, userName);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

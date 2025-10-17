@@ -80,6 +80,10 @@ public class ChatJoinServlet extends HttpServlet {
         Map<String,Object> result = new HashMap<>();
         result.put("userId", user.getUserId());
 
+        // Ably/Firebase 설정 포함
+        result.put("ablyConfig", loadAblyConfig());
+        result.put("firebaseConfig", loadFirebaseConfig());
+
         if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
             // 참여 중인 채팅방 리스트
             List<SchedulePostDto> joinedRooms = service.getUserJoinedRooms(user.getUserId());
@@ -98,16 +102,40 @@ public class ChatJoinServlet extends HttpServlet {
         gson.toJson(result, res.getWriter());
     }
 
+
     // ==========================================
-    // 2️⃣ /chat/update
+    // 2️⃣ /chat/update (join / leave / check)
     // ==========================================
     private void handleUpdate(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
-        int postId = Integer.parseInt(req.getParameter("postId"));
-        Map<String,Object> result = new HashMap<>();
+        String postIdStr = req.getParameter("postId");
+        String action = req.getParameter("action");
 
+        if (postIdStr == null || action == null) {
+            writeError(res, 400, "postId 또는 action 누락");
+            return;
+        }
+
+        int postId = Integer.parseInt(postIdStr);
         ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
-        ChatJoinResponse chatResult = service.leaveChat(dto); // leave만
+        ChatJoinResponse chatResult;
 
+        switch (action) {
+            case "join":
+                chatResult = service.joinChat(dto);
+                break;
+            case "leave":
+                chatResult = service.leaveChat(dto);
+                break;
+            case "check":
+                boolean already = service.isUserInChat(postId, user.getUserId());
+                chatResult = new ChatJoinResponse(already, already ? "참여중" : "참여하지 않음",
+                        already ? "channel-" + postId : null, 0, 0);
+                break;
+            default:
+                chatResult = new ChatJoinResponse(false, "Invalid action", null, 0, 0);
+        }
+
+        Map<String,Object> result = new HashMap<>();
         result.put("chatResult", chatResult);
         gson.toJson(result, res.getWriter());
     }
@@ -116,7 +144,13 @@ public class ChatJoinServlet extends HttpServlet {
     // 3️⃣ /chat/status
     // ==========================================
     private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
-        int postId = Integer.parseInt(req.getParameter("postId"));
+        String postIdStr = req.getParameter("postId");
+        if (postIdStr == null) {
+            writeError(res, 400, "postId 누락");
+            return;
+        }
+
+        int postId = Integer.parseInt(postIdStr);
         SchedulePostDto post = service.getPostDetails(postId);
 
         Map<String,Object> result = new HashMap<>();

@@ -3,7 +3,9 @@ import { Plugin } from "https://esm.sh/prosemirror-state";
 
 const userId = document.getElementById("userId")?.value || `guest-${Math.random().toString(36).substr(2,6)}`;
 
-// ===================== 공용 요청 함수 (jQuery AJAX) =====================
+/* ========================================================================
+   공용 AJAX 요청 (채팅 참가/퇴장/체크)
+   ======================================================================== */
 function sendChatAction(postId, userId, action, callback) {
     if (!postId || !userId) return callback(null);
 
@@ -19,7 +21,9 @@ function sendChatAction(postId, userId, action, callback) {
     });
 }
 
-// ===================== ScheduleBlock Node =====================
+/* ========================================================================
+   ScheduleBlock Node 정의
+   ======================================================================== */
 export const ScheduleBlock = Node.create({
     name: "scheduleBlock",
     group: "block",
@@ -131,7 +135,7 @@ export const ScheduleBlock = Node.create({
                     joinBtn.textContent = "참여중";
                     joinBtn.disabled = true;
 
-                    // 서버에서 currentPeople 갱신
+                    // DB 기반 currentPeople 갱신
                     $.getJSON(`/chat/participants?postId=${postId}`, (data) => {
                         if (data?.currentPeople != null) updateCurrentPeople(data.currentPeople);
                     });
@@ -143,7 +147,9 @@ export const ScheduleBlock = Node.create({
     },
 });
 
-// ===================== postId 활성화 후 적용 =====================
+/* ========================================================================
+   postId 활성화 후 Ably/채팅 연동 적용
+   ======================================================================== */
 export function activateScheduleBlockAbly(editor, postId) {
     editor.state.doc.descendants((node, pos) => {
         if (node.type.name === "scheduleBlock") {
