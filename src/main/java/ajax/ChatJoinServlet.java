@@ -22,12 +22,6 @@ import service.chat.ChatService;
 import utils.AblyChatConfig;
 import utils.ConfigLoader;
 
-/**
- * /chat/*
- * - /chat/init : 채팅 초기화 (Ably + Firebase 설정, 유저ID, 참여중 방목록)
- * - /chat/update : 참가 / 나가기 (DB 반영)
- * - /chat/status : 참가 여부 및 현재 인원 수 조회
- */
 @WebServlet("/chat/*")
 public class ChatJoinServlet extends HttpServlet {
 
@@ -50,11 +44,9 @@ public class ChatJoinServlet extends HttpServlet {
         if (path == null) path = "";
 
         switch (path) {
-            case "/init" : handleInit(req, res, user);
-            break;
-            case "/status" : handleStatus(req, res, user);
-            break;
-            default :
+            case "/init": handleInit(req, res, user); break;
+            case "/status": handleStatus(req, res, user); break;
+            default:
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 res.getWriter().write("{\"error\":\"Invalid endpoint\"}");
         }
@@ -76,29 +68,28 @@ public class ChatJoinServlet extends HttpServlet {
         if (path == null) path = "";
 
         switch (path) {
-            case "/update" : handleUpdate(req, res, user);
-            	break;
-            default :
+            case "/update": handleUpdate(req, res, user); break;
+            default:
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");                
+                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");
         }
     }
 
-    // ✅ 1️⃣ /chat/init : 초기 설정 + 참여중 방 목록 반환
+    // ===========================
+    // 1️⃣ /chat/init
+    // ===========================
     private void handleInit(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         String postIdParam = req.getParameter("postId");
 
-        // Ably/Firebase 설정 로딩
-        Map<String, String> ablyConfig = loadAblyConfig();
-        Map<String, String> firebaseConfig = loadFirebaseConfig();
+        Map<String,String> ablyConfig = loadAblyConfig();
+        Map<String,String> firebaseConfig = loadFirebaseConfig();
 
-        Map<String, Object> result = new HashMap<>();
+        Map<String,Object> result = new HashMap<>();
         result.put("userId", user.getUserId());
         result.put("ablyConfig", ablyConfig);
         result.put("firebaseConfig", firebaseConfig);
 
         if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
-            // ✅ 현재 사용자가 참여 중인 채팅방 목록 (rooms)
             List<SchedulePostDto> joinedRooms = service.getUserJoinedRooms(user.getUserId());
             result.put("rooms", joinedRooms);
         } else {
@@ -116,27 +107,39 @@ public class ChatJoinServlet extends HttpServlet {
         gson.toJson(result, res.getWriter());
     }
 
-    // ✅ 2️⃣ /chat/update : 참가(join) 또는 나가기(leave)
+    // ===========================
+    // 2️⃣ /chat/update
+    // ===========================
     private void handleUpdate(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         int postId = Integer.parseInt(req.getParameter("postId"));
         String action = req.getParameter("action"); // join / leave
 
         ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
-        ChatJoinResponse result;
+        Map<String, Object> result = new HashMap<>();
 
+        ChatJoinResponse chatResult;
         if ("leave".equalsIgnoreCase(action)) {
-            result = service.leaveChat(dto);
+            chatResult = service.leaveChat(dto);
         } else {
-            result = service.joinChat(dto);
+            chatResult = service.joinChat(dto);
         }
+
+        // 결과 객체 포함
+        result.put("chatResult", chatResult);
+
+        // Ably 설정 포함 (선택적으로 전달)
+        Map<String, String> ablyConfig = loadAblyConfig();
+        result.put("ablyConfig", ablyConfig);
 
         gson.toJson(result, res.getWriter());
     }
 
-    // ✅ 3️⃣ /chat/status : 현재 참가 여부 및 인원 수 조회
+    // ===========================
+    // 3️⃣ /chat/status
+    // ===========================
     private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         int postId = Integer.parseInt(req.getParameter("postId"));
-        Map<String, Object> result = new HashMap<>();
+        Map<String,Object> result = new HashMap<>();
 
         boolean joined = service.isUserInChat(postId, user.getUserId());
         SchedulePostDto post = service.getPostDetails(postId);
@@ -150,7 +153,9 @@ public class ChatJoinServlet extends HttpServlet {
         gson.toJson(result, res.getWriter());
     }
 
+    // ===========================
     // 🔹 Ably 설정 로딩
+    // ===========================
     private Map<String, String> loadAblyConfig() {
         Map<String, String> ablyConfig = new HashMap<>();
         Optional<Properties> ablyPropsOpt = AblyChatConfig.getAblyConfig(getServletContext());
@@ -161,7 +166,9 @@ public class ChatJoinServlet extends HttpServlet {
         return ablyConfig;
     }
 
+    // ===========================
     // 🔹 Firebase 설정 로딩
+    // ===========================
     private Map<String, String> loadFirebaseConfig() {
         Map<String, String> firebaseConfig = new HashMap<>();
         Optional<Properties> firebasePropsOpt = ConfigLoader.getFirebaseConfig(getServletContext());
