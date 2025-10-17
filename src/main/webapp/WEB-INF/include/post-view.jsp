@@ -83,7 +83,7 @@
 <div id="board" class="ProseMirror"></div>
 
 <!-- 액션 버튼 (작성자만 표시) -->
-<c:if test="${not empty sessionScope.userId && sessionScope.userId == post.userId}">
+<c:if test="${not empty sessionScope.user.userId && sessionScope.user.userId == post.userId}">
     <div class="action-buttons">
         <button onclick="editPost()" class="btn btn-primary">수정</button>
         <button onclick="deletePost()" class="btn btn-danger">삭제</button>
