@@ -24,6 +24,15 @@
     <h1 class="board-title">${boardTitle}</h1>
   </header>
 
+  <!-- 📢 공지사항 영역 -->
+  <div id="noticeArea" class="notice-area" style="display: none;">
+    <div class="notice-container">
+      <div class="notice-badge">📢 공지</div>
+      <div class="notice-content" id="noticeContent"></div>
+      <div class="notice-indicator" id="noticeIndicator"></div>
+    </div>
+  </div>
+
   <div class="sort-bar">
     <label for="sortSelect">정렬 기준:</label>
     <select id="sortSelect" class="sort-select">
@@ -53,6 +62,132 @@
     </div>
   </main>
 </div>
+
+<style>
+/* 공지사항 영역 */
+.notice-area {
+  margin: 16px 0;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notice-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.notice-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.notice-container:hover::before {
+  left: 100%;
+}
+
+.notice-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.notice-badge {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #667eea;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.notice-content {
+  flex: 1;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  position: relative;
+}
+
+/* 공지 전환 애니메이션 */
+.notice-content.fade-out {
+  animation: noticeFadeOut 0.5s ease-out forwards;
+}
+
+.notice-content.fade-in {
+  animation: noticeFadeIn 0.5s ease-in forwards;
+}
+
+@keyframes noticeFadeOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-20px); }
+}
+
+@keyframes noticeFadeIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.notice-content a {
+  color: white;
+  text-decoration: none;
+  display: block;
+}
+
+.notice-content a:hover {
+  text-decoration: underline;
+}
+
+/* 공지 인디케이터 */
+.notice-indicator {
+  position: absolute;
+  right: 20px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.notice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.notice-dot:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(1.2);
+}
+
+.notice-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+}
+</style>
 
 <script>
 (function(){
@@ -102,7 +237,121 @@
   window.currentPage = 1;
   window.currentQuery = "";
   var totalPages = 1;
+  
+  // --- 공지사항 state ---
+  var notices = [];
+  var currentNoticeIndex = 0;
+  var noticeInterval = null;
 
+  // --- 공지사항 함수 ---
+  function loadNotices() {
+    fetch(contextPath + "postList2.async?listId=9&limit=100")
+      .then(function(res) {
+        if (!res.ok) throw new Error("Network " + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        notices = data.posts || [];
+        if (notices.length > 0) {
+          document.getElementById("noticeArea").style.display = "block";
+          showNotice(0);
+          
+          // 여러 개의 공지가 있으면 자동 회전 시작
+          if (notices.length > 1) {
+            startNoticeRotation();
+          }
+        } else {
+          document.getElementById("noticeArea").style.display = "none";
+        }
+      })
+      .catch(function(err) {
+        console.error("공지사항 로드 실패:", err);
+      });
+  }
+  
+  function showNotice(index) {
+    if (!notices || notices.length === 0) return;
+    
+    currentNoticeIndex = index;
+    var notice = notices[index];
+    var noticeContent = document.getElementById("noticeContent");
+    
+    var link = "post-detail.post?postId=" + encodeURIComponent(notice.postId)
+             + "&listId=" + encodeURIComponent(notice.listId || 9);
+    
+    // Fade out
+    noticeContent.classList.add("fade-out");
+    
+    setTimeout(function() {
+      // 내용 변경
+      noticeContent.innerHTML = '<a href="' + link + '">' 
+        + escapeHtml(notice.title || "공지사항") 
+        + '</a>';
+      
+      // Fade in
+      noticeContent.classList.remove("fade-out");
+      noticeContent.classList.add("fade-in");
+      
+      setTimeout(function() {
+        noticeContent.classList.remove("fade-in");
+      }, 500);
+      
+      // 인디케이터 업데이트
+      updateNoticeIndicator(index);
+    }, 500);
+  }
+  
+  function updateNoticeIndicator(activeIndex) {
+    var indicator = document.getElementById("noticeIndicator");
+    if (notices.length <= 1) {
+      indicator.style.display = "none";
+      return;
+    }
+    
+    indicator.style.display = "flex";
+    var html = "";
+    for (var i = 0; i < notices.length; i++) {
+      html += '<span class="notice-dot' + (i === activeIndex ? ' active' : '') + '"></span>';
+    }
+    indicator.innerHTML = html;
+    
+    // 인디케이터 클릭 이벤트
+    var dots = indicator.querySelectorAll(".notice-dot");
+    for (var i = 0; i < dots.length; i++) {
+      (function(idx) {
+        dots[idx].onclick = function() {
+          stopNoticeRotation();
+          showNotice(idx);
+          if (notices.length > 1) {
+            setTimeout(function() {
+              startNoticeRotation();
+            }, 3000); // 3초 후 자동 회전 재개
+          }
+        };
+      })(i);
+    }
+  }
+  
+  function startNoticeRotation() {
+    // 기존 타이머 정리
+    if (noticeInterval) {
+      clearInterval(noticeInterval);
+    }
+    
+    // 2초마다 다음 공지로 전환
+    noticeInterval = setInterval(function() {
+      var nextIndex = (currentNoticeIndex + 1) % notices.length;
+      showNotice(nextIndex);
+    }, 2000);
+  }
+  
+  function stopNoticeRotation() {
+    if (noticeInterval) {
+      clearInterval(noticeInterval);
+      noticeInterval = null;
+    }
+  }
+  
   // --- render ---
   function renderPosts(posts){
     if (!Array.isArray(posts) || posts.length === 0){
@@ -214,8 +463,20 @@
   document.getElementById("writeBtn").addEventListener("click", function(){
     window.location.href = contextPath + "editor.post?listId=" + encodeURIComponent(listId);
   });
+  
+  // 공지사항 클릭 시 회전 일시 정지/재개
+  document.getElementById("noticeArea").addEventListener("mouseenter", function() {
+    stopNoticeRotation();
+  });
+  
+  document.getElementById("noticeArea").addEventListener("mouseleave", function() {
+    if (notices.length > 1) {
+      startNoticeRotation();
+    }
+  });
 
   // --- first load ---
-  loadPosts();
+  loadNotices();  // 공지사항 로드
+  loadPosts();    // 일반 게시글 로드
 })();
 </script>

@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>게시글 수정</title>
+  <title>게시글 작성</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -38,7 +38,6 @@
       padding: 20px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       overflow: auto;
-      cursor: text;
     }
     
     .board .schedule-block {
@@ -67,23 +66,10 @@
     .actions { display: flex; gap: 8px; margin-top: 16px; }
     .btn-primary, .btn-secondary {
       border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer;
-      transition: all 0.2s;
     }
     .btn-primary { background: #1a73e8; color: #fff; }
-    .btn-primary:hover { background: #1557b0; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-secondary { background: #f1f3f4; color: #333; }
-    .btn-secondary:hover { background: #e0e0e0; }
-
-    /* 에러 메시지 */
-    .error-message {
-      background: #fee;
-      border: 1px solid #fcc;
-      color: #c33;
-      padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-    }
 
     @media (max-width: 768px) {
       .toolbar { gap: 4px; padding: 8px; }
@@ -94,40 +80,36 @@
 </head>
 <body>
 
-<!-- ✅ update.post로 제출 -->
-<form action="<c:url value='/update.post'/>" method="post" onsubmit="return prepareAndSubmit()">
+<!-- ★ 수정/작성 모드 감지 -->
+<c:set var="isEditMode" value="${not empty post}" />
+
+<!-- ★ Front Controller로 제출 (수정 모드일 때는 update.post로) -->
+<form action="<c:url value='${isEditMode ? "/update.post" : "/create.post"}'/>" method="post" onsubmit="return prepareAndSubmit()">
   <div class="container">
 
-    <!-- 에러 메시지 표시 -->
-    <c:if test="${not empty error_msg}">
-      <div class="error-message">${error_msg}</div>
+    <!-- 수정 모드일 때 postId 전달 -->
+    <c:if test="${isEditMode}">
+      <input type="hidden" name="postId" value="${post.postId}" />
     </c:if>
-
-    <!-- ✅ Hidden fields -->
-    <input type="hidden" name="postId" value="${post.postId}" />
-    <input type="hidden" id="hiddenPostId" value="${post.postId}" />
-    <input type="hidden" id="hiddenListId" value="${param.listId != null ? param.listId : post.listId}" />
-    
-    <!-- ✅ 기존 컨텐츠를 data 속성에 저장 -->
-    <div id="initialContentData" data-content='<c:out value="${post.content}" escapeXml="true" />' style="display:none;"></div>
 
     <!-- 카테고리 선택 -->
     <div class="form-group">
       <label for="listId">
         카테고리 선택 <span class="required">*</span>
       </label>
+      <!-- ★ 수정 모드일 때는 post.listId, 아니면 URL 파라미터 사용 -->
       <select id="listId" name="listId" class="form-control" required>
         <option value="">-- 카테고리를 선택하세요 --</option>
-        <option value="1" ${post.listId == 1 ? 'selected' : ''}>노을</option>
-        <option value="2" ${post.listId == 2 ? 'selected' : ''}>맛집 추천</option>
-        <option value="3" ${post.listId == 3 ? 'selected' : ''}>맛집 후기</option>
-        <option value="4" ${post.listId == 4 ? 'selected' : ''}>촬영 TIP</option>
-        <option value="5" ${post.listId == 5 ? 'selected' : ''}>장비 추천</option>
-        <option value="6" ${post.listId == 6 ? 'selected' : ''}>중고 거래</option>
-        <option value="7" ${post.listId == 7 ? 'selected' : ''}>해'쳐 모여</option>
-        <option value="8" ${post.listId == 8 ? 'selected' : ''}>장소 추천</option>
+        <option value="1" ${(isEditMode && post.listId == 1) || (!isEditMode && param.listId == '1') ? 'selected' : ''}>노을</option>
+        <option value="2" ${(isEditMode && post.listId == 2) || (!isEditMode && param.listId == '2') ? 'selected' : ''}>맛집 추천</option>
+        <option value="3" ${(isEditMode && post.listId == 3) || (!isEditMode && param.listId == '3') ? 'selected' : ''}>맛집 후기</option>
+        <option value="4" ${(isEditMode && post.listId == 4) || (!isEditMode && param.listId == '4') ? 'selected' : ''}>촬영 TIP</option>
+        <option value="5" ${(isEditMode && post.listId == 5) || (!isEditMode && param.listId == '5') ? 'selected' : ''}>장비 추천</option>
+        <option value="6" ${(isEditMode && post.listId == 6) || (!isEditMode && param.listId == '6') ? 'selected' : ''}>중고 거래</option>
+        <option value="7" ${(isEditMode && post.listId == 7) || (!isEditMode && param.listId == '7') ? 'selected' : ''}>해'쳐 모여</option>
+        <option value="8" ${(isEditMode && post.listId == 8) || (!isEditMode && param.listId == '8') ? 'selected' : ''}>장소 추천</option>
       </select>
-      <div class="form-help">게시글의 카테고리를 선택하세요.</div>
+      <div class="form-help">게시글을 작성할 카테고리를 선택하세요.</div>
     </div>
 
     <!-- 제목 입력 -->
@@ -141,7 +123,7 @@
         name="title"
         class="form-control"
         placeholder="제목을 입력하세요"
-        value="${post.title}"
+        value="${isEditMode ? post.title : ''}"
         required
         maxlength="100"
       />
@@ -220,7 +202,7 @@
 
     <!-- 액션 버튼 -->
     <div class="actions">
-      <button type="submit" class="btn-primary" id="submitBtn">수정 완료</button>
+      <button type="submit" class="btn-primary">${isEditMode ? '수정 완료' : '저장'}</button>
       <button type="button" class="btn-secondary" onclick="cancelPost()">취소</button>
     </div>
 
@@ -230,8 +212,6 @@
 <script type="module">
   import { initEditor } from "${pageContext.request.contextPath}/js/editor-init.js";
   import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
-
-  console.log("=== post-edit.jsp 실행 ===");
 
   // ========================================
   // 카테고리별 사용 가능한 기능 매핑
@@ -251,42 +231,31 @@
   // 전역 상태
   // ========================================
   let editor = null;
-  let currentCategory = '${post.listId}';
+  let currentCategory = '';
   let hasContentChanged = false;
-  let initialContent = null;
+
+  // ✅ 수정 모드 확인
+  const isEditMode = ${not empty post};
+  console.log('수정 모드:', isEditMode);
+
+  // ✅ URL 파라미터 또는 post 객체에서 listId 가져오기
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialListId = isEditMode ? '${post.listId}' : (urlParams.get('listId') || '${param.listId}' || '');
   
-  const postId = '${post.postId}';
-  const listIdFromParam = document.getElementById('hiddenListId').value;
+  console.log('초기 listId:', initialListId);
 
-  console.log('postId:', postId);
-  console.log('currentCategory:', currentCategory);
-  console.log('listIdFromParam:', listIdFromParam);
-
-  // ========================================
-  // 기존 컨텐츠 로드
-  // ========================================
-  function loadInitialContent() {
-    const contentElement = document.getElementById('initialContentData');
-    if (!contentElement) {
-      console.error('초기 컨텐츠 엘리먼트를 찾을 수 없습니다');
-      return null;
-    }
-
-    const contentStr = contentElement.getAttribute('data-content');
-    if (!contentStr || contentStr.trim() === '') {
-      console.log('초기 컨텐츠가 비어있습니다');
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(contentStr);
-      console.log('초기 컨텐츠 로드 성공');
-      return parsed;
-    } catch (e) {
-      console.error('컨텐츠 파싱 실패:', e);
-      return null;
-    }
+  // ✅ 수정 모드일 때 기존 content 파싱
+  let existingContent = null;
+  <c:if test="${not empty post.content}">
+  try {
+    const jsonData = `${post.content}`;
+    existingContent = JSON.parse(jsonData);
+    console.log('기존 content 로드 성공');
+  } catch (err) {
+    console.error('기존 content JSON 파싱 오류:', err);
+    existingContent = null;
   }
+  </c:if>
 
   // ========================================
   // 에디터 초기화
@@ -297,24 +266,20 @@
       document.getElementById("toolbar")
     );
 
-    // ✅ 기존 컨텐츠 로드
-    initialContent = loadInitialContent();
-    if (initialContent) {
-      editor.commands.setContent(initialContent);
-      console.log('에디터에 기존 컨텐츠 설정 완료');
-    } else {
-      console.log('에디터를 빈 상태로 시작');
+    // ✅ 수정 모드일 때 기존 content 로드
+    if (isEditMode && existingContent) {
+      editor.commands.setContent(existingContent);
+      console.log('에디터에 기존 content 설정 완료');
     }
 
     // 내용 변경 감지
-    editor.on('update', () => { 
-      hasContentChanged = true; 
-    });
-    
+    editor.on('update', () => { hasContentChanged = true; });
     return editor;
   }
-  
   editor = initializeEditor();
+  
+  // ✅ 전역 변수로 에디터 등록 (이미지 모달 등에서 사용)
+  window.currentEditor = editor;
 
   // ========================================
   // 이모지 기능
@@ -360,11 +325,15 @@
       }
     });
   }
-  
-  // ✅ 초기 카테고리에 맞는 툴바 표시
-  if (currentCategory) {
-    updateToolbarFeatures(currentCategory);
-    console.log('초기 툴바 기능 설정:', currentCategory);
+
+  // ✅ 초기 카테고리가 있으면 툴바 기능 활성화
+  if (initialListId) {
+    currentCategory = initialListId;
+    updateToolbarFeatures(initialListId);
+    console.log('초기 툴바 기능 활성화:', initialListId);
+  } else {
+    // 초기엔 emoji/link만
+    updateToolbarFeatures('');
   }
 
   // ========================================
@@ -373,6 +342,7 @@
   function resetEditor() {
     if (editor) {
       editor.commands.setContent('');
+      document.getElementById('title').value = '';
       hasContentChanged = false;
     }
   }
@@ -391,7 +361,13 @@
     const titleValue = document.getElementById('title').value.trim();
     const hasContent = hasContentChanged || !!titleValue;
 
-    if (currentCategory && currentCategory !== newCategory && hasContent) {
+    // ✅ 수정 모드에서는 카테고리 변경 시 항상 확인
+    // ✅ 작성 모드에서는 초기 로드 시에는 확인 안 함
+    const shouldConfirm = isEditMode 
+      ? (currentCategory && currentCategory !== newCategory)
+      : (currentCategory && currentCategory !== newCategory && hasContent);
+
+    if (shouldConfirm) {
       if (!confirm('카테고리를 변경하면 현재까지의 작성 내용이 모두 삭제됩니다. 그래도 진행하시겠습니까?')) {
         e.target.value = currentCategory; // 되돌리기
         return;
@@ -409,50 +385,24 @@
   });
 
   // ========================================
-  // ✅ 폼 제출 전에 TipTap JSON 주입 + 유효성 검사
+  // 폼 제출 전에 TipTap JSON 주입 + 유효성 검사
   // ========================================
   window.prepareAndSubmit = function () {
-    console.log('=== 폼 제출 시작 ===');
-    
-    if (!editor) { 
-      alert("에디터가 초기화되지 않았습니다."); 
-      return false; 
-    }
+    if (!editor) { alert("에디터가 초기화되지 않았습니다."); return false; }
 
-    const title = document.getElementById('title').value.trim();
+    const title  = document.getElementById('title').value.trim();
     const listId = document.getElementById('listId').value;
 
-    console.log('제출 데이터:', { postId, title, listId });
-
-    if (!listId) { 
-      alert("카테고리를 선택해주세요."); 
-      return false; 
-    }
-    
-    if (!title) { 
-      alert("제목을 입력해주세요."); 
-      return false; 
-    }
+    if (!listId) { alert("카테고리를 선택해주세요."); return false; }
+    if (!title)  { alert("제목을 입력해주세요."); return false; }
 
     const contentData = editor.getJSON();
-    
     if (!contentData || !contentData.content || contentData.content.length === 0) {
-      if (!confirm("본문 내용이 비어있습니다. 계속 진행하시겠습니까?")) {
-        return false;
-      }
+      if (!confirm("본문 내용이 비어있습니다. 계속 진행하시겠습니까?")) return false;
     }
 
-    // ✅ 서버는 문자열 JSON을 기대
-    const contentStr = JSON.stringify(contentData);
-    document.getElementById('content').value = contentStr;
-    
-    console.log('content 필드에 설정된 값 길이:', contentStr.length);
-    console.log('=== 폼 제출 진행 ===');
-    
-    // 버튼 비활성화 (중복 제출 방지)
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitBtn').textContent = '저장 중...';
-    
+    // ★ 서버는 문자열 JSON을 기대
+    document.getElementById('content').value = JSON.stringify(contentData);
     return true; // 제출 진행
   };
 
@@ -460,40 +410,40 @@
   // 취소
   // ========================================
   window.cancelPost = function () {
-    if (hasContentChanged && !confirm("수정을 취소하시겠습니까? 수정 중인 내용은 저장되지 않습니다.")) {
+    const message = isEditMode 
+      ? "수정을 취소하시겠습니까? 변경 사항은 저장되지 않습니다."
+      : "작성을 취소하시겠습니까? 작성 중인 내용은 저장되지 않습니다.";
+    
+    if (confirm(message)) {
+      hasContentChanged = false;
+      
+      // ✅ 수정 모드일 때는 게시글 상세 페이지로
+      <c:if test="${not empty post.postId}">
+      window.location.href = "<c:url value='/post-detail.post'/>?postId=${post.postId}";
       return;
+      </c:if>
+      
+      // ✅ 작성 모드일 때는 listId가 있으면 해당 리스트로 돌아가기
+      if (initialListId) {
+        window.location.href = "<c:url value='/post-list'/>?listId=" + initialListId;
+      } else {
+        window.location.href = "<c:url value='/meeting-gather.jsp'/>";
+      }
     }
-    
-    hasContentChanged = false;
-    
-    // ✅ listId 파라미터와 함께 상세 페이지로 돌아가기
-    let url = '${pageContext.request.contextPath}/post-detail.post?postId=' + postId;
-    if (listIdFromParam && listIdFromParam !== 'null' && listIdFromParam !== '') {
-      url += '&listId=' + listIdFromParam;
-    }
-    
-    console.log('취소 - 이동할 URL:', url);
-    window.location.href = url;
   };
 
   // ========================================
   // 페이지 이탈 경고
   // ========================================
   window.addEventListener('beforeunload', function (e) {
-    if (hasContentChanged) { 
-      e.preventDefault(); 
-      e.returnValue = ''; 
-      return ''; 
-    }
+    if (hasContentChanged) { e.preventDefault(); e.returnValue = ''; return ''; }
   });
 
   // ========================================
   // 에디터 클릭 시 포커스
   // ========================================
   document.getElementById('board').addEventListener('click', function () {
-    if (editor) {
-      editor.commands.focus();
-    }
+    if (editor) editor.commands.focus();
   });
 </script>
 

@@ -43,7 +43,7 @@ public class GetPostViewService implements Action {
             // 4️⃣ 페이지 이동 설정
             forward = new ActionForward();
             forward.setRedirect(false); // forward 방식
-            forward.setPath("/public/post-detail.jsp"); // ✅ 상세 보기 페이지 JSP 경로
+            forward.setPath(request.getContextPath() + "/public/post-detail.jsp"); // ✅ 상세 보기 페이지 JSP 경로
 
         } catch (Exception e) {
             e.printStackTrace();

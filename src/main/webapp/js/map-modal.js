@@ -178,17 +178,26 @@ export function openModal(editor) {
           })
           .run();
       } else {
-        // 새 지도 삽입
+        // ✅ 새 지도 삽입 - 현재 커서 위치 또는 문서 끝에 삽입
         const safeId = `map-${Date.now()}`;
-        editor.chain().focus().insertContent({
-          type: "kakaoMap",
-          attrs: {
-            lat: selectedData.lat,
-            lng: selectedData.lng,
-            id: safeId,
-            label: selectedData.address
-          }
-        }).run();
+        const { from } = editor.state.selection;
+        const docSize = editor.state.doc.content.size;
+        
+        // 커서 위치가 유효하면 그 위치에, 아니면 문서 끝에 삽입
+        const insertPos = from > 0 && from < docSize ? from : docSize - 1;
+        
+        editor.chain()
+          .insertContentAt(insertPos, {
+            type: "kakaoMap",
+            attrs: {
+              lat: selectedData.lat,
+              lng: selectedData.lng,
+              id: safeId,
+              label: selectedData.address
+            }
+          })
+          .focus(insertPos + 1)
+          .run();
       }
       modal.remove();
     }

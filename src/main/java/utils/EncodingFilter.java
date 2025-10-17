@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpSession;
  */
 @WebFilter(description = "요청 및 응답 인코딩 설정 필터", 
            urlPatterns = "/*", 
+           asyncSupported = true,
            initParams = { @WebInitParam(name = "encoding", value = "UTF-8") })
 public class EncodingFilter implements Filter {
 	private String encoding;

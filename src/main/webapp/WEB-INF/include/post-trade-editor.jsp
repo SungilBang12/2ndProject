@@ -245,6 +245,9 @@
     return editor;
   }
   editor = initializeEditor();
+  
+  // ✅ 전역 변수로 에디터 등록 (이미지 모달 등에서 사용)
+  window.currentEditor = editor;
 
   // ========================================
   // 이모지 기능
