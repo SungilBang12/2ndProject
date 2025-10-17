@@ -1,351 +1,469 @@
-/* 🎨 게시판 기본 스타일 */
-.slot-board {
-  --primary:#6750a4;
-  --surface:#fef7ff;
-  --card-bg:#fdfbff;
-  --border:rgba(0,0,0,.12);
+/* ========== Sunset Dark Theme for post-list ========== */
+/* 팔레트: 헤더(#1a1614~#0f0d0c)와 어울리는 보랏빛-선셋 다크 */
+:root{
+  --primary:#CDA4FF;
+  --surface:#15121c;        /* 전체 배경 위 카드 표면 */
+  --surface-2:#1b1723;      /* 카드 hover/강조 배경 */
+  --card-bg:#17131e;        /* 카드 기본 배경 */
+  --card-bg-2:#1e1a26;
+  --border:rgba(255,255,255,.08);
+  --muted:rgba(255,255,255,.6);
+  --muted-2:rgba(255,255,255,.45);
+  --strong:#f5f5f7;
   --gap:12px;
   --sunset-1:#EEAF61;
   --sunset-2:#FB9062;
   --sunset-3:#EE5D6C;
   --sunset-4:#CE4993;
   --sunset-5:#6A0D83;
-  background:linear-gradient(to bottom,#fff5ef,#fdf4fa);
-  font-family:"Noto Sans KR",sans-serif;
+}
+
+/* 🎨 게시판 기본 스타일 */
+.slot-board{
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(238,93,108,.12), transparent 60%),
+    radial-gradient(900px 500px at 90% -15%, rgba(106,13,131,.14), transparent 55%),
+    linear-gradient(180deg,#191624 0%, #120F19 100%);
+  font-family:"Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   padding:var(--gap);
-  position: relative;
+  position:relative;
+  color: var(--strong);
 }
 
 /* 📦 게시판 전체 구조 */
-.slot-board .board-main {
+.slot-board .board-main{
   width:100%;
   display:flex;
   flex-direction:column;
   min-height:80vh;
-  position: relative;
-  z-index: 1;
+  position:relative;
+  z-index:1;
 }
 
-.slot-board .board-grid {
+.slot-board .board-grid{
   flex:1;
   display:grid;
   grid-template-columns:1fr;
   grid-auto-rows:max-content;
   gap:var(--gap);
   width:100%;
-  padding-bottom:70px; /* ✅ bottom-bar 높이만큼 여백 확보 */
+  padding-bottom:70px; /* ✅ bottom-bar 높이 확보 */
 }
 
 /* 🗂 게시글 카드 */
-.slot-board .post-card {
+.slot-board .post-card{
   background:var(--card-bg);
   border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:14px;
   padding:16px;
   display:flex;
   flex-direction:column;
   justify-content:center;
-  transition:transform .12s, box-shadow .15s;
+  transition:transform .14s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
 }
-.slot-board .post-card:hover {
-  transform:translateY(-2px);
-  box-shadow:0 6px 12px rgba(0,0,0,.06);
+.slot-board .post-card:hover{
+  transform: translateY(-2px);
+  background: var(--card-bg-2);
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
 }
-.slot-board .post-head {
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
+
+.slot-board .post-head{
+  display:flex; align-items:flex-start; gap:10px;
 }
-.slot-board .post-title {
+
+.slot-board .post-title{
   flex:1;
   font-weight:800;
   font-size:15px;
-  color:#1a1523;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  color:#F0E9FF;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.slot-board .post-body { margin-top:6px; }
-.slot-board .post-content {
-  font-size:13px;
-  line-height:1.6;
-  color:#4b4b4b;
+
+.slot-board .post-body{ margin-top:6px; }
+
+.slot-board .post-content{
+  font-size:13px; line-height:1.65;
+  color: var(--muted);
   opacity:.95;
-  background:#fff;
-  border-radius:8px;
-  padding:8px 10px;
+  background: #14101b;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;
+  padding:10px 12px;
   display:none;
 }
-.slot-board .meta {
+
+.slot-board .meta{
   font-size:12px;
-  color:#999;
-  margin-top:6px;
+  color: var(--muted-2);
+  margin-top:8px;
   text-align:right;
 }
 
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  margin-bottom: 20px;
-  left: calc(var(--sidebar-w) + 12px); /* 🔹 약간 안쪽으로 들임 (gap만큼) */
-  width: calc(100% - var(--sidebar-w) - 270px); /* 🔹 오른쪽 extra + 내부 여백 반영 */
-  background: linear-gradient(to right, #fff7f7, #fff2f0, #fff7f7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px; /* 🔹 위+아래 꼭지점 모두 둥글게 */
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  font-weight: 600;
-  color: #1d1b20;
-  box-shadow: 0 -2px 8px rgba(255, 165, 130, 0.2);
-  height: 58px;
-  z-index: 2000;
-  backdrop-filter: blur(3px); /* 🔹 살짝 투명감 주면 부드럽게 어우러짐 */
+/* 🎛 정렬 바 (다크) */
+.sort-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; padding:10px 16px;
+  border-radius:12px;
+  background:
+    linear-gradient(135deg, rgba(255,139,122,.08), rgba(110,13,130,.10));
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+  border: 1px solid rgba(255,255,255,.08);
+  font-family:"Poppins","Noto Sans KR",sans-serif;
+  backdrop-filter: blur(6px);
+}
+.sort-bar label{ font-weight:700; color:#EEDCFF; margin-right:10px; }
+.sort-bar .post-count{ font-weight:700; font-size:15px; color:#D7C6FF; }
+.sort-bar .sort-controls{ display:flex; align-items:center; gap:8px; }
+
+.sort-select{
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  background: #151120;
+  color:#E7E0FF;
+  font-size:14px; font-weight:600; cursor:pointer;
+  transition: box-shadow .2s, transform .2s, border-color .2s, background .2s;
+}
+.sort-select:hover{
+  box-shadow:0 0 0 3px rgba(206,73,147,.18);
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.22);
 }
 
-/* 반응형에서 extra 영역 사라질 때 전체로 확장 */
-@media (max-width: 991px) {
-  .bottom-bar {
-    left: 0;
-    width: 100%;
-    border-radius: 0;
-  }
+/* ✅ 전체 게시글 수 영역 (다크) */
+.post-count-container{
+  display:flex; justify-content:flex-start; align-items:center;
+  margin: 4px 0 10px 14px;
+}
+.post-count{ font-weight:700; font-size:15px; color:#D7C6FF; }
+
+/* 🌀 Monogram 버튼 (다크 보강) */
+.monogram-btn{
+  --size:34px;
+  width:var(--size); height:var(--size);
+  border-radius:50%;
+  position:relative; border:0; background:transparent;
+  cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:13px; color:#F0E9FF;
+  box-shadow: inset 0 0 0 999px #201a2b;
+}
+.monogram-btn::before{
+  content:""; position:absolute; inset:-2px; border-radius:inherit; opacity:.9;
+  background:conic-gradient(from 0deg, var(--sunset-1), var(--sunset-2), var(--sunset-3), var(--sunset-4), var(--sunset-5), var(--sunset-1));
+  -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 3px),#000 calc(100% - 2px)) content-box, linear-gradient(#000,#000);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: monoring-rotate 3.2s linear infinite;
+  animation-play-state: paused;
+}
+.monogram-btn:hover::before{ animation-play-state: running; }
+@keyframes monoring-rotate{ to{ transform: rotate(360deg); } }
+
+.monogram-btn.sunset{ color:#FFBCA3; box-shadow: inset 0 0 0 999px #231a25; }
+.monogram-btn.equipment{ color:#A7CBFF; box-shadow: inset 0 0 0 999px #1b2330; }
+.monogram-btn.meeting{ color:#DAB2FF; box-shadow: inset 0 0 0 999px #20182a; }
+
+mark{ background: #5b4b00; color: #fff; border-radius: 3px; padding: 0 3px; }
+
+/* 🎨 게시판 헤더 */
+.board-header{
+  width:100%;
+  text-align:center;
+  margin:12px 0 28px; padding:22px 0;
+  border-radius:14px;
+  background:linear-gradient(90deg, rgba(238,175,97,.25), rgba(238,93,108,.28), rgba(106,13,131,.30), rgba(206,73,147,.26));
+  background-size:300% 300%;
+  animation: headerFloat 5s ease-in-out infinite alternate;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+  overflow:hidden; position:relative;
+  transition: transform .35s ease, box-shadow .35s ease;
+}
+.board-title{
+  font-family:"Poppins","Noto Sans KR",sans-serif;
+  font-size:28px; font-weight:900; letter-spacing:.8px; margin:0; position:relative;
+  background: linear-gradient(90deg,#ffffff,#ffe6cf,#ffd1ea,#ffffff);
+  background-size:300%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation: textGlow 6s ease-in-out infinite;
+}
+.board-header:hover{ animation-play-state: paused; transform: scale(1.02); box-shadow: 0 10px 34px rgba(0,0,0,.45); }
+.board-header:hover .board-title{ animation: shineText 2s linear infinite; }
+
+@keyframes headerFloat{
+  0%{ background-position:0% 50%; transform: translateY(0); }
+  50%{ background-position:100% 50%; transform: translateY(-3px); }
+  100%{ background-position:0% 50%; transform: translateY(0); }
+}
+@keyframes textGlow{
+  0%,100%{ filter: drop-shadow(0 0 6px rgba(255,180,150,.45)); }
+  50%{ filter: drop-shadow(0 0 12px rgba(255,120,200,.65)); }
+}
+@keyframes shineText{
+  0%{ background-position: 0% 50%; }
+  100%{ background-position: 200% 50%; }
 }
 
 /* 페이지 버튼 */
 .page-controls{ display:flex; align-items:center; gap:8px; }
 .page-btn{
-  border-radius:12px;
-  padding:8px 16px;
-  font-weight:600;
-  cursor:pointer;
-  transition:all .25s;
-  position:relative;
-  overflow:hidden;
+  border-radius:12px; padding:8px 16px;
+  font-weight:700; cursor:pointer; position:relative; overflow:hidden;
+  transition: transform .2s, box-shadow .2s, background .2s, color .2s, border-color .2s;
 }
 .page-btn[disabled]{ opacity:.45; cursor:not-allowed; filter:grayscale(.2); }
 
 .page-btn.sunset-linefill{
-  border:2px solid rgba(0,0,0,.15);
-  color:#2b2530;
-  background:transparent;
+  border:2px solid rgba(255,255,255,.16);
+  color:#F6EDFF;
+  background: #13101a;
 }
-.page-btn.sunset-linefill>span{ position:relative; z-index:1; }
+.page-btn.sunset-linefill:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.38);
+  border-color: rgba(255,255,255,.28);
+  background: #191525;
+}
 
 .page-btn.sunset-ghost{
   border:2px solid transparent;
-  background:linear-gradient(#0000,#0000),
-             linear-gradient(135deg,var(--sunset-1),var(--sunset-3),var(--sunset-5));
-  background-origin:border-box;
-  background-clip:padding-box,border-box;
-  color:transparent;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  box-shadow:0 2px 4px rgba(206,73,147,.25);
+  background:
+    linear-gradient(#0000,#0000),
+    linear-gradient(135deg,var(--sunset-1),var(--sunset-3),var(--sunset-5));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  color: transparent; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  box-shadow: 0 2px 6px rgba(206,73,147,.35);
 }
 .page-btn.sunset-ghost:hover{
-  transform:translateY(-1px);
-  box-shadow:0 4px 8px rgba(206,73,147,.35);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(206,73,147,.5);
 }
 
-/* 🎨 게시판 헤더 */
-.board-header {
-  width:100%;
-  text-align:center;
-  margin:12px 0 28px;
-  padding:22px 0;
+/* 하이라이트/검색 매칭 */
+mark{ background: linear-gradient(180deg,#5f4a00,#6d4f00); color:#fff; }
+
+/* 🧭 bottom-bar (다크) */
+.bottom-bar{
+  position: fixed; bottom: 0;
+  left: calc(var(--sidebar-w) + 12px);
+  width: calc(100% - var(--sidebar-w) - 270px);
+  height: 58px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 20px;
+  font-weight:700; color:#F6EDFF;
+  background:
+    linear-gradient(90deg, rgba(255,139,122,.10), rgba(206,73,147,.12), rgba(255,139,122,.10));
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  box-shadow: 0 -8px 26px rgba(0,0,0,.35);
+  z-index: 2000;
+  backdrop-filter: blur(6px);
+}
+@media (max-width: 991px){
+  .bottom-bar{
+    left:0; width:100%; border-radius:0;
+    background: linear-gradient(90deg, rgba(255,139,122,.12), rgba(106,13,131,.14), rgba(255,139,122,.12));
+  }
+}
+
+/* ========== 접근성/가독성 보강 ========== */
+.slot-board .post-title a{ color: inherit; }
+.slot-board .post-title a:focus-visible{ outline: 3px solid rgba(206,73,147,.5); border-radius:6px; outline-offset:2px; }
+.slot-board .post-card:focus-within{ box-shadow: 0 0 0 3px rgba(206,73,147,.28), 0 10px 28px rgba(0,0,0,.35); }
+
+/* ========== 반응형 미세 튜닝 ========== */
+@media (max-width: 600px){
+  .board-title{ font-size:24px; }
+  .sort-select{ font-size:13px; padding:7px 10px; }
+  .slot-board .post-content{ font-size:12.5px; }
+}
+
+/* ================== Sunset × Complementary Dark Theme ================== */
+/* 팔레트: 노을(주황·핑크·마젠타) ↔ 보색(청록·시안·남보라) 페어링 */
+:root{
+  /* Sunset (Warm) */
+  --sunset-1:#F6A26B;   /* 밝은 주황 */
+  --sunset-2:#FF7A6E;   /* 코랄 */
+  --sunset-3:#F05A8A;   /* 마젠타 핑크 */
+  --sunset-4:#D24D9C;   /* 로즈/보라 */
+  --sunset-5:#9B2C8A;   /* 딥 보라 핑크 */
+
+  /* Complementary (Cool) — 보색 */
+  --comp-1:#5BC8B2;     /* 민트/청록 */
+  --comp-2:#4FB6E8;     /* 시안 블루 */
+  --comp-3:#6A7BFF;     /* 남보라 블루 */
+  --comp-4:#48A9A6;     /* 틸 */
+  --comp-5:#6E57CF;     /* 바이올렛 블루 */
+
+  /* 베이스/텍스트 */
+  --surface:#14121B;
+  --surface-2:#191628;
+  --card-bg:#171425;
+  --card-bg-2:#1F1B31;
+  --border:rgba(255,255,255,.10);
+  --muted:rgba(235,235,245,.72);
+  --muted-2:rgba(235,235,245,.56);
+  --strong:#FAFAFF;
+
+  --gap:12px;
+}
+
+/* 배경: 노을 그라데이션 + 보색 글로우 */
+.slot-board{
+  background:
+    radial-gradient(1100px 600px at 12% -10%, color-mix(in oklab, var(--sunset-2) 24%, transparent), transparent 60%),
+    radial-gradient(1000px 540px at 88% -14%, color-mix(in oklab, var(--comp-2) 22%, transparent), transparent 55%),
+    linear-gradient(180deg, #120F19 0%, #0F0C16 100%);
+  color: var(--strong);
+}
+
+/* 카드 */
+.slot-board .post-card{
+  background: var(--card-bg);
+  border:1px solid var(--border);
   border-radius:14px;
-  background:linear-gradient(90deg,var(--sunset-1),var(--sunset-3),var(--sunset-5),var(--sunset-4));
-  background-size:300% 300%;
-  animation:headerFloat 5s ease-in-out infinite alternate;
-  box-shadow:0 4px 12px rgba(238,93,108,0.2);
-  overflow:hidden;
-  position:relative;
-  transition:transform 0.4s ease, box-shadow 0.4s ease;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+  transition: transform .14s, box-shadow .18s, border-color .18s, background .18s;
 }
-.board-title {
-  font-family:"Poppins","Noto Sans KR",sans-serif;
-  font-size:28px;
-  font-weight:800;
-  background:linear-gradient(90deg,#ffffff,#ffe9d0,#ffd1d1,#ffffff);
-  background-size:300%;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:textGlow 6s ease-in-out infinite;
-  letter-spacing:0.8px;
-  margin:0;
-  position:relative;
+.slot-board .post-card:hover{
+  background: var(--card-bg-2);
+  border-color: color-mix(in oklab, var(--comp-2) 28%, transparent);
+  box-shadow: 0 16px 36px rgba(0,0,0,.45), 0 0 0 3px color-mix(in oklab, var(--comp-2) 14%, transparent);
 }
-.board-header:hover {
-  animation-play-state:paused;
-  transform:scale(1.02);
-  box-shadow:0 8px 24px rgba(238,93,108,0.35);
-}
-.board-header:hover .board-title {
-  animation:shineText 2s linear infinite;
+.slot-board .post-title{ color:#F5ECFF; }
+.slot-board .post-content{
+  background:#131120;
+  border:1px solid rgba(255,255,255,.08);
+  color: var(--muted);
 }
 
-/* 🌈 애니메이션 */
-@keyframes headerFloat {
-  0% { background-position:0% 50%; transform:translateY(0); }
-  50% { background-position:100% 50%; transform:translateY(-3px); }
-  100% { background-position:0% 50%; transform:translateY(0); }
+/* 게시판 헤더: Warm → Cool 보색 흐름 */
+.board-header{
+  background:
+    linear-gradient(90deg,
+      color-mix(in oklab, var(--sunset-1) 45%, transparent),
+      color-mix(in oklab, var(--sunset-3) 45%, transparent),
+      color-mix(in oklab, var(--comp-2) 45%, transparent),
+      color-mix(in oklab, var(--comp-5) 45%, transparent)
+    );
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow: 0 8px 32px rgba(0,0,0,.45);
 }
-@keyframes textGlow {
-  0%,100% { filter:drop-shadow(0 0 6px rgba(255,180,150,0.5)); }
-  50% { filter:drop-shadow(0 0 12px rgba(255,120,90,0.7)); }
-}
-@keyframes shineText {
-  0% { background-position:0% 50%; }
-  100% { background-position:200% 50%; }
-}
-
-/* 정렬 바 */
-.sort-bar {
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  margin-bottom:12px;
-  padding:8px 16px;
-  border-radius:12px;
-  background:linear-gradient(to right,#fff6f1,#fff1f7);
-  box-shadow:0 2px 6px rgba(0,0,0,0.05);
-  font-family:"Poppins","Noto Sans KR",sans-serif;
-}
-.sort-bar label {
-  font-weight:600;
-  color:#4a3b4e;
-  margin-right:10px;
-}
-.sort-select {
-  padding:6px 12px;
-  border-radius:10px;
-  border:1px solid rgba(0,0,0,0.1);
-  background:white;
-  font-size:14px;
-  font-weight:600;
-  color:#3e2b4c;
-  cursor:pointer;
-  transition:all 0.25s ease;
-}
-.sort-select:hover {
-  box-shadow:0 0 10px rgba(255,150,120,0.3);
-  transform:translateY(-2px);
+.board-title{
+  background: linear-gradient(90deg,#ffffff,#e8fff9,#e3e6ff,#ffffff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
 }
 
-/* 🌀 Monogram 버튼 */
-.monogram-btn {
-  --size:34px;
-  width:var(--size);
-  height:var(--size);
-  border-radius:50%;
-  position:relative;
-  border:0;
-  background:transparent;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:800;
-  font-size:13px;
-  color:#5b3a5e;
-  box-shadow:inset 0 0 0 999px #f9f0ff;
+/* 정렬 바: 따뜻함(선셋) 베이스 + 보색 라이트 */
+.sort-bar{
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--sunset-1) 12%, transparent),
+      color-mix(in oklab, var(--comp-2) 12%, transparent));
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
 }
-.monogram-btn::before {
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius:inherit;
-  opacity:.9;
-  background:conic-gradient(
-    from 0deg,
-    var(--sunset-1),
-    var(--sunset-2),
-    var(--sunset-3),
-    var(--sunset-4),
-    var(--sunset-5),
-    var(--sunset-1)
-  );
-  -webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 3px),#000 calc(100% - 2px)) content-box,linear-gradient(#000,#000);
-  -webkit-mask-composite:xor;
-  mask-composite:exclude;
-  animation:monoring-rotate 3.2s linear infinite;
-  animation-play-state:paused;
+.sort-bar label{ color: #F7EFFF; }
+.sort-bar .post-count{ color:#DDE8FF; }
+.sort-select{
+  background:#151329; color:#EAE4FF;
+  border:1px solid rgba(255,255,255,.14);
 }
-.monogram-btn:hover::before { animation-play-state:running; }
-@keyframes monoring-rotate { to { transform:rotate(360deg); } }
-
-/* 🌞 타입별 색상 테마 */
-.monogram-btn.sunset {
-  color:#fb9062;
-  box-shadow:inset 0 0 0 999px #fff4ef;
-}
-.monogram-btn.sunset::before {
-  background:conic-gradient(#eeaf61,#fb9062,#ee5d6c,#fb9062,#eeaf61);
-}
-.monogram-btn.equipment {
-  color:#3583f3;
-  box-shadow:inset 0 0 0 999px #f0f8ff;
-}
-.monogram-btn.equipment::before {
-  background:conic-gradient(#7bc8f6,#3583f3,#2f61b3,#3583f3,#7bc8f6);
-}
-.monogram-btn.meeting {
-  color:#9d55f1;
-  box-shadow:inset 0 0 0 999px #f9f0ff;
-}
-.monogram-btn.meeting::before {
-  background:conic-gradient(#ce8af7,#9d55f1,#6a0d83,#9d55f1,#ce8af7);
-}
-mark {
-  background: #fff3a0;
-  color: #000;
-  border-radius: 3px;
-  padding: 0 2px;
+.sort-select:hover{
+  border-color: color-mix(in oklab, var(--comp-2) 40%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--comp-2) 20%, transparent);
 }
 
-/* ✅ 전체 게시글 수 표시 영역 */
-.post-count-container {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin: 4px 0 10px 14px;
+/* 하이라이트 */
+mark{
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--sunset-1) 40%, transparent),
+    color-mix(in oklab, var(--comp-1) 35%, transparent));
+  color:#0C0B12;
 }
 
-.post-count {
-  font-weight: 600;
-  font-size: 15px;
-  color: #3a2b3f;
+/* 페이지 버튼: 한쪽은 Warm, 다른 한쪽은 Cool로 대비 */
+.page-btn.sunset-linefill{
+  background:#121024;
+  color:#F8F6FF;
+  border:2px solid color-mix(in oklab, var(--comp-2) 35%, transparent);
+}
+.page-btn.sunset-linefill:hover{
+  transform: translateY(-1px);
+  background:#171536;
+  border-color: color-mix(in oklab, var(--comp-3) 45%, transparent);
+  box-shadow: 0 8px 20px rgba(0,0,0,.45), 0 0 0 3px color-mix(in oklab, var(--comp-3) 18%, transparent);
 }
 
-/* ✅ 게시글 수 + 정렬바 한 줄 정렬 */
-.sort-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding: 8px 16px;
-  border-radius: 12px;
-  background: linear-gradient(to right, #fff6f1, #fff1f7);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  font-family: "Poppins", "Noto Sans KR", sans-serif;
+.page-btn.sunset-ghost{
+  border:2px solid transparent;
+  background:
+    linear-gradient(#0000,#0000),
+    linear-gradient(135deg, var(--sunset-2), var(--sunset-3), var(--sunset-5));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  color:transparent; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--sunset-3) 35%, transparent);
+}
+.page-btn.sunset-ghost:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px color-mix(in oklab, var(--sunset-3) 50%, transparent);
 }
 
-.sort-bar .post-count {
-  font-weight: 600;
-  font-size: 15px;
-  color: #3a2b3f;
+/* Monogram: Warm/Cool 페어 */
+.monogram-btn{ color:#F3ECFF; box-shadow: inset 0 0 0 999px #1E1A2E; }
+.monogram-btn.sunset{
+  color: color-mix(in oklab, var(--sunset-2) 90%, #fff);
+  box-shadow: inset 0 0 0 999px #241828;
+}
+.monogram-btn.sunset::before{
+  background: conic-gradient(var(--sunset-1),var(--sunset-2),var(--sunset-3),var(--sunset-4),var(--sunset-5),var(--sunset-1));
+}
+.monogram-btn.equipment{
+  color: color-mix(in oklab, var(--comp-2) 90%, #fff);
+  box-shadow: inset 0 0 0 999px #17222A;
+}
+.monogram-btn.equipment::before{
+  background: conic-gradient(var(--comp-1),var(--comp-2),var(--comp-3),var(--comp-4),var(--comp-5),var(--comp-1));
+}
+.monogram-btn.meeting{
+  color: color-mix(in oklab, var(--comp-5) 90%, #fff);
+  box-shadow: inset 0 0 0 999px #1A1830;
+}
+.monogram-btn.meeting::before{
+  background: conic-gradient(var(--sunset-3),var(--comp-2),var(--comp-5),var(--sunset-3));
 }
 
-.sort-bar .sort-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* 하단 바: Warm 바탕에 Cool 라이트 림 */
+.bottom-bar{
+  background:
+    linear-gradient(90deg,
+      color-mix(in oklab, var(--sunset-2) 18%, transparent),
+      color-mix(in oklab, var(--comp-2) 18%, transparent),
+      color-mix(in oklab, var(--sunset-2) 18%, transparent));
+  border:1px solid rgba(255,255,255,.12);
+  color:#F5F2FF;
+}
+@media (max-width: 991px){
+  .bottom-bar{
+    background:
+      linear-gradient(90deg,
+        color-mix(in oklab, var(--sunset-2) 22%, transparent),
+        color-mix(in oklab, var(--comp-2) 22%, transparent),
+        color-mix(in oklab, var(--sunset-2) 22%, transparent));
+  }
 }
 
+/* 미세 가독성 */
+.slot-board .meta{ color: var(--muted-2); }
+.slot-board .post-title a{ color:inherit; }
+.slot-board .post-title a:focus-visible{
+  outline:3px solid color-mix(in oklab, var(--comp-2) 45%, transparent);
+  border-radius:6px; outline-offset:2px;
+}
 
-
-
-
+/* 선택적으로 라이트 모드 배경을 다크 톤으로 전환하고 싶다면 */
+.slot-board .board-grid{ background: transparent; }
 

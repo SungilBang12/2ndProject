@@ -1,41 +1,155 @@
 @charset "UTF-8";
 
+/* ===================== Global Reset & Vars ===================== */
+/* 최상단 빈 공간 제거 + 사이징 안정화 */
+html, body { margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+/* iOS 노치 안전영역 보정(필요 시) */
+body { padding-top: env(safe-area-inset-top, 0); }
 
-/* 헤더 우측 액션(프로필 팝오버 앵커) */
-.header-actions{ display:flex; align-items:center; gap:8px; position:relative; }
+/* 공통 크기 변수 */
+:root{
+  --header-h: 64px;          /* 헤더 블록 기본 높이 */
+  --home-btn-size: 44px;     /* 홈/아바타 버튼 높이 */
+  --input-h: 44px;           /* 검색 인풋/폼 높이 */
+  --gap: 16px;               /* 헤더 그리드 컬럼 간격 */
+}
 
-/* 아바타 버튼 */
+/* ===================== Header Layout ===================== */
+.site-header{
+  position: sticky; top: 0;
+  z-index: 1000; /* 팝오버보다만 낮으면 됨 */
+  background: linear-gradient(135deg, #1a1614 0%, #0f0d0c 100%);
+  border-bottom: 1px solid rgba(255, 139, 122, 0.15);
+  box-shadow: 0 2px 16px rgba(0,0,0,.3);
+  backdrop-filter: blur(8px);
+
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* 좌(홈) | 중앙(검색) | 우(프로필) */
+  align-items: center;
+  column-gap: var(--gap);
+
+  min-height: var(--header-h);
+  padding: 10px 16px; /* 수직 패딩은 얕게, 내부 요소 고정 높이로 정렬 */
+  overflow: visible;  /* 팝오버가 헤더 밖으로 자연스럽게 보이도록 */
+}
+
+/* ===== 좌측: 홈 버튼 ===== */
+.home-btn--top{
+  width: var(--home-btn-size);
+  height: var(--home-btn-size);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
+  box-shadow: 0 4px 12px rgba(255,107,107,.3);
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+  text-decoration: none;
+}
+.home-btn--top::before{
+  content: "🌅";
+  font-size: 20px;
+  position: relative; z-index: 1;
+}
+.home-btn--top::after{
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(255,255,255,.2) 0%, transparent 100%);
+  opacity: 0; transition: opacity .25s;
+}
+.home-btn--top:hover{ transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(255,107,107,.45); }
+.home-btn--top:hover::after{ opacity: 1; }
+
+/* ===== 중앙: 검색 ===== */
+.site-search-wrap{
+  justify-self: center;
+  width: min(680px, 100%);
+}
+.site-search{
+  height: var(--input-h);
+  display: flex; align-items: center;
+  background: rgba(42,31,26,.6);
+  border: 1px solid rgba(255,139,122,.2);
+  border-radius: 12px;
+  overflow: hidden; /* 내부 라운딩 유지 */
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+}
+.site-search:focus-within{
+  background: rgba(42,31,26,.8);
+  border-color: rgba(255,139,122,.4);
+  box-shadow: 0 0 0 3px rgba(255,139,122,.1);
+}
+.search-input{
+  flex: 1; height: 100%;
+  background: transparent; border: none; outline: none;
+  padding: 0 14px;
+  color: #e5e5e5; font-size: 15px; font-weight: 400;
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.search-input::placeholder{ color: rgba(229,229,229,.5); }
+.search-btn{
+  width: var(--home-btn-size);
+  height: calc(var(--home-btn-size) - 4px); /* 외곽 여백 살짝 */
+  margin: 2px;
+  border: none; border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
+  position: relative; overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.search-btn::before{ content:"🔍"; font-size: 18px; position: relative; z-index: 1; }
+.search-btn::after{
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(255,255,255,.2) 0%, transparent 100%);
+  opacity: 0; transition: opacity .2s;
+}
+.search-btn:hover{ transform: scale(1.03); box-shadow: 0 4px 12px rgba(255,107,107,.4); }
+.search-btn:hover::after{ opacity: 1; }
+.site-search.is-searching .search-btn{ animation: searchPulse 1.5s ease-in-out infinite; }
+@keyframes searchPulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+
+/* ===== 우측: 프로필/액션 ===== */
+.header-right{
+  justify-self: end;
+  display: flex; align-items: center; gap: 8px;
+  min-width: var(--home-btn-size);
+  position: relative; /* 내부 absolute 기준 */
+}
+
+/* 액션 래퍼(팝오버 기준점) */
+.header-actions{
+  display:flex; align-items:center; gap:8px;
+  position:relative; /* 팝오버 기준 */
+  z-index: 1200;     /* 헤더(1000) 보다 위 */
+}
+
+/* 아바타 버튼(동그란 버튼) */
 .avatar-btn{
   width: var(--home-btn-size);
   height: var(--home-btn-size);
   border-radius: 9999px;
-  background: rgba(255,255,255,.9);
+  background: rgba(255,255,255,.92);
   box-shadow: 0 1px 2px rgba(0,0,0,.15);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  outline: none;
-  border: none;
-  appearance: none;
-  cursor: pointer;
-  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; outline: none; border: none;
+  appearance: none; cursor: pointer; padding: 0;
+  transition: transform .15s ease, box-shadow .15s ease;
 }
+.avatar-btn:hover{ transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.18); }
+.avatar-btn:active{ transform: translateY(0); }
 .avatar-btn svg{ pointer-events: none; }
 
-/* 프로필 드롭다운 */
+/* ===================== Profile Popover ===================== */
 .profile-popover[hidden]{ display:none !important; }
+
 .profile-popover{
   position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
+  right: 0; top: calc(100% + 8px); /* 트리거 아래로 */
   background: #fff; color:#111;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(0,0,0,.12);
-  width: 280px;
-  max-width: calc(100vw - 16px);
-  z-index: 1500;
+  width: 280px; max-width: calc(100vw - 16px);
+  z-index: 1500;  /* 헤더/드롭다운보다 위 */
 }
 .profile-card{ padding: 10px; }
 .profile-row{
@@ -48,97 +162,72 @@
   background: #f3f4f6;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.meta .name{ 
-  font-weight: 700; 
-  display: flex;
-  align-items: center;
-  gap: 6px; /* 이름과 뱃지 사이 간격 */
+.meta .name{
+  font-weight: 700;
+  display: flex; align-items: center; gap: 6px; /* 이름과 뱃지 간격 */
 }
 .meta .sub{ font-size: 12px; color:#6b7280; }
 
-/* 비로그인 상태일 때의 텍스트 스타일 */
+/* 비로그인 상태 텍스트 */
 .meta .name-guest{ font-size: 14px; font-weight: 500; color: #6b7280; }
-.meta .sub-guest{ font-size: 14px; font-weight: 700; color: #ef4444; } /* 로그인 버튼 강조 */
+.meta .sub-guest{ font-size: 14px; font-weight: 700; color: #ef4444; }
 
-
-/* ───────── New Styles for DTO ───────── */
-
-/* 역할 및 인증 뱃지 */
+/* 역할/인증 뱃지 */
 .role-badge{
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 4px;
-    line-height: 1;
-    display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 6px; border-radius: 4px; line-height: 1;
+  display: inline-block;
 }
+.role-badge.is-admin{ background:#4f46e5; color:#fff; }
+.role-badge.is-verified{ background:#d1fae5; color:#059669; }
 
-/* 관리자 뱃지 */
-.role-badge.is-admin {
-    background: #4f46e5;
-    color: #fff;
+/* 미인증 경고 */
+.verification-warning{
+  padding: 10px 16px; font-size: 13px; line-height: 1.4;
+  background:#fef2f2; color:#ef4444;
+  border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;
+  text-align:center;
 }
-
-/* 이메일 인증 뱃지 */
-.role-badge.is-verified {
-    background: #d1fae5;
-    color: #059669;
+.verification-warning .resend-link{
+  display:block; margin-top:4px; font-weight:600;
+  color:#dc2626; text-decoration: underline; text-underline-offset: 2px;
 }
+.verification-warning .resend-link:hover{ color:#991b1b; }
 
-
-/* 미인증 경고 메시지 */
-.verification-warning {
-    padding: 10px 16px;
-    font-size: 13px;
-    background: #fef2f2; /* Red-100 */
-    color: #ef4444; /* Red-500 */
-    border-top: 1px solid #fecaca;
-    border-bottom: 1px solid #fecaca;
-    line-height: 1.4;
-    text-align: center;
-}
-.verification-warning .resend-link {
-    display: block;
-    margin-top: 4px;
-    font-weight: 600;
-    color: #dc2626; /* Red-600 */
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-.verification-warning .resend-link:hover {
-    color: #991b1b;
-}
-
-
-/* 메뉴 아이템 공통 */
+/* 메뉴 */
 .menu-item{
-  display: block; padding: 10px 16px;
-  font-size: 14px; line-height: 1.4;
-  color: #374151; /* Gray-700 */
+  display:block; padding:10px 16px;
+  font-size:14px; line-height:1.4; color:#374151;
 }
-.menu-item:hover{
-  background: #f3f4f6;
-}
-.menu-item.is-primary{
-  font-weight: 600;
-  color: #10b981; /* Green-500 */
-  text-align: center;
-}
+.menu-item:hover{ background:#f3f4f6; }
+.menu-item.is-primary{ font-weight:600; color:#10b981; text-align:center; }
 .menu-item.is-danger{
-  font-weight: 600;
-  color: #ef4444; /* Red-500 */
-  text-align: center;
-  width: 100%;
-  border: none;
-  cursor: pointer;
+  font-weight:600; color:#ef4444; text-align:center; width:100%;
+  border:none; cursor:pointer; background:none;
 }
-.menu-item.is-admin-link {
-    color: #4f46e5; /* Indigo-600 */
-    font-weight: 600;
+.menu-item.is-admin-link{ color:#4f46e5; font-weight:600; }
+
+.divider{ height:1px; background:#e5e7eb; margin:4px 0; }
+
+/* ===================== Utilities ===================== */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
 
-.divider{
-  height: 1px;
-  background: #e5e7eb;
-  margin: 4px 0;
+/* 헤더 바로 다음 섹션에만 미세 간격 주고 싶다면 사용(옵션)
+.site-header + * { margin-top: 8px; }
+*/
+
+/* ===================== Responsive ===================== */
+@media (max-width: 768px){
+  :root{
+    --header-h: 60px;
+    --home-btn-size: 42px;
+    --input-h: 42px;
+    --gap: 10px;
+  }
+  .search-input{ font-size:14px; }
+  .search-btn::before{ font-size:16px; }
+  .home-btn--top::before{ font-size:18px; }
 }

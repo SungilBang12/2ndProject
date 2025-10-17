@@ -95,9 +95,10 @@ input[type="search"]::-webkit-search-cancel-button{ cursor:pointer; }
 .site-search .search-btn:focus-visible{ outline:2px solid rgba(255,255,255,.45); outline-offset:2px; }
 
 /* 헤더 높이만큼 문서 흐름에 자리 예약 */
-body::before{ content:""; display:block; height:var(--site-header-h); }
-/* 앵커 스크롤 보정 */
-html{ scroll-padding-top: var(--site-header-h); }
+html[data-fixed-header] body::before{
+  content:""; display:block; height:var(--site-header-h);
+}
+html[data-fixed-header]{ scroll-padding-top: var(--site-header-h); }
 
 /* iOS 안전영역 */
 @supports (padding: env(safe-area-inset-top)){

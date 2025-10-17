@@ -192,7 +192,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: var(--gray-200);
+  background: #e5e7eb00;
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 24px;
@@ -220,7 +220,7 @@
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: var(--coral);
+  background: #171425;
   color: white;
   display: flex;
   align-items: center;
@@ -230,8 +230,8 @@
   flex-shrink: 0;
 }
 
-.post-icon.equipment { background: #10b981; }
-.post-icon.meeting { background: #3b82f6; }
+.post-icon.equipment { background: #171425; }
+.post-icon.meeting { background: #171425 }
 
 .post-title {
   flex: 1;
@@ -515,7 +515,17 @@ mark {
 
       var postType = p.postType || "";
       var postTypeClass = postType ? postType.toLowerCase() : "";
+      
       var postTypeInitial = postType ? postType.charAt(0).toUpperCase() : "📄";
+      
+      if (postTypeInitial == 'S') {
+    	  postTypeInitial = "🌅";
+        } else if (postTypeInitial == 'E') {
+        	postTypeInitial = "📷";
+        } else {
+        	postTypeInitial = "👥";
+        }
+      
 
       var link = "post-detail.post?postId=" + encodeURIComponent(postId)
                + "&listId=" + encodeURIComponent(p.listId || listId);
