@@ -216,6 +216,18 @@
 	background: white;
 	color: #667eea;
 }
+.btn-cancel {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #ff7875;
+}
 
 /* ---------------- Modal ---------------- */
 .modal {

@@ -14,7 +14,7 @@ export function initViewer(boardEl, JSONcontent) {
 		editable: false, // 읽기 전용
 		extensions: [
 			StarterKit.configure({
-
+				Document: false,
 				// Configure an included extension
 				Link: {
 					openOnClick: true,
