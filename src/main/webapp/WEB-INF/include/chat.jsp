@@ -16,22 +16,6 @@
     💬
 </button>
 
-ChatGPT said:
-
-좋아요 😄
-지금 HTML 구조를 보면 채팅 헤더, 리스트, 메시지 패널, 입력 영역이 섞여 있고, 나가기 버튼은 헤더와 액션 버튼에 있어서 UX가 조금 혼란스러울 수 있어요.
-말씀하신 요구사항(나가기 버튼 헤더 왼쪽, 메시지 스크롤 가능, 메시지 창 고정) 기준으로 DOM 구조와 CSS를 정리해드릴게요.
-
-1️⃣ DOM 구조 개선
-
-주요 변경점:
-
-나가기 버튼을 헤더 왼쪽으로 이동
-
-채팅 패널 구조 정리: 메시지 영역 + 입력 영역 고정
-
-참가 버튼은 입력 영역 위쪽에 위치
-
 <!-- 채팅 위젯 -->
 <div id="chatWidget" style="display:none;">
     <!-- 헤더 -->
@@ -43,7 +27,7 @@ ChatGPT said:
         <div class="chat-header-title">
             <h3 id="chatTitle">채팅</h3>
             <p class="participant-info">
-                참가자: <span id="participantCount">0/${param.maxPeople != null ? param.maxPeople : 5}</span>
+                참가자: <span id="participantCount">0</span>/<span id="maxPeople">${param.maxPeople != null ? param.maxPeople : 999}</span>
             </p>
         </div>
 
@@ -64,12 +48,7 @@ ChatGPT said:
     <div id="chatPanel" style="display:none;">
         <!-- 메시지 영역 -->
         <div id="chatMessages"></div>
-
-        <!-- 참가 버튼 -->
-        <div class="chat-action-buttons">
-            <button id="joinBtn" disabled>참가하기</button>
-        </div>
-
+		
         <!-- 입력 영역 -->
         <div class="chat-input-area">
             <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." />

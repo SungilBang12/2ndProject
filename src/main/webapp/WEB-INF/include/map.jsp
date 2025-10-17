@@ -21,8 +21,6 @@
 
     <!-- TipTap 에디터 초기화 스크립트 -->
     <script type="module">
- 
-        
         // Kakao 지도 버튼 이벤트 연결
         document.addEventListener('DOMContentLoaded', function() {
             const mapButton = document.querySelector('button[data-cmd="Map"]');

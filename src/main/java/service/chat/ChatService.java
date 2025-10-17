@@ -14,7 +14,7 @@ import utils.ConnectionPoolHelper;
 public class ChatService {
 
     private final ChatDao dao = new ChatDao();
-
+    
     /** 🔹 게시글 상세 조회 */
     public SchedulePostDto getPostDetails(int postId) {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {

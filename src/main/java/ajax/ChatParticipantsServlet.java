@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
+
+import dto.SchedulePostDto;
 import dto.Users;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -42,10 +44,16 @@ import service.chat.ChatService;
 	        }
 
 	        int postId = Integer.parseInt(postIdParam);
+	     // 현재 참가자 수
 	        int currentPeople = service.getParticipantCount(postId);
+
+	        // 최대 참가자 수
+	        SchedulePostDto schedule = service.getPostDetails(postId);
+	        int maxPeople = schedule.getMaxPeople(); // ChatService에서 추가 필요
 
 	        Map<String, Object> result = new HashMap<>();
 	        result.put("currentPeople", currentPeople);
+	        result.put("maxPeople", maxPeople);
 
 	        new Gson().toJson(result, res.getWriter());
 	    }
