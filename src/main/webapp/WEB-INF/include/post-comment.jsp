@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <title>댓글</title>
 <style>
-/* 기본 스타일 */
+/* 기존 CSS 유지 */
 * {
     margin: 0;
     padding: 0;
@@ -29,7 +29,6 @@ body {
     overflow: hidden;
 }
 
-/* 댓글 헤더 */
 .comment-header { 
     display: flex; 
     justify-content: space-between; 
@@ -52,11 +51,6 @@ body {
     font-size: 14px;
 }
 
-.stat-icon {
-    font-size: 16px;
-}
-
-/* 댓글 목록 */
 #commentList {
     padding: 0;
     background: white;
@@ -115,7 +109,6 @@ body {
     color: #333;
 }
 
-/* 댓글 내용 - TipTap 뷰어 */
 .comment-content { 
     margin: 8px 0;
 }
@@ -148,7 +141,6 @@ body {
     display: inline-block;
 }
 
-/* 더보기 메뉴 */
 .comment-more-menu {
     position: absolute;
     right: 10px;
@@ -228,7 +220,6 @@ body {
     background: #fff0f2;
 }
 
-/* 수정 모드 */
 .comment-edit-form {
     margin-top: 10px;
 }
@@ -321,7 +312,6 @@ body {
     background: white;
 }
 
-/* 댓글 작성 폼 */
 .comment-write-form { 
     padding: 24px;
     background: #fafbfc;
@@ -346,7 +336,6 @@ body {
     color: #333;
 }
 
-/* 댓글 Toolbar 스타일 */
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -480,7 +469,6 @@ body {
     box-shadow: none;
 }
 
-/* 상태 표시 */
 .status-badge {
     display: inline-block;
     padding: 4px 10px;
@@ -518,9 +506,7 @@ body {
 </style>
 </head>
 <body>
-    <!-- 댓글 영역 -->
     <div class="comment-container">
-        <!-- 댓글 통계 -->
         <div class="comment-header">
             <div class="comment-stats">
                 <div class="stat-item">
@@ -528,16 +514,13 @@ body {
                     <span>댓글 <strong id="commentTotalCount">0</strong></span>
                 </div>
             </div>
-            
             <div style="font-size: 12px; color: #999;">최신순</div>
         </div>
         
-        <!-- 댓글 목록 -->
         <div id="commentList">
             <div class="loading">댓글을 불러오는 중...</div>
         </div>
         
-        <!-- 댓글 작성 폼 -->
         <c:if test="${not empty sessionScope.user}">
             <div class="comment-write-form">
                 <div class="write-form-header">
@@ -546,9 +529,7 @@ body {
                     <span class="author-name">${sessionScope.user.userId}</span>
                 </div>
                 
-                <!-- 댓글 Toolbar -->
                 <div id="toolbar" class="toolbar">
-                    <!-- 기본 텍스트 스타일 -->
                     <div class="toolbar-group">
                         <button type="button" data-cmd="bold" title="굵게"><strong>B</strong></button>
                         <button type="button" data-cmd="italic" title="기울임"><i>I</i></button>
@@ -559,26 +540,19 @@ body {
 
                     <div class="toolbar-divider"></div>
 
-                    <!-- 기능 버튼 -->
                     <div class="toolbar-group toolbar-media">
-                        <!-- 이미지 -->
                         <div class="toolbar-feature" data-feature="image">
                             <jsp:include page="/WEB-INF/include/image-modal.jsp" />
                         </div>
-
-                        <!-- 이모지 -->
                         <div class="toolbar-feature" data-feature="emoji">
                             <jsp:include page="/WEB-INF/include/emoji-picker.jsp" />
                         </div>
-
-                        <!-- 링크 -->
                         <div class="toolbar-feature" data-feature="link">
                             <jsp:include page="/WEB-INF/template/link-btn.jsp" />
                         </div>
                     </div>
                 </div>
                 
-                <!-- 댓글 작성 에디터 -->
                 <div id="commentContent"></div>
                 
                 <div class="comment-write-actions">
@@ -599,516 +573,559 @@ body {
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-   <script type="module">
-    import { initEditor } from "${pageContext.request.contextPath}/js/editor-init.js";
-    import { initViewer } from "${pageContext.request.contextPath}/js/editor-view.js";
-    import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
+    <script type="module">
+        import { initEditor } from "${pageContext.request.contextPath}/js/editor-init.js";
+        import { initViewer } from "${pageContext.request.contextPath}/js/editor-view.js";
+        import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
 
-    // ✅ 현재 로그인한 사용자 ID
-    window.CURRENT_USER_ID = '${sessionScope.user.userId}' || null;
-    
-    // postId
-    window.POST_ID = parseInt('${param.postId}') || parseInt('${postId}') || 1;
-    
-    // 댓글 작성 에디터
-    let commentEditor = null;
-    
-    // 댓글 뷰어들을 저장할 맵
-    const commentViewers = new Map();
+        // ===== 전역 변수 =====
+        window.CURRENT_USER_ID = '${sessionScope.user.userId}' || null;
+        window.POST_ID = parseInt('${param.postId}') || parseInt('${postId}') || 1;
 
-    // === 유틸리티 함수 ===
-    
-    window.escapeHtml = function(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
-    };
+        let commentEditor = null;
+        const commentViewers = new Map();
+        const editEditors = new Map();
+        const commentDataCache = new Map();
+        
+        // ✅ toolbar 템플릿을 HTML 문자열로 저장 (DOM 노드가 아닌 문자열)
+        let toolbarTemplateHTML = '';
 
-    window.htmlDecode = function(str) {
-        if (str === null || str === undefined) return '';
-        const div = document.createElement('div');
-        div.innerHTML = String(str);
-        return div.textContent || div.innerText || '';
-    };
+        // ===== 유틸리티 함수 =====
+        
+        function log(msg, data) {
+            console.log(`[Comment] ${msg}`, data || '');
+        }
 
-    function toTipTapDocFromPlain(text) {
-        const t = (text ?? '').toString();
-        return {
-            type: "doc",
-            content: [{ type: "paragraph", content: t ? [{ type: "text", text: t }] : [] }]
+        function logError(msg, error) {
+            console.error(`[Comment ERROR] ${msg}`, error);
+        }
+
+        window.formatDateTime = function(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const mi = String(date.getMinutes()).padStart(2, '0');
+            return `${y}.${m}.${d} ${h}:${mi}`;
         };
-    }
 
-    window.formatDateTime = function(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return year + '.' + month + '.' + day + ' ' + hours + ':' + minutes;
-    };
+        function parseTipTapContent(contentRaw) {
+            try {
+                if (!contentRaw) {
+                    return { type: "doc", content: [{ type: "paragraph" }] };
+                }
 
-    // ✅ 이중 JSON 구조에서 TipTap 문서 추출
-    function extractTipTapDoc(contentRaw) {
-        try {
-            // 1단계: 외부 JSON 파싱 {"text": "...", "edited": false, "deleted": false}
-            let outerJson = contentRaw;
-            if (typeof contentRaw === 'string') {
-                outerJson = JSON.parse(contentRaw);
+                let outerJson = contentRaw;
+                if (typeof contentRaw === 'string') {
+                    outerJson = JSON.parse(contentRaw);
+                }
+
+                let textField = outerJson.text || '';
+
+                if (typeof textField === 'string' && textField.trim()) {
+                    return JSON.parse(textField);
+                }
+
+                return { type: "doc", content: [{ type: "paragraph" }] };
+            } catch (error) {
+                logError('parseTipTapContent 실패', error);
+                return { 
+                    type: "doc", 
+                    content: [{ 
+                        type: "paragraph", 
+                        content: [{ type: "text", text: "내용을 불러올 수 없습니다." }] 
+                    }] 
+                };
             }
-            
-            // text 필드 추출
-            let textField = outerJson.text || '';
-            
-            // 2단계: TipTap JSON 파싱
-            if (typeof textField === 'string' && textField.trim()) {
-                return JSON.parse(textField);
-            }
-            
-            return toTipTapDocFromPlain('');
-            
-        } catch (e) {
-            console.error('TipTap 문서 추출 실패:', e);
-            return toTipTapDocFromPlain('내용을 불러올 수 없습니다.');
         }
-    }
 
-    // ✅ 이중 JSON 구조에서 순수 텍스트 추출 (댓글 제목 표시용)
-    function extractTextFromComment(contentRaw) {
-        try {
-            const tiptapDoc = extractTipTapDoc(contentRaw);
-            return extractTextFromTipTap(tiptapDoc);
-        } catch (e) {
-            console.error('텍스트 추출 실패:', e);
-            return '(내용을 불러올 수 없습니다)';
-        }
-    }
+        // ✅ 작성 에디터 초기화 함수
+        function initWriteEditor() {
+            const commentContent = document.getElementById('commentContent');
+            const toolbar = document.getElementById('toolbar');
+            
+            if (!commentContent || !toolbar) {
+                logError('작성 에디터 요소를 찾을 수 없음');
+                return false;
+            }
 
-    // TipTap 문서에서 순수 텍스트 추출
-    function extractTextFromTipTap(tiptapDoc) {
-        if (!tiptapDoc) return '';
-        
-        let text = '';
-        
-        function extractText(node) {
-            if (!node) return;
-            
-            if (node.type === 'text' && node.text) {
-                text += node.text;
-            }
-            
-            if (node.type === 'image') {
-                text += '[이미지] ';
-            }
-            
-            if (node.content && Array.isArray(node.content)) {
-                node.content.forEach(child => {
-                    extractText(child);
-                });
+            try {
+                // 기존 에디터 파괴
+                if (commentEditor) {
+                    try {
+                        commentEditor.destroy();
+                        log('기존 작성 에디터 파괴');
+                    } catch (error) {
+                        logError('작성 에디터 파괴 실패', error);
+                    }
+                }
+
+                // 새 에디터 생성
+                commentEditor = initEditor(commentContent, toolbar);
                 
-                if (node.type === 'paragraph') {
-                    text += ' ';
-                }
-            }
-        }
-        
-        extractText(tiptapDoc);
-        return text.trim();
-    }
-
-    // === 초기화 ===
-    
-    jQuery(document).ready(function() {
-        // 댓글 작성 에디터 초기화
-        const commentContent = document.getElementById('commentContent');
-        const toolbar = document.getElementById('toolbar');
-        
-        if (commentContent && toolbar) {
-            commentEditor = initEditor(commentContent, toolbar);
-            
-            // 이모지 기능 설정
-            window.openEmojiPicker = EmojiModule.openPicker;
-            EmojiModule.setupEmojiSuggestion(commentEditor);
-            
-            console.log('댓글 작성 에디터 초기화 완료');
-        }
-        
-        loadCommentList();
-    });
-
-    // === 댓글 목록 ===
-    
-    function loadCommentList() {
-        jQuery.ajax({
-            url: '${pageContext.request.contextPath}/CommentsList.async',
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                postId: window.POST_ID,
-                pageno: 1
-            },
-            beforeSend: function() {
-                jQuery('#commentList').html('<div class="loading">댓글을 불러오는 중...</div>');
-            },
-            success: function(response, status, xhr) {
-                if (response && response.ok) {
-                    displayCommentList(response.items || []);
-                    jQuery('#commentTotalCount').text(response.total ?? 0);
-                } else {
-                    jQuery('#commentList').html('<div class="empty-state">오류가 발생했습니다</div>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('댓글 목록 로드 실패:', error);
-                jQuery('#commentList').html('<div class="empty-state">댓글을 불러올 수 없습니다</div>');
-            }
-        });
-    }
-
-    function displayCommentList(comments) {
-        const commentList = jQuery('#commentList');
-        commentList.empty();
-        
-        // 기존 뷰어들 정리
-        commentViewers.clear();
-        
-        if (!comments || comments.length === 0) {
-            commentList.html('<div class="empty-state">첫 댓글을 작성해보세요! 📝</div>');
-            return;
-        }
-        
-        let visibleCount = 0;
-        for (let i = 0; i < comments.length; i++) {
-            if (!comments[i].deleted) {
-                const commentHtml = createCommentHtml(comments[i]);
-                commentList.append(commentHtml);
+                // 이모지 기능 설정
+                window.openEmojiPicker = EmojiModule.openPicker;
+                EmojiModule.setupEmojiSuggestion(commentEditor);
                 
-                // TipTap 뷰어 초기화
-                initCommentViewer(comments[i]);
-                visibleCount++;
+                log('작성 에디터 초기화 완료');
+                return true;
+            } catch (error) {
+                logError('작성 에디터 초기화 실패', error);
+                return false;
             }
         }
-        
-        if (visibleCount === 0) {
-            commentList.html('<div class="empty-state">댓글이 없습니다.</div>');
-        }
-    }
 
-    function createCommentHtml(comment) {
-        const contextPath = '${pageContext.request.contextPath}';
+        // ===== 초기화 =====
         
-        const profileImgSrc = contextPath + '/images/default-avatar.png';
-        const profileImg = '<img src="' + profileImgSrc + '" alt="프로필" class="profile-img">';
-        
-        const timeText = window.formatDateTime(comment.createdAt);
-        
-        // ✅ 현재 로그인한 사용자와 댓글 작성자 비교
-        const isAuthor = window.CURRENT_USER_ID && comment.userId && 
-                        (window.CURRENT_USER_ID === comment.userId);
-        
-        const authorBadge = isAuthor ? 
-            ' <span class="status-badge author">글쓴이</span>' : '';
-        
-        const editedBadge = comment.edited ? 
-            ' <span class="status-badge edited">수정됨</span>' : '';
-        
-        let actionButtons = '';
-        
-        // ✅ 작성자인 경우에만 수정/삭제 버튼 표시
-        if (isAuthor) {
-            // ✅ contentRaw를 그대로 전달 (이중 JSON 구조 유지)
-            const raw = comment.contentRaw || '';
-            const forDataAttr = window.escapeHtml(raw);
+        jQuery(document).ready(function() {
+            const toolbar = document.getElementById('toolbar');
             
-            actionButtons = 
-                '<div class="comment-more-menu">' +
-                '<button class="btn-more" onclick="toggleDropdown(event, ' + comment.commentId + ')">⋮</button>' +
-                '<div class="dropdown-menu" id="dropdown' + comment.commentId + '">' +
-                '<button class="dropdown-item" data-comment-id="' + comment.commentId + '" data-content="' + forDataAttr + '" onclick="editCommentFromBtn(this)">수정</button>' +
-                '<button class="dropdown-item danger" onclick="deleteComment(' + comment.commentId + ')">삭제</button>' +
-                '</div></div>';
-        }
-        
-        return '<div class="comment-item" data-comment-id="' + comment.commentId + '">' +
-            '<div class="comment-item-header">' +
-            '<div class="comment-author">' +
-            profileImg +
-            '<div class="comment-main-content">' +
-            '<div class="author-info">' +
-            '<span class="author-name">사용자 ' + window.escapeHtml(comment.userId) + '</span>' +
-            authorBadge +
-            editedBadge +
-            '</div>' +
-            '<div class="comment-content" id="commentContent' + comment.commentId + '"></div>' +
-            '<span class="comment-time">' + timeText + '</span>' +
-            '</div></div>' +
-            actionButtons +
-            '</div></div>';
-    }
-
-    // ✅ 댓글 뷰어 초기화
-    function initCommentViewer(comment) {
-        const viewerElement = document.getElementById('commentContent' + comment.commentId);
-        if (!viewerElement) {
-            console.error('뷰어 엘리먼트를 찾을 수 없습니다:', comment.commentId);
-            return;
-        }
-
-        // ✅ 이중 JSON 구조에서 TipTap 문서 추출
-        const doc = extractTipTapDoc(comment.contentRaw);
-        
-        const viewer = initViewer(viewerElement, doc);
-        commentViewers.set(comment.commentId, viewer);
-    }
-
-    // === 댓글 작성 ===
-    
-    window.writeComment = function() {
-        if (!commentEditor) {
-            alert('에디터가 초기화되지 않았습니다.');
-            return;
-        }
-        
-        const content = commentEditor.getJSON();
-        
-        // 빈 내용 체크
-        if (!content || !content.content || content.content.length === 0) {
-            alert('댓글 내용을 입력해주세요.');
-            return;
-        }
-        
-        const firstBlock = content.content[0];
-        if (content.content.length === 1 && 
-            firstBlock.type === 'paragraph' && 
-            (!firstBlock.content || firstBlock.content.length === 0)) {
-            alert('댓글 내용을 입력해주세요.');
-            return;
-        }
-        
-        const requestData = {
-            postId: window.POST_ID,
-            text: JSON.stringify(content),  // ✅ TipTap JSON → Service → DAO가 한 번 더 감쌈
-            imageUrl: null
-        };
-        
-        jQuery.ajax({
-            url: '${pageContext.request.contextPath}/CommentsCreate.async',
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            dataType: 'json',
-            data: JSON.stringify(requestData),
-            beforeSend: function() {
-                jQuery('.btn-submit').prop('disabled', true).text('작성 중...');
-            },
-            success: function(response) {
-                if (response && response.ok) {
-                    // ✅ 에디터 내용만 초기화
-                    commentEditor.commands.clearContent();
-                    loadCommentList();
-                    alert('댓글이 작성되었습니다.');
-                } else {
-                    alert((response && response.error) || '댓글 작성에 실패했습니다.');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('댓글 작성 실패:', error);
-                alert('댓글 작성 중 오류가 발생했습니다.');
-            },
-            complete: function() {
-                jQuery('.btn-submit').prop('disabled', false).text('댓글 작성');
+            // ✅ toolbar HTML을 문자열로 저장
+            if (toolbar) {
+                toolbarTemplateHTML = toolbar.outerHTML;
             }
+            
+            // 작성 에디터 초기화
+            initWriteEditor();
+            
+            loadCommentList();
         });
-    }
 
-    // === 댓글 수정 ===
-    
-    window.editCommentFromBtn = function(btnEl) {
-        const id = parseInt(btnEl.dataset.commentId, 10);
-        const raw = htmlDecode(btnEl.dataset.content || '');
-        editComment(id, raw);
-    };
-
-    window.editComment = function(commentId, originalContent) {
-        console.log('수정 모드 진입:', commentId);
+        // ===== 댓글 목록 =====
         
-        const contentDiv = jQuery('.comment-item[data-comment-id="' + commentId + '"] .comment-content');
-
-        // ✅ 이중 JSON 구조에서 TipTap 문서 추출
-        let parsed;
-        try {
-            parsed = extractTipTapDoc(originalContent);
-        } catch (e) {
-            console.error('수정 모드: 파싱 실패:', e);
-            alert('댓글을 수정할 수 없습니다.');
-            return;
+        function loadCommentList() {
+            jQuery.ajax({
+                url: '${pageContext.request.contextPath}/CommentsList.async',
+                type: 'GET',
+                dataType: 'json',
+                data: {
+                    postId: window.POST_ID,
+                    pageno: 1
+                },
+                beforeSend: function() {
+                    jQuery('#commentList').html('<div class="loading">댓글을 불러오는 중...</div>');
+                },
+                success: function(response) {
+                    if (response && response.ok) {
+                        displayCommentList(response.items || []);
+                        jQuery('#commentTotalCount').text(response.total ?? 0);
+                        
+                        // ✅ 댓글 목록 로드 후 작성 에디터 상태 확인
+                        setTimeout(() => {
+                            if (!commentEditor || commentEditor.isDestroyed) {
+                                log('작성 에디터가 손상됨. 재초기화 시도');
+                                initWriteEditor();
+                            }
+                        }, 100);
+                    } else {
+                        jQuery('#commentList').html('<div class="empty-state">오류가 발생했습니다</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    logError('댓글 목록 로드 실패', error);
+                    jQuery('#commentList').html('<div class="empty-state">댓글을 불러올 수 없습니다</div>');
+                }
+            });
         }
-        
-        // 수정 폼 HTML 생성
-        const editFormId = 'editForm' + commentId;
-        const editToolbarId = 'editToolbar' + commentId;
-        const editAreaId = 'editArea' + commentId;
-        
-        const editFormHtml = 
-            '<div class="comment-edit-form" id="' + editFormId + '">' +
-            '<div class="comment-edit-toolbar" id="' + editToolbarId + '">' +
-            '<button type="button" data-cmd="bold" title="굵게"><strong>B</strong></button>' +
-            '<button type="button" data-cmd="italic" title="기울임"><i>I</i></button>' +
-            '<button type="button" data-cmd="strike" title="취소선"><s>S</s></button>' +
-            '</div>' +
-            '<div class="comment-edit-area" id="' + editAreaId + '"></div>' +
-            '<div class="edit-actions">' +
-            '<button class="btn-cancel-edit" onclick="cancelEdit(' + commentId + ')">취소</button>' +
-            '<button class="btn-save-edit" onclick="updateComment(' + commentId + ')">수정 완료</button>' +
-            '</div></div>';
-        
-        contentDiv.html(editFormHtml);
-        
-        // ✅ 에디터 초기화
-        setTimeout(() => {
-            const editArea = document.getElementById(editAreaId);
-            const editToolbar = document.getElementById(editToolbarId);
+
+        function displayCommentList(comments) {
+            const commentList = jQuery('#commentList');
+            commentList.empty();
             
-            if (!editArea || !editToolbar) {
-                console.error('수정 에디터 엘리먼트를 찾을 수 없습니다');
+            // 기존 뷰어 정리
+            commentViewers.forEach(viewer => {
+                try {
+                    viewer.destroy();
+                } catch (error) {
+                    logError('뷰어 파괴 실패', error);
+                }
+            });
+            commentViewers.clear();
+            
+            // 기존 수정 에디터 정리
+            editEditors.forEach((editor, id) => {
+                try {
+                    editor.destroy();
+                } catch (error) {
+                    logError('수정 에디터 파괴 실패', error);
+                }
+            });
+            editEditors.clear();
+            
+            // 데이터 캐시 갱신
+            commentDataCache.clear();
+            comments.forEach(comment => {
+                commentDataCache.set(comment.commentId, comment);
+            });
+            
+            if (!comments || comments.length === 0) {
+                commentList.html('<div class="empty-state">첫 댓글을 작성해보세요! 📝</div>');
                 return;
             }
             
-            try {
-                const editEditor = initEditor(editArea, editToolbar);
-                editEditor.commands.setContent(parsed);
-                window['editEditor' + commentId] = editEditor;
-                editEditor.commands.focus();
-                
-                console.log('수정 에디터 초기화 완료:', commentId);
-            } catch (error) {
-                console.error('수정 에디터 초기화 실패:', error);
-                alert('에디터를 초기화할 수 없습니다.');
+            let visibleCount = 0;
+            for (let i = 0; i < comments.length; i++) {
+                if (!comments[i].deleted) {
+                    const commentHtml = createCommentHtml(comments[i]);
+                    commentList.append(commentHtml);
+                    initCommentViewer(comments[i]);
+                    visibleCount++;
+                }
             }
-        }, 150);
-        
-        jQuery('.dropdown-menu').removeClass('show');
-    }
+            
+            if (visibleCount === 0) {
+                commentList.html('<div class="empty-state">댓글이 없습니다.</div>');
+            }
+        }
 
-    window.cancelEdit = function(commentId) {
-        if (window['editEditor' + commentId]) {
-            delete window['editEditor' + commentId];
+        function createCommentHtml(comment) {
+            const contextPath = '${pageContext.request.contextPath}';
+            const profileImgSrc = contextPath + '/images/default-avatar.png';
+            const timeText = window.formatDateTime(comment.createdAt);
+            
+            const isAuthor = window.CURRENT_USER_ID && comment.userId && 
+                            (window.CURRENT_USER_ID === comment.userId);
+            
+            const authorBadge = isAuthor ? 
+                ' <span class="status-badge author">글쓴이</span>' : '';
+            
+            const editedBadge = comment.edited ? 
+                ' <span class="status-badge edited">수정됨</span>' : '';
+            
+            let actionButtons = '';
+            
+            if (isAuthor) {
+                actionButtons = 
+                    '<div class="comment-more-menu">' +
+                    '<button class="btn-more" onclick="toggleDropdown(event, ' + comment.commentId + ')">⋮</button>' +
+                    '<div class="dropdown-menu" id="dropdown' + comment.commentId + '">' +
+                    '<button class="dropdown-item" onclick="startEditComment(' + comment.commentId + ')">수정</button>' +
+                    '<button class="dropdown-item danger" onclick="deleteComment(' + comment.commentId + ')">삭제</button>' +
+                    '</div></div>';
+            }
+            
+            return '<div class="comment-item" data-comment-id="' + comment.commentId + '">' +
+                '<div class="comment-item-header">' +
+                '<div class="comment-author">' +
+                '<img src="' + profileImgSrc + '" alt="프로필" class="profile-img">' +
+                '<div class="comment-main-content">' +
+                '<div class="author-info">' +
+                '<span class="author-name">사용자 ' + comment.userId + '</span>' +
+                authorBadge +
+                editedBadge +
+                '</div>' +
+                '<div class="comment-content" id="commentContent' + comment.commentId + '"></div>' +
+                '<span class="comment-time">' + timeText + '</span>' +
+                '</div></div>' +
+                actionButtons +
+                '</div></div>';
         }
-        loadCommentList();
-    }
 
-    window.updateComment = function(commentId) {
-        console.log('댓글 수정 시작:', commentId);
-        
-        const editEditor = window['editEditor' + commentId];
-        
-        if (!editEditor) {
-            alert('에디터를 찾을 수 없습니다.');
-            return;
+        function initCommentViewer(comment) {
+            const viewerElement = document.getElementById('commentContent' + comment.commentId);
+            if (!viewerElement) {
+                logError('뷰어 엘리먼트를 찾을 수 없음', comment.commentId);
+                return;
+            }
+
+            const doc = parseTipTapContent(comment.contentRaw);
+            
+            try {
+                const viewer = initViewer(viewerElement, doc);
+                commentViewers.set(comment.commentId, viewer);
+            } catch (error) {
+                logError('뷰어 초기화 실패', error);
+            }
         }
+
+        // ===== 댓글 작성 =====
         
-        const content = editEditor.getJSON();
-        
-        // 빈 내용 체크
-        if (!content || !content.content || content.content.length === 0) {
-            alert('댓글 내용을 입력해주세요.');
-            return;
-        }
-        
-        const firstBlock = content.content[0];
-        if (content.content.length === 1 && 
-            firstBlock.type === 'paragraph' && 
-            (!firstBlock.content || firstBlock.content.length === 0)) {
-            alert('댓글 내용을 입력해주세요.');
-            return;
-        }
-        
-        const requestData = {
-            commentId: commentId,
-            text: JSON.stringify(content),  // ✅ TipTap JSON → Service → DAO가 한 번 더 감쌈
-            imageUrl: null
+        window.writeComment = function() {
+            if (!commentEditor) {
+                alert('에디터가 초기화되지 않았습니다.');
+                return;
+            }
+            
+            const content = commentEditor.getJSON();
+            
+            if (!content || !content.content || content.content.length === 0) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+            
+            const firstBlock = content.content[0];
+            if (content.content.length === 1 && 
+                firstBlock.type === 'paragraph' && 
+                (!firstBlock.content || firstBlock.content.length === 0)) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+            
+            const requestData = {
+                postId: window.POST_ID,
+                text: JSON.stringify(content),
+                imageUrl: null
+            };
+            
+            jQuery.ajax({
+                url: '${pageContext.request.contextPath}/CommentsCreate.async',
+                type: 'POST',
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                data: JSON.stringify(requestData),
+                beforeSend: function() {
+                    jQuery('.btn-submit').prop('disabled', true).text('작성 중...');
+                },
+                success: function(response) {
+                    if (response && response.ok) {
+                        // ✅ 에디터 파괴 후 재생성
+                        try {
+                            commentEditor.destroy();
+                        } catch (error) {
+                            logError('에디터 파괴 실패', error);
+                        }
+                        
+                        loadCommentList();
+                        
+                        // ✅ 댓글 목록 로드 후 에디터 재초기화
+                        setTimeout(() => {
+                            initWriteEditor();
+                            alert('댓글이 작성되었습니다.');
+                        }, 200);
+                    } else {
+                        alert((response && response.error) || '댓글 작성에 실패했습니다.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    logError('댓글 작성 실패', error);
+                    alert('댓글 작성 중 오류가 발생했습니다.');
+                },
+                complete: function() {
+                    jQuery('.btn-submit').prop('disabled', false).text('댓글 작성');
+                }
+            });
         };
+
+        // ===== 댓글 수정 =====
         
-        jQuery.ajax({
-            url: '${pageContext.request.contextPath}/CommentsUpdate.async',
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            dataType: 'json',
-            data: JSON.stringify(requestData),
-            beforeSend: function() {
-                jQuery('.btn-save-edit').prop('disabled', true).text('처리 중...');
-            },
-            success: function(response) {
-                if (response && response.ok) {
-                    delete window['editEditor' + commentId];
-                    loadCommentList();
-                    alert('댓글이 수정되었습니다.');
-                } else {
-                    alert((response && response.error) || '댓글 수정에 실패했습니다.');
+        window.startEditComment = function(commentId) {
+            log('수정 모드 진입', commentId);
+            
+            const comment = commentDataCache.get(commentId);
+            if (!comment) {
+                logError('캐시에서 댓글 데이터를 찾을 수 없음', commentId);
+                alert('댓글 데이터를 불러올 수 없습니다.');
+                return;
+            }
+            
+            const contentDiv = jQuery('.comment-item[data-comment-id="' + commentId + '"] .comment-content');
+            if (contentDiv.length === 0) {
+                logError('댓글 컨테이너를 찾을 수 없음', commentId);
+                return;
+            }
+            
+            const parsed = parseTipTapContent(comment.contentRaw);
+            log('파싱된 내용', parsed);
+            
+            // 기존 뷰어 제거
+            const viewer = commentViewers.get(commentId);
+            if (viewer) {
+                try {
+                    viewer.destroy();
+                } catch (error) {
+                    logError('뷰어 파괴 실패', error);
+                }
+                commentViewers.delete(commentId);
+            }
+            
+            // ✅ HTML 문자열로 수정 폼 생성
+            const editFormHTML = 
+                '<div class="comment-edit-form">' +
+                toolbarTemplateHTML.replace('id="toolbar"', 'id="editToolbar' + commentId + '"')
+                                   .replace('class="toolbar"', 'class="comment-edit-toolbar"') +
+                '<div class="comment-edit-area" id="editArea' + commentId + '"></div>' +
+                '<div class="edit-actions">' +
+                '<button class="btn-cancel-edit" onclick="cancelEdit(' + commentId + ')">취소</button>' +
+                '<button class="btn-save-edit" onclick="saveEdit(' + commentId + ')">수정 완료</button>' +
+                '</div></div>';
+            
+            contentDiv.html(editFormHTML);
+            jQuery('.dropdown-menu').removeClass('show');
+            
+            // 에디터 초기화
+            setTimeout(() => {
+                const editArea = document.getElementById('editArea' + commentId);
+                const editToolbar = document.getElementById('editToolbar' + commentId);
+                
+                if (!editArea || !editToolbar) {
+                    logError('수정 에디터 엘리먼트를 찾을 수 없음', commentId);
+                    return;
+                }
+                
+                try {
+                    const editEditor = initEditor(editArea, editToolbar);
+                    editEditor.commands.setContent(parsed);
+                    editEditor.commands.focus();
+                    
+                    // 이모지 기능 설정
+                    try {
+                        EmojiModule.setupEmojiSuggestion(editEditor);
+                    } catch (error) {
+                        logError('이모지 설정 실패', error);
+                    }
+                    
+                    editEditors.set(commentId, editEditor);
+                    
+                    log('수정 에디터 초기화 완료', commentId);
+                } catch (error) {
+                    logError('수정 에디터 초기화 실패', error);
+                    alert('에디터를 초기화할 수 없습니다.');
+                }
+            }, 150);
+        };
+
+        window.cancelEdit = function(commentId) {
+            log('수정 취소', commentId);
+            
+            const editor = editEditors.get(commentId);
+            if (editor) {
+                try {
+                    editor.destroy();
+                } catch (error) {
+                    logError('에디터 파괴 실패', error);
+                }
+                editEditors.delete(commentId);
+            }
+            
+            loadCommentList();
+        };
+
+        window.saveEdit = function(commentId) {
+            log('수정 저장 시작', commentId);
+            
+            const editor = editEditors.get(commentId);
+            
+            if (!editor) {
+                logError('수정 에디터를 찾을 수 없음', commentId);
+                alert('에디터가 준비되지 않았습니다.');
+                return;
+            }
+            
+            const content = editor.getJSON();
+            log('저장할 내용', content);
+            
+            if (!content || !content.content || content.content.length === 0) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+            
+            const firstBlock = content.content[0];
+            if (content.content.length === 1 && 
+                firstBlock.type === 'paragraph' && 
+                (!firstBlock.content || firstBlock.content.length === 0)) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+            
+            const requestData = {
+                commentId: commentId,
+                text: JSON.stringify(content),
+                imageUrl: null
+            };
+            
+            jQuery.ajax({
+                url: '${pageContext.request.contextPath}/CommentsUpdate.async',
+                type: 'POST',
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                data: JSON.stringify(requestData),
+                beforeSend: function() {
+                    jQuery('.btn-save-edit').prop('disabled', true).text('처리 중...');
+                },
+                success: function(response) {
+                    if (response && response.ok) {
+                        try {
+                            editor.destroy();
+                        } catch (error) {
+                            logError('에디터 파괴 실패', error);
+                        }
+                        editEditors.delete(commentId);
+                        
+                        loadCommentList();
+                        
+                        // ✅ 작성 에디터 재초기화 확인
+                        setTimeout(() => {
+                            if (!commentEditor || commentEditor.isDestroyed) {
+                                initWriteEditor();
+                            }
+                            alert('댓글이 수정되었습니다.');
+                        }, 200);
+                    } else {
+                        alert((response && response.error) || '댓글 수정에 실패했습니다.');
+                        jQuery('.btn-save-edit').prop('disabled', false).text('수정 완료');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    logError('댓글 수정 실패', error);
+                    alert('댓글 수정 중 오류가 발생했습니다.');
                     jQuery('.btn-save-edit').prop('disabled', false).text('수정 완료');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('댓글 수정 실패:', error);
-                alert('댓글 수정 중 오류가 발생했습니다.');
-                jQuery('.btn-save-edit').prop('disabled', false).text('수정 완료');
-            }
-        });
-    }
-
-    // === 댓글 삭제 ===
-    
-    window.deleteComment = function(commentId) {
-        jQuery('.dropdown-menu').removeClass('show');
-        
-        if (!confirm('댓글을 삭제하시겠습니까?')) {
-            return;
-        }
-        
-        const requestData = {
-            commentId: commentId
+            });
         };
+
+        // ===== 댓글 삭제 =====
         
-        jQuery.ajax({
-            url: '${pageContext.request.contextPath}/CommentsDelete.async',
-            type: 'POST',
-            contentType: 'application/json; charset=UTF-8',
-            dataType: 'json',
-            data: JSON.stringify(requestData),
-            success: function(response) {
-                if (response && response.ok) {
-                    loadCommentList();
-                    alert('댓글이 삭제되었습니다.');
-                } else {
-                    alert((response && response.error) || '댓글 삭제에 실패했습니다.');
+        window.deleteComment = function(commentId) {
+            jQuery('.dropdown-menu').removeClass('show');
+            
+            if (!confirm('댓글을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            const requestData = {
+                commentId: commentId
+            };
+            
+            jQuery.ajax({
+                url: '${pageContext.request.contextPath}/CommentsDelete.async',
+                type: 'POST',
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                data: JSON.stringify(requestData),
+                success: function(response) {
+                    if (response && response.ok) {
+                        loadCommentList();
+                        alert('댓글이 삭제되었습니다.');
+                    } else {
+                        alert((response && response.error) || '댓글 삭제에 실패했습니다.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    logError('댓글 삭제 실패', error);
+                    alert('댓글 삭제 중 오류가 발생했습니다.');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('댓글 삭제 실패:', error);
-                alert('댓글 삭제 중 오류가 발생했습니다.');
+            });
+        };
+
+        // ===== 드롭다운 =====
+        
+        window.toggleDropdown = function(event, commentId) {
+            event.stopPropagation();
+            const dropdown = jQuery('#dropdown' + commentId);
+            const isVisible = dropdown.hasClass('show');
+            jQuery('.dropdown-menu').removeClass('show');
+            if (!isVisible) {
+                dropdown.addClass('show');
+            }
+        };
+
+        jQuery(document).on('click', function(e) {
+            if (!jQuery(e.target).closest('.comment-more-menu').length) {
+                jQuery('.dropdown-menu').removeClass('show');
             }
         });
-    }
-
-    // === 드롭다운 ===
-    
-    window.toggleDropdown = function(event, commentId) {
-        event.stopPropagation();
-        const dropdown = jQuery('#dropdown' + commentId);
-        const isVisible = dropdown.hasClass('show');
-        jQuery('.dropdown-menu').removeClass('show');
-        if (!isVisible) {
-            dropdown.addClass('show');
-        }
-    }
-
-    jQuery(document).on('click', function(e) {
-        if (!jQuery(e.target).closest('.comment-more-menu').length) {
-            jQuery('.dropdown-menu').removeClass('show');
-        }
-    });
-</script>
+    </script>
 </body>
 </html>
