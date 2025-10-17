@@ -27,7 +27,7 @@
         <div class="chat-header-title">
             <h3 id="chatTitle">채팅</h3>
             <p class="participant-info">
-                참가자: <span id="participantCount">0/${param.maxPeople != null ? param.maxPeople : 5}</span>
+                참가자: <span id="participantCount">0</span>/<span id="maxPeople">${param.maxPeople != null ? param.maxPeople : 999}</span>
             </p>
         </div>
 
