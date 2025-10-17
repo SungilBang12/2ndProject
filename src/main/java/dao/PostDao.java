@@ -985,4 +985,19 @@ public class PostDao {
 
 		return 0;
 	}
+	
+	// PostDao.java (import는 기존 그대로 사용)
+	public int updatePostHit(int postId) {
+	    // Oracle: NULL 안전하게 처리 (NVL)
+	    final String sql = "UPDATE POST SET HIT = NVL(HIT, 0) + 1 WHERE POST_ID = ?";
+
+	    try (Connection conn = ConnectionPoolHelper.getConnection();
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        pstmt.setInt(1, postId);
+	        return pstmt.executeUpdate(); // 1이면 성공
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        return 0;
+	    }
+	}
 }

@@ -14,6 +14,7 @@ import service.post.CreatePostService;
 import service.post.GetPostEditFormService;
 import service.post.GetPostViewService;
 import service.post.UpdatePostService;
+import service.post.PostHitService;
 
 @WebServlet("*.post")
 public class PostViewController extends HttpServlet {
@@ -42,6 +43,24 @@ public class PostViewController extends HttpServlet {
             
         } else if (urlCommand.equals("/post-detail.post")) {
             System.out.println(">>> 게시글 상세 조회");
+            String pid = request.getParameter("postId");
+            if (pid == null) pid = request.getParameter("id");
+            if (pid == null) pid = request.getParameter("post_id");
+
+            // 2) 정수 변환 가능할 때만 증가
+            if (pid != null) {
+                try {
+                    int postId = Integer.parseInt(pid);
+                    boolean ok = new PostHitService().incrementPostHit(postId);
+                    if (!ok) {
+                        System.out.println("[HIT] 증가 실패 (postId=" + postId + ")");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("[HIT] postId 파싱 실패: " + pid);
+                }
+            } else {
+                System.out.println("[HIT] postId 파라미터 없음");
+            }
             action = new GetPostViewService();
             forward = action.excute(request, response);
             
