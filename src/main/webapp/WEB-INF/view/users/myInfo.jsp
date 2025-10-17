@@ -81,15 +81,31 @@
           </div>
         </div>
 
-        <div class="stat-item">
-		  <div class="stat-number">
-		    <c:if test="${not empty user.createdAt}">
-		      ${user.createdAt.year}.${String.format('%02d', user.createdAt.monthValue)}.${String.format('%02d', user.createdAt.dayOfMonth)}
-		    </c:if>
-		    <c:if test="${empty user.createdAt}">-</c:if>
-		  </div>
-		  <div class="stat-label">가입일</div>
-		</div>
+        <div class="profile-stats">
+          <div class="stat-item">
+            <div class="stat-number" id="postCount">0</div>
+            <div class="stat-label">작성한 글</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="commentCount">0</div>
+            <div class="stat-label">작성한 댓글</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">
+              <c:if test="${not empty user.createdAt}">
+                ${user.createdAt.year}.${String.format('%02d', user.createdAt.monthValue)}.${String.format('%02d', user.createdAt.dayOfMonth)}
+              </c:if>
+              <c:if test="${empty user.createdAt}">-</c:if>
+            </div>
+            <div class="stat-label">가입일</div>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <a href="${ctx}/users/myInfoEdit" class="btn btn-primary">내 정보 수정</a>
+          <a href="${ctx}/users/myActivity" class="btn btn-secondary">내 활동 내역</a>
+        </div>
+      </div>
 
       <!-- 최근 작성한 글 -->
       <div class="content-section">

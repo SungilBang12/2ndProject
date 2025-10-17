@@ -5,7 +5,12 @@ import com.google.gson.JsonObject;
 import dto.Comments;
 import utils.ConnectionPoolHelper;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -213,5 +218,19 @@ public class CommentsDao {
             o.addProperty("deleted", false);
             return o;
         }
+    }
+
+    // 특정 사용자가 작성한 댓글 수 조회
+    public int countByUserId(Connection conn, String userId) throws SQLException {
+        final String sql = "SELECT COUNT(*) FROM COMMENTS WHERE USER_ID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
     }
 }
