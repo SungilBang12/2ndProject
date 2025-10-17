@@ -51,7 +51,6 @@
 </head>
 
 <body>
-  <!-- 전역 레이아웃 유지 -->
   <jsp:include page="/WEB-INF/include/header.jsp" />
 
   <main class="main grid-14x5">
@@ -64,7 +63,7 @@
 
       <section class="hero-slider" id="top10-root">
         <div class="hs-viewport">
-          <ul class="hs-track" id="hsTrack"><!-- JS 렌더 --></ul>
+          <ul class="hs-track" id="hsTrack"></ul>
         </div>
         <button class="hs-nav hs-prev" id="hsPrev" aria-label="이전">‹</button>
         <button class="hs-nav hs-next" id="hsNext" aria-label="다음">›</button>
@@ -95,72 +94,147 @@
     let index  = 0;
     let timer  = null;
 
-    // ===== 이미지 추출(노을 앨범과 동일 로직) — 없으면 null을 반환 =====
+    // 안전 JSON 파서 (문자열일 때만 시도)
+    function safeParseJSON(maybe) {
+      if (typeof maybe !== 'string') return maybe;
+      let s = maybe.trim();
+      if (!/^[{\[]/.test(s)) return null; // JSON 모양 아니면 포기
+      s = s.replace(/&quot;/g, '"')
+           .replace(/&#34;/g, '"')
+           .replace(/&apos;|&#39;/g, "'")
+           .replace(/&amp;/g, '&');
+      s = s.replace(/,\s*([}\]])/g, '$1'); // trailing comma 제거
+      try { return JSON.parse(s); } catch { return null; }
+    }
+
+    // ===== 썸네일 추출 (JSON 문자열 처리 우선순위 조정) =====
     function pickThumb(p){
-      if (p && (p.thumbnail || p.thumb || p.imageSrc || p.imageUrl)) return p.thumbnail || p.thumb || p.imageSrc || p.imageUrl;
+      // 1. Post 객체 자체의 썸네일 속성 우선 체크
+      if (p && (p.thumbnail || p.thumb || p.imageSrc || p.imageUrl))
+        return p.thumbnail || p.thumb || p.imageSrc || p.imageUrl;
+
+      // 2. image 리스트 속성 체크
       const list = (p && (p.images || p.imageList || p.image_list)) || [];
       if (Array.isArray(list) && list.length){
         const i0 = list[0] || {};
         return i0.imageSrc || i0.src || i0.url || null;
       }
-      const c = p && p.content;
-      if (!c) return null;
-      if (typeof c === 'string' && /<img/i.test(c)){
-        const m = c.match(/<img[^>]+src=["']([^"']+)["']/i);
-        return (m && m[1]) ? m[1] : null;
+
+      const content = p && p.content;
+      if (!content) return null;
+
+      let json = null;
+      let htmlContent = null;
+
+      if (typeof content === 'string') {
+        // 3. 🚨 JSON 문자열인지 확인하고 파싱 시도 (가장 높은 확률의 오류 원인 해결)
+        if (/^[{\[]/.test(content.trim())) {
+           json = safeParseJSON(content);
+        } else {
+           // JSON이 아니면 일반 HTML/텍스트로 간주
+           htmlContent = content;
+        }
+      } else if (typeof content === 'object') {
+        // 4. content가 이미 파싱된 객체인 경우
+        json = content;
       }
-      try{
-        const json = (typeof c === 'object') ? c : JSON.parse(c);
-        let found=null;
+
+      // 5. JSON/객체에서 이미지 찾기 (ProseMirror 구조 처리)
+      if (json) {
+        let found = null;
         (function walk(node){
           if (found) return;
           if (Array.isArray(node)) { node.forEach(walk); return; }
           if (node && typeof node === 'object'){
-            if (node.type === 'image' && node.attrs && node.attrs.src) { found=node.attrs.src; return; }
+            // "type":"image", "attrs":{"src":"..."} 패턴 찾기
+            if (node.type === 'image' && node.attrs && node.attrs.src) { found = node.attrs.src; return; }
             if (node.content) walk(node.content);
           }
         })(json);
-        return found;
-      }catch(_){ return null; }
+        if (found) return found;
+        
+        // JSON에서 이미지를 못 찾았으면, HTML 추출 단계로 넘어가지 않음
+        htmlContent = null; 
+      }
+      
+      // 6. HTML 문자열에서 이미지 찾기 (content가 JSON이 아니었을 경우에만 시도)
+      if (typeof htmlContent === 'string' && /<img/i.test(htmlContent)){
+        // <img ... src="URL" ...> 패턴에서 URL 추출 (이전 개선된 정규식 유지)
+        const m = htmlContent.match(/<img[^>]*\s+src\s*=\s*['"]([^'"]+)['"][^>]*>/i);
+        return (m && m[1]) ? m[1] : null;
+      }
+
+      return null;
     }
 
-    // ===== 본문 텍스트 추출(HTML/TipTap 모두 대응) =====
+    // ===== 본문 텍스트 (기존 로직 유지) =====
     function getTextSnippet(p, maxLen){
-      const c = p && p.content;
-      if (!c) return '';
-      let text = '';
-      if (typeof c === 'string'){
-        // HTML 태그 제거
-        text = c.replace(/<style[\s\S]*?<\/style>/gi,'')
-                .replace(/<script[\s\S]*?<\/script>/gi,'')
-                .replace(/<[^>]+>/g,' ')
-                .replace(/\s+/g,' ')
-                .trim();
-      }else{
+      const content = p && p.content;
+      if (!content) return '';
+      if (typeof content === 'string'){
+        // JSON처럼 보이면 파싱해서 텍스트만 추출
+        if (/^[{\[]/.test(content)) {
+          const json = safeParseJSON(content);
+          if (json) {
+            let buf = [];
+            (function walk(node){
+              if (Array.isArray(node)){ node.forEach(walk); return; }
+              if (!node || typeof node !== 'object') return;
+              if (node.type === 'text' && node.text) buf.push(node.text);
+              if (node.content) walk(node.content);
+            })(json);
+            const text = buf.join(' ').replace(/\s+/g,' ').trim();
+            return text.length > (maxLen||180) ? text.slice(0,maxLen||180)+'…' : text;
+          }
+        }
+        // 일반 문자열/HTML
+        const text = content.replace(/<style[\s\S]*?<\/style>/gi,'')
+                            .replace(/<script[\s\S]*?<\/script>/gi,'')
+                            .replace(/<[^>]+>/g,' ')
+                            .replace(/\s+/g,' ')
+                            .trim();
+        return text.length > (maxLen||180) ? text.slice(0,maxLen||180)+'…' : text;
+      } else {
         try{
-          const json = c;
           let buf = [];
           (function walk(node){
             if (Array.isArray(node)){ node.forEach(walk); return; }
             if (!node || typeof node !== 'object') return;
             if (node.type === 'text' && node.text) buf.push(node.text);
             if (node.content) walk(node.content);
-          })(json);
-          text = buf.join(' ').replace(/\s+/g,' ').trim();
-        }catch(_){ text = ''; }
+          })(content);
+          const text = buf.join(' ').replace(/\s+/g,' ').trim();
+          return text.length > (maxLen||180) ? text.slice(0,maxLen||180)+'…' : text;
+        }catch{ return ''; }
       }
-      if (!text) return '';
-      if (text.length > (maxLen||180)) return text.substring(0, maxLen||180) + '…';
-      return text;
     }
 
-    // ===== 지도 포함 판단(있으면 배지 표시) =====
+    // ===== 지도 포함 여부 (기존 로직 유지) =====
     function hasMap(p){
       if (!p) return false;
       if ((p.maps && p.maps.length) || (p.mapList && p.mapList.length)) return true;
-      const c = p.content;
-      if (!c) return false;
-      if (typeof c === 'string') return /kakao|map|lat|lng|latitude|longitude/i.test(c);
+
+      const content = p.content;
+      if (!content) return false;
+
+      if (typeof content === 'string') {
+        // 문자열이면 간단 키워드 체크 + 안전 파싱 후 탐색 시도
+        if (/kakao|map|lat|lng|latitude|longitude/i.test(content)) return true;
+        const json = safeParseJSON(content);
+        if (!json) return false;
+        let found=false;
+        (function walk(node){
+          if (found) return;
+          if (Array.isArray(node)){ node.forEach(walk); return; }
+          if (!node || typeof node !== 'object') return;
+          if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
+          if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
+          if (node.content) walk(node.content);
+        })(json);
+        return found;
+      }
+
+      // 객체
       try{
         let found=false;
         (function walk(node){
@@ -170,7 +244,7 @@
           if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
           if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
           if (node.content) walk(node.content);
-        })(c);
+        })(content);
         return found;
       }catch(_){ return false; }
     }
@@ -199,8 +273,8 @@
       fb.style.display = "none";
 
       track.innerHTML = slides.map(p => {
-        const img   = pickThumb(p);                 // 존재하면 이미지
-        const text  = getTextSnippet(p, 220);       // 이미지가 없을 때 흐릿하게
+        const img   = pickThumb(p);
+        const text  = getTextSnippet(p, 220);
         const cat   = esc(p.category || "카테고리");
         const ttl   = esc(p.title || FALLBACK_TITLE);
         const hit   = (p.hit != null ? p.hit : 0);
@@ -223,10 +297,9 @@
               </a>
             </li>`;
         } else if (text){
-          /* 이미지가 없으면: 본문을 흐릿 배경으로 */
           return `
             <li class="hs-slide">
-              <a class="hs-link" href="${href}">
+              <a class="hs-link" href="${href}">	
                 <figure class="hs-figure hs-textposter">
                   <div class="hs-textbg" aria-hidden="true">${esc(text)}</div>
                   <div class="hs-overlay"></div>
@@ -239,7 +312,6 @@
               </a>
             </li>`;
         } else {
-          /* 텍스트도 없으면: 아주 간단한 컬러 배경만 */
           return `
             <li class="hs-slide">
               <a class="hs-link" href="${href}">
@@ -289,7 +361,7 @@
       fb.style.display = "";
       fb.textContent = "인기 글을 불러오는 중입니다…";
       const url = new URL(API_URL, location.origin);
-      url.searchParams.set('sort','views'); // 조회수순
+      url.searchParams.set('sort','views');
       url.searchParams.set('limit', String(LIMIT));
       url.searchParams.set('page','1');
       try{
@@ -298,6 +370,18 @@
         const json = await res.json();
         const list = json.posts || json.items || json.list || json.data || [];
         slides = Array.isArray(list) ? list.slice(0, LIMIT) : [];
+        
+        // 디버깅 로직 (개선된 pickThumb 테스트)
+        slides.forEach((p, idx) => {
+            const thumbUrl = pickThumb(p);
+            if (thumbUrl) {
+                console.info(`[Top10] Slide ${idx + 1} (${p.postId || 'N/A'}): 썸네일 URL 추출 성공: ${thumbUrl}`);
+            } else {
+                const contentSnippet = (p.content && typeof p.content === 'string') ? p.content.slice(0, 150) + '...' : String(p.content);
+                console.warn(`[Top10] Slide ${idx + 1} (${p.postId || 'N/A'}): 썸네일 URL 추출 실패. content 타입: ${typeof p.content}. CONTENT SNIPPET: ${contentSnippet}`);
+            }
+        });
+        
         render();
         startAutoplay();
       }catch(err){

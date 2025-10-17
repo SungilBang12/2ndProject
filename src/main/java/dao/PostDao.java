@@ -847,15 +847,21 @@ public class PostDao {
 		int startRow = offset + 1;
 		int endRow = offset + limit;
 
-		StringBuilder sql = new StringBuilder("SELECT * FROM ( " + "  SELECT ROWNUM AS rnum, inner_query.* FROM ( "
-				+ "    SELECT " + "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, "
-				+ "      SUBSTR(p.CONTENT, 1, 200) AS CONTENT, " + "      p.HIT, "
-				+ "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, "
-				+ "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, " + "      c.CATEGORY_NAME AS CATEGORY, "
-				+ "      pt.TYPE_NAME AS POST_TYPE " + "    FROM POST p "
-				+ "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID "
-				+ "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID "
-				+ "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID " + "    WHERE 1=1 ");
+		StringBuilder sql = new StringBuilder("SELECT * FROM ( " 
+			    + "  SELECT ROWNUM AS rnum, inner_query.* FROM ( "
+			    + "    SELECT " 
+			    + "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, "
+			    + "      p.CONTENT AS CONTENT, "
+			    + "      p.HIT, "
+			    + "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, "
+			    + "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, "
+			    + "      c.CATEGORY_NAME AS CATEGORY, "
+			    + "      pt.TYPE_NAME AS POST_TYPE "
+			    + "    FROM POST p "
+			    + "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID "
+			    + "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID "
+			    + "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID "
+			    + "    WHERE 1=1 ");
 
 		if (listId != null)
 			sql.append("AND p.LIST_ID = ? ");
@@ -1010,5 +1016,20 @@ public class PostDao {
 		}
 
 		return 0;
+	}
+	
+	// PostDao.java (import는 기존 그대로 사용)
+	public int updatePostHit(int postId) {
+	    // Oracle: NULL 안전하게 처리 (NVL)
+	    final String sql = "UPDATE POST SET HIT = NVL(HIT, 0) + 1 WHERE POST_ID = ?";
+
+	    try (Connection conn = ConnectionPoolHelper.getConnection();
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        pstmt.setInt(1, postId);
+	        return pstmt.executeUpdate(); // 1이면 성공
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        return 0;
+	    }
 	}
 }
