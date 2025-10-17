@@ -25,10 +25,6 @@ public class UsersService {
 		public ServiceException(String message) {
 			super(message);
 		}
-		
-		public ServiceException(String message, Throwable cause) {
-			super(message, cause);
-		}
 	}
 	
 	/**
@@ -74,7 +70,7 @@ public class UsersService {
 					ex.printStackTrace();
 				}
 			}
-			throw new ServiceException("회원가입 처리 중 오류가 발생했습니다.", e);
+			throw new ServiceException("회원가입 처리 중 오류가 발생했습니다.");
 		} finally {
 			ConnectionPoolHelper.close(conn);
 		}
@@ -121,7 +117,7 @@ public class UsersService {
 			conn = ConnectionPoolHelper.getConnection();
 			return usersDao.selectUserByUserId(conn, userId);
 		} catch (SQLException e) {
-			throw new ServiceException("사용자 정보 조회 중 오류가 발생했습니다.", e);
+			throw new ServiceException("사용자 정보 조회 중 오류가 발생했습니다.");
 		} finally {
 			ConnectionPoolHelper.close(conn);
 		}
@@ -186,7 +182,7 @@ public class UsersService {
 					ex.printStackTrace();
 				}
 			}
-			throw new ServiceException("사용자 정보 수정 중 오류가 발생했습니다.", e);
+			throw new ServiceException("사용자 정보 수정 중 오류가 발생했습니다.");
 		} finally {
 			ConnectionPoolHelper.close(conn);
 		}
@@ -234,7 +230,7 @@ public class UsersService {
 					ex.printStackTrace();
 				}
 			}
-			throw new ServiceException("회원 탈퇴 처리 중 오류가 발생했습니다.", e);
+			throw new ServiceException("회원 탈퇴 처리 중 오류가 발생했습니다.");
 		} finally {
 			ConnectionPoolHelper.close(conn);
 		}
