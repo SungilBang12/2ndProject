@@ -3,47 +3,20 @@ import { Plugin } from "https://esm.sh/prosemirror-state";
 
 const userId = document.getElementById("userId")?.value || `guest-${Math.random().toString(36).substr(2,6)}`;
 
-// ===================== 공용 요청 함수 =====================
-async function sendChatAction(postId, userId, action) {
-    if (!postId || !userId) return null;
-    try {
-        const res = await fetch("/chat/update", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-            body: new URLSearchParams({ postId: String(postId), userId, action }),
-        });
-        if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error(`❌ ${action} 요청 실패:`, err);
-        return null;
-    }
-}
+// ===================== 공용 요청 함수 (jQuery AJAX) =====================
+function sendChatAction(postId, userId, action, callback) {
+    if (!postId || !userId) return callback(null);
 
-// ===================== Ably 설정 =====================
-async function fetchAblyConfig(postId) {
-    const res = await fetch(`/chat/init?postId=${postId}`);
-    if (!res.ok) throw new Error("초기화 실패");
-    const data = await res.json();
-    if (!data.ablyConfig?.pubKey) throw new Error("Ably 키 미설정");
-    return data.ablyConfig.pubKey;
-}
-
-async function setupAblyChannel(postId, userId) {
-    const pubKey = await fetchAblyConfig(postId);
-    const ably = new Ably.Realtime({ key: pubKey, clientId: userId });
-    const channel = ably.channels.get(`channel-${postId}`);
-
-    await new Promise((resolve, reject) => {
-        const check = () => {
-            if (ably.connection.state === "connected") resolve();
-            else if (ably.connection.state === "failed") reject("Ably 연결 실패");
-            else setTimeout(check, 150);
-        };
-        check();
+    $.ajax({
+        url: "/chat/update",
+        method: "POST",
+        data: { postId, userId, action },
+        success: function(res) { callback(res); },
+        error: function(xhr, status, err) {
+            console.error(`❌ ${action} 요청 실패:`, err);
+            callback(null);
+        }
     });
-
-    return channel;
 }
 
 // ===================== ScheduleBlock Node =====================
@@ -104,27 +77,27 @@ export const ScheduleBlock = Node.create({
                 <div class="schedule-info-item">👥 <span class="currentPeople">${currentPeople}</span>/${maxPeople}명 모집</div>
                 <div class="schedule-btns" style="display:flex; justify-content:space-between; margin-top:5px;">
                     <button class="schedule-join-btn" ${postId ? "" : "disabled"}>참가하기</button>
-                    ${editMode ? '<button class="schedule-cancel-btn btn-cancel">삭제</button>' : ""}
+                    ${editMode ? '<button class="schedule-delete-btn btn-delete">삭제</button>' : ""}
                 </div>
             `;
 
             const joinBtn = dom.querySelector(".schedule-join-btn");
-            const cancelBtn = dom.querySelector(".schedule-cancel-btn");
+            const deleteBtn = dom.querySelector(".schedule-delete-btn");
             const currentPeopleSpan = dom.querySelector(".currentPeople");
 
-            const updatePresenceCount = (membersLength) => {
-                currentPeople = membersLength;
+            const updateCurrentPeople = (count) => {
+                currentPeople = count;
                 currentPeopleSpan.textContent = currentPeople;
                 if (joinBtn) joinBtn.disabled = joined || currentPeople >= maxPeople;
             };
 
-            // ✅ 드래그 방지
+            // 드래그 방지
             dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
             dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
 
-            // ✅ 삭제 버튼 (수정 모드 전용)
-            if (editMode && cancelBtn) {
-                cancelBtn.addEventListener("click", (e) => {
+            // 삭제 버튼 (editMode 전용)
+            if (editMode && deleteBtn) {
+                $(deleteBtn).on("click", (e) => {
                     e.stopPropagation();
                     if (!confirm("이 블록을 삭제하시겠습니까?")) return;
                     const pos = getPos();
@@ -132,59 +105,37 @@ export const ScheduleBlock = Node.create({
                 });
             }
 
-            // ✅ 페이지 로드시 참가 상태 자동 확인
-            (async () => {
-                if (postId && !editMode) {
-                    const checkData = await sendChatAction(postId, userId, "check");
-                    if (checkData?.chatResult?.alreadyJoined) {
+            // 페이지 로드시 참가 상태 확인
+            if (postId && !editMode) {
+                sendChatAction(postId, userId, "check", (res) => {
+                    if (res?.chatResult?.alreadyJoined) {
                         joined = true;
                         joinBtn.textContent = "참여중";
                         joinBtn.disabled = true;
                     }
-                }
-            })();
+                });
+            }
 
-            // ✅ 참가 버튼 클릭 이벤트
-            joinBtn?.addEventListener("click", async (e) => {
+            // 참가 버튼 클릭
+            $(joinBtn).on("click", (e) => {
                 e.stopPropagation();
-                if (!node.attrs.postId) {
-                    alert("게시글이 아직 저장되지 않아 참가할 수 없습니다.");
-                    return;
-                }
-                if (joined || currentPeople >= maxPeople) return;
+                if (!postId || joined || currentPeople >= maxPeople) return;
 
-                // 참가 처리
-                const joinData = await sendChatAction(node.attrs.postId, userId, "join");
-                if (!joinData?.chatResult?.success) {
-                    alert(joinData?.chatResult?.message || "참가 실패");
-                    return;
-                }
-
-                try {
-                    const channel = await setupAblyChannel(node.attrs.postId, userId);
-                    await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
+                sendChatAction(postId, userId, "join", (res) => {
+                    if (!res?.chatResult?.success) {
+                        alert(res?.chatResult?.message || "참가 실패");
+                        return;
+                    }
 
                     joined = true;
-                    joinBtn.disabled = true;
                     joinBtn.textContent = "참여중";
+                    joinBtn.disabled = true;
 
-                    // 현재 인원 수 반영
-                    channel.presence.get((err, members) => {
-                        if (!err) updatePresenceCount(members?.length || 0);
+                    // 서버에서 currentPeople 갱신
+                    $.getJSON(`/chat/participants?postId=${postId}`, (data) => {
+                        if (data?.currentPeople != null) updateCurrentPeople(data.currentPeople);
                     });
-
-                    // 실시간 입퇴장 반영
-                    channel.presence.subscribe(["enter", "leave"], () => {
-                        channel.presence.get((err, members) => {
-                            if (!err) updatePresenceCount(members?.length || 0);
-                        });
-                    });
-
-                    alert(`${title} 모임에 참가했습니다!`);
-                } catch (err) {
-                    console.warn(err);
-                    alert("참가 실패");
-                }
+                });
             });
 
             return { dom };
@@ -192,7 +143,7 @@ export const ScheduleBlock = Node.create({
     },
 });
 
-// ===================== postId 활성화 후 Ably 연결 =====================
+// ===================== postId 활성화 후 적용 =====================
 export function activateScheduleBlockAbly(editor, postId) {
     editor.state.doc.descendants((node, pos) => {
         if (node.type.name === "scheduleBlock") {
