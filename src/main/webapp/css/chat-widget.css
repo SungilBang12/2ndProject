@@ -1,10 +1,7 @@
 /* ========================================================================
-   Chat Widget CSS
+   Chat Widget CSS - 개선판
    ======================================================================== */
 
-/* =======================
-   전체 채팅 위젯
-   ======================= */
 #chatWidget {
     position: fixed;
     bottom: 20px;
@@ -15,10 +12,10 @@
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     z-index: 9999;
+    overflow: hidden;
 }
 
 /* =======================
@@ -27,34 +24,45 @@
 .chat-header {
     background-color: #4a90e2;
     color: #fff;
-    padding: 10px 12px;
+    padding: 8px 12px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    position: relative;
 }
 
-.chat-header h3 {
+.chat-header button#leaveBtn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.chat-header button#leaveBtn:hover {
+    color: #ffd966;
+}
+
+.chat-header-title {
+    flex: 1;
+    text-align: center;
+}
+
+.chat-header-title h3 {
     margin: 0;
     font-size: 1.1rem;
 }
 
-.chat-header p {
+.chat-header-title p {
     margin: 2px 0 0;
     font-size: 0.85rem;
     color: #e0e0e0;
 }
 
-.chat-header-buttons button {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.1rem;
-    margin-left: 6px;
-    cursor: pointer;
-}
-
-.chat-header-buttons button:hover {
-    color: #ffd966;
+.chat-header-buttons {
+    display: flex;
+    gap: 6px;
 }
 
 /* =======================
@@ -97,12 +105,14 @@
 #chatPanel {
     display: flex;
     flex-direction: column;
-    flex: 1;
     background-color: #f9f9f9;
+    flex: 1;
+    overflow: hidden;
 }
 
 #chatMessages {
     flex: 1;
+    height: 300px; /* 메시지 창 고정 높이 */
     padding: 10px;
     overflow-y: auto;
     display: flex;
@@ -110,6 +120,7 @@
     gap: 6px;
 }
 
+/* 메시지 스타일 */
 .chat-message-mine {
     align-self: flex-end;
     background-color: #4a90e2;
@@ -138,49 +149,28 @@
 }
 
 /* =======================
-   참가/나가기 버튼
+   참가 버튼
    ======================= */
 .chat-action-buttons {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     padding: 6px 10px;
     border-top: 1px solid #ddd;
     background-color: #fff;
 }
 
-.chat-action-buttons button {
-    flex: 1;
-    margin: 0 2px;
-    padding: 6px 0;
-    font-size: 0.9rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
 #joinBtn {
     background-color: #4caf50;
     color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
 }
 
 #joinBtn:disabled {
     background-color: #a5d6a7;
     cursor: not-allowed;
-}
-
-#leaveBtn {
-    background-color: #f44336;
-    color: #fff;
-}
-
-#leaveBtn:disabled {
-    background-color: #ef9a9a;
-    cursor: not-allowed;
-}
-
-.chat-action-buttons button:hover:not(:disabled) {
-    opacity: 0.9;
 }
 
 /* =======================
@@ -213,7 +203,6 @@
     background-color: #4a90e2;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
 .send-btn:disabled {
@@ -221,12 +210,8 @@
     cursor: not-allowed;
 }
 
-.send-btn:hover:not(:disabled) {
-    opacity: 0.9;
-}
-
 /* =======================
-   우측 하단 채팅 토글 버튼
+   토글 버튼
    ======================= */
 #chatToggleBtn {
     position: fixed;
@@ -241,32 +226,11 @@
     border: none;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
 }
 
 #chatToggleBtn:hover {
     background-color: #357ab8;
-}
-
-/* =======================
-   스크롤 스타일
-   ======================= */
-#chatMessages::-webkit-scrollbar,
-#chatListPanel::-webkit-scrollbar {
-    width: 6px;
-}
-
-#chatMessages::-webkit-scrollbar-thumb,
-#chatListPanel::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 3px;
-}
-
-#chatMessages::-webkit-scrollbar-track,
-#chatListPanel::-webkit-scrollbar-track {
-    background-color: transparent;
 }
