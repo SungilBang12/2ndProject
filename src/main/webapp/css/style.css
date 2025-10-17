@@ -10,7 +10,7 @@
 html, body{ margin:0; height:100%; }
 body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Apple SD Gothic Neo, sans-serif;
-  color:#111; background: #191624; line-height:1.5;
+  color:#d34848; background: #191624; line-height:1.5;
 }
 a{ color:inherit; text-decoration:none; }
 
