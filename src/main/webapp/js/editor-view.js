@@ -31,4 +31,14 @@ export function initViewer(boardEl, JSONcontent) {
 		],
 		content: JSONcontent,
 	});
+	// 읽기 전용에서도 postId 채워서 참가 버튼 활성화
+	if (postId) {
+		editor.state.doc.descendants((node, pos) => {
+			if (node.type.name === "scheduleBlock") {
+				const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, postId });
+				editor.view.dispatch(tr);
+			}
+		});
+	}
+	return editor;
 }
