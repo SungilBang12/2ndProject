@@ -23,7 +23,9 @@ if (!chatModule) throw new Error("❌ chatModule not found.");
 const postId = chatModule.dataset.postId || null;
 const userId = chatModule.dataset.userId;
 window.userId = userId;
-const maxPeople = parseInt(chatModule.dataset.maxPeople || "0", 10);
+
+// ScheduleBlock에서 maxPeople 동기화 가능하도록 초기값을 dataset에서 가져오기
+const maxPeople = parseInt(chatModule.dataset.maxPeople || "5", 10);
 
 const $joinBtn = $("#joinBtn");
 const $leaveBtn = $("#leaveBtn");
@@ -45,7 +47,7 @@ if (!postId) loadChatList();
 else initChatRoom();
 
 // ==============================
-// 🗂 채팅 리스트 로드
+// 채팅 리스트 로드
 // ==============================
 function loadChatList() {
   $chatListPanel.show();
@@ -84,7 +86,7 @@ function loadChatList() {
 }
 
 // ==============================
-// 🔹 Realtime 채팅방 초기화
+// Realtime 채팅방 초기화
 // ==============================
 async function initChatRoom() {
   try {
@@ -103,18 +105,27 @@ async function initChatRoom() {
     }
 
     try {
-      ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId });
+      window.ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId });
     } catch (err) {
       console.error("❌ Ably Realtime 연결 실패:", err);
     }
 
-    ably.connection.on("connected", () => {
-      setupChannel(channelName || `channel-${postId}`);
+    window.ably.connection.on("connected", () => {
+      // 통합 채널명 설정
+      const unifiedChannelName = `channel-${postId}`;
+      window.chatChannelName = unifiedChannelName;
+
+      // Ably 채널 구독
+      setupChannel(unifiedChannelName);
+
+      // 참가 / 나가기 버튼
       setupJoinLeaveButtons();
+
+      // Firebase 초기화
       initFirebase(firebaseConfig);
     });
 
-    ably.connection.on("failed", () => {
+    window.ably.connection.on("failed", () => {
       console.error("❌ Ably Realtime 연결 실패 상태 발생");
       displayMessage('<div class="system-message" style="color:red;">Ably 연결 실패</div>');
     });
@@ -126,7 +137,7 @@ async function initChatRoom() {
 }
 
 // ==============================
-// 🔹 Firebase 초기화
+// Firebase 초기화
 // ==============================
 function initFirebase(firebaseConfig) {
   if (!firebaseConfig?.apiKey) return;
@@ -155,16 +166,18 @@ function initFirebase(firebaseConfig) {
 }
 
 // ==============================
-// 🔹 Ably 채널 구독
+// Ably 채널 구독
 // ==============================
 function setupChannel(channelName) {
-  channel = ably.channels.get(channelName);
+  channel = window.ably.channels.get(channelName);
 
+  // 메시지 구독
   channel.subscribe("message", (msg) => {
     const mine = msg.data.user === userId;
     const cls = mine ? "chat-message-mine" : "chat-message-other";
     displayMessage(`<div class="${cls}"><strong>${mine ? "나" : msg.data.user}</strong>: ${msg.data.text}</div>`);
 
+    // Firebase에도 저장
     if (!mine && firebaseDb) {
       firebaseDb.ref(`chat/${postId}/messages`).push({
         user: msg.data.user,
@@ -174,16 +187,26 @@ function setupChannel(channelName) {
     }
   });
 
+  // 참가자 변화 구독
   channel.presence.subscribe(["enter", "leave"], (member) => {
-    participantCount += member.action === "enter" ? 1 : -1;
+    participantCount = Math.max(0, member.action === "enter" ? participantCount + 1 : participantCount - 1);
     updateCountDisplay();
     const actionText = member.action === "enter" ? "참가했습니다." : "퇴장했습니다.";
     displayMessage(`<div class="system-message">${member.clientId} 님이 ${actionText}</div>`);
   });
 
+  // 초기 참가자 수 가져오기
   channel.presence.get((err, members) => {
     if (!err) {
       participantCount = members.length;
+      updateCountDisplay();
+    }
+  });
+
+  // ScheduleBlock에서 실시간 참가자 정보 수신
+  document.addEventListener("schedulePresenceUpdate", (e) => {
+    if (e.detail.postId === postId) {
+      participantCount = e.detail.currentPeople;
       updateCountDisplay();
     }
   });
@@ -193,7 +216,7 @@ function setupChannel(channelName) {
 }
 
 // ==============================
-// 🔹 참가 / 나가기 버튼 처리
+// 참가 / 나가기 버튼 처리
 // ==============================
 function setupJoinLeaveButtons() {
   let joined = false;
@@ -247,7 +270,7 @@ function setupJoinLeaveButtons() {
 }
 
 // ==============================
-// 🔹 화면 업데이트 헬퍼
+// 화면 업데이트 헬퍼
 // ==============================
 function displayMessage(content) {
   $chatMessages.append(content);

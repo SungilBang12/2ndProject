@@ -89,4 +89,20 @@ public class ChatService {
             try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
         }
     }
+    
+    public int getParticipantCount(int postId) {
+        // DB에서 현재 참가자 수를 조회
+        String sql = "SELECT COUNT(*) FROM chat_participants WHERE post_id = ?";
+        try (var conn = ConnectionPoolHelper.getConnection();
+             var ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, postId);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

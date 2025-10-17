@@ -4,7 +4,8 @@
 
 <div id="chatModule" class="chat-container"
 	data-post-id="${param.postId}"
-	data-user-id="${sessionScope.user.userId}" data-max-people="${param.maxPeople != null ? param.maxPeople : 5}">
+	data-user-id="${sessionScope.user.userId}" 
+	data-max-people="${param.maxPeople != null ? param.maxPeople : 200}">
 
 	<!-- 리스트 영역 -->
 	<div id="chatListPanel" class="chat-list-panel">
