@@ -3,15 +3,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 
-<<<<<<< HEAD
 <c:set var="user" value="${sessionScope.loggedInUser}" />
-=======
 <%-- 
     🚨 Controller에서 session.setAttribute("loggedInUser", user); 로 저장했으므로,
     세션 변수 이름을 "loggedInUser"로 변경하여 접근합니다.
 --%>
-<c:set var="user" value="${sessionScope.user}" />
->>>>>>> 455863720bf7d7b204140fa80b53539dd68274c0
 <c:set var="isLoggedIn" value="${user != null}" />
 <c:set var="userName" value="${user.userName}" />
 <c:set var="userId" value="${user.userId}" />
@@ -53,7 +49,7 @@
   <!-- 드롭다운 -->
   <div class="profile-popover" id="profile-popover" role="menu"
        aria-labelledby="avatar-btn" hidden>
-    <c:choose>
+   <c:choose>
       <c:when test="${isLoggedIn}">
         <div class="profile-card">
           <div class="profile-row">
@@ -68,16 +64,16 @@
               <div class="sub"><c:out value="${userEmail}" /></div>
             </div>
           </div>
+          </c:when>
+          </c:choose>
 
           <div class="divider"></div>
 
-<<<<<<< HEAD
           <!-- ✅ 컨트롤러 라우팅에 맞춘 경로 -->
           <a href="<c:url value='/users/myInfo'/>" class="menu-item" role="menuitem">내 정보</a>
           <a href="<c:url value='/users/myInfoEdit'/>" class="menu-item" role="menuitem">내 정보 수정</a>
           <a href="<c:url value='/users/myPosts'/>" class="menu-item" role="menuitem">내가 쓴 게시글</a>
           <a href="<c:url value='/users/myComments'/>" class="menu-item" role="menuitem">내가 쓴 댓글</a>
-=======
 		<c:choose>
 			<c:when test="${isLoggedIn}">
 				<!-- ============================================== -->
@@ -98,7 +94,6 @@
 							</div>
 						</div>
 					</div>
->>>>>>> 455863720bf7d7b204140fa80b53539dd68274c0
 
           <div class="divider"></div>
 
