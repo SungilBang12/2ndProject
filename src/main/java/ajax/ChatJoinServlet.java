@@ -2,13 +2,16 @@ package ajax;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
 import com.google.gson.Gson;
+
 import dto.ChatJoinRequest;
 import dto.ChatJoinResponse;
+import dto.SchedulePostDto;
 import dto.Users;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -20,18 +23,19 @@ import utils.AblyChatConfig;
 import utils.ConfigLoader;
 
 /**
- * /chat/join
- * - GET : Ably + Firebase 설정 및 유저정보 전달, postId 없으면 채팅 리스트 반환
- * - POST : 특정 채팅방 참가 처리 (join or leave)
+ * /chat/*
+ * - /chat/init : 채팅 초기화 (Ably + Firebase 설정, 유저ID, 참여중 방목록)
+ * - /chat/update : 참가 / 나가기 (DB 반영)
+ * - /chat/status : 참가 여부 및 현재 인원 수 조회
  */
-@WebServlet("/chat/join")
+@WebServlet("/chat/*")
 public class ChatJoinServlet extends HttpServlet {
 
     private final ChatService service = new ChatService();
+    private final Gson gson = new Gson();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
-    	String postIdParam = req.getParameter("postId");
         res.setContentType("application/json;charset=UTF-8");
         HttpSession session = req.getSession();
         Users user = (Users) session.getAttribute("user");
@@ -42,33 +46,18 @@ public class ChatJoinServlet extends HttpServlet {
             return;
         }
 
-        String userId = user.getUserId();
-        System.out.println("채팅 조인 리퀘스트로 들어온 postId"+postIdParam);
+        String path = req.getPathInfo();
+        if (path == null) path = "";
 
-        // Ably/Firebase 설정 로딩
-        Map<String, String> ablyConfig = loadAblyConfig();
-        Map<String, String> firebaseConfig = loadFirebaseConfig();
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
-        result.put("ablyConfig", ablyConfig);
-        result.put("firebaseConfig", firebaseConfig);
-
-        if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
-            // postId 없으면 채팅방 리스트 반환
-        	System.out.println("postId가 없습니다. = " + postIdParam);
-            result.put("rooms", new String[]{});
-        } else {
-            int postId = Integer.parseInt(postIdParam);
-            result.put("postId", postId);
-            result.put("channelName", "channel-" + postId);
-
-            // DB에서 실제 maxPeople 조회
-            var post = service.getPostDetails(postId);
-            if (post != null) result.put("maxPeople", post.getMaxPeople());
+        switch (path) {
+            case "/init" : handleInit(req, res, user);
+            break;
+            case "/status" : handleStatus(req, res, user);
+            break;
+            default :
+                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");
         }
-
-        new Gson().toJson(result, res.getWriter());
     }
 
     @Override
@@ -83,20 +72,82 @@ public class ChatJoinServlet extends HttpServlet {
             return;
         }
 
-        String userId = user.getUserId();
+        String path = req.getPathInfo();
+        if (path == null) path = "";
+
+        switch (path) {
+            case "/update" : handleUpdate(req, res, user);
+            	break;
+            default :
+                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");                
+        }
+    }
+
+    // ✅ 1️⃣ /chat/init : 초기 설정 + 참여중 방 목록 반환
+    private void handleInit(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
+        String postIdParam = req.getParameter("postId");
+
+        // Ably/Firebase 설정 로딩
+        Map<String, String> ablyConfig = loadAblyConfig();
+        Map<String, String> firebaseConfig = loadFirebaseConfig();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", user.getUserId());
+        result.put("ablyConfig", ablyConfig);
+        result.put("firebaseConfig", firebaseConfig);
+
+        if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
+            // ✅ 현재 사용자가 참여 중인 채팅방 목록 (rooms)
+            List<SchedulePostDto> joinedRooms = service.getUserJoinedRooms(user.getUserId());
+            result.put("rooms", joinedRooms);
+        } else {
+            int postId = Integer.parseInt(postIdParam);
+            result.put("postId", postId);
+            result.put("channelName", "channel-" + postId);
+
+            SchedulePostDto post = service.getPostDetails(postId);
+            if (post != null) {
+                result.put("maxPeople", post.getMaxPeople());
+                result.put("currentPeople", post.getCurrentPeople());
+            }
+        }
+
+        gson.toJson(result, res.getWriter());
+    }
+
+    // ✅ 2️⃣ /chat/update : 참가(join) 또는 나가기(leave)
+    private void handleUpdate(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         int postId = Integer.parseInt(req.getParameter("postId"));
         String action = req.getParameter("action"); // join / leave
 
-        ChatJoinRequest reqDto = new ChatJoinRequest(postId, userId);
+        ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
         ChatJoinResponse result;
 
         if ("leave".equalsIgnoreCase(action)) {
-            result = service.leaveChat(reqDto);
+            result = service.leaveChat(dto);
         } else {
-            result = service.joinChat(reqDto);
+            result = service.joinChat(dto);
         }
 
-        new Gson().toJson(result, res.getWriter());
+        gson.toJson(result, res.getWriter());
+    }
+
+    // ✅ 3️⃣ /chat/status : 현재 참가 여부 및 인원 수 조회
+    private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
+        int postId = Integer.parseInt(req.getParameter("postId"));
+        Map<String, Object> result = new HashMap<>();
+
+        boolean joined = service.isUserInChat(postId, user.getUserId());
+        SchedulePostDto post = service.getPostDetails(postId);
+
+        result.put("joined", joined);
+        if (post != null) {
+            result.put("maxPeople", post.getMaxPeople());
+            result.put("currentPeople", post.getCurrentPeople());
+        }
+
+        gson.toJson(result, res.getWriter());
     }
 
     // 🔹 Ably 설정 로딩

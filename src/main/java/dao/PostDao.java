@@ -477,30 +477,49 @@ public class PostDao {
 	// DATE_POST 테이블에 정모/일정 정보 삽입
 	public void insertSchedule(int postId, JsonObject attrs) {
 
-		// SQL 문 수정: post_schedule -> DATE_POST, 컬럼명 일치
-		String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, PEOPLE) VALUES (?, ?, ?, ?, ?)";
+	    // 🚨 테이블 구조에 맞게 SQL 컬럼 수정
+	    // DATE_ID는 시퀀스 등으로 자동 생성될 것이므로 제외
+	    // DATE_VALUE는 임시로 제외 (JSON에 명확한 값이 없어 MEET_DATE, MEET_TIME 사용)
+	    String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, MAX_PEOPLE, CURRENT_PEOPLE) "
+	               + "VALUES (?, ?, ?, ?, ?, ?)";
 
-		try (Connection conn = ConnectionPoolHelper.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	    try (Connection conn = ConnectionPoolHelper.getConnection();
+	            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			pstmt.setInt(1, postId);
+	        int index = 1;
+	        
+	        // 1. POST_ID (NUMBER)
+	        pstmt.setInt(index++, postId); 
 
-			// JSON 필드를 DATE_POST 컬럼에 맞게 바인딩
-			pstmt.setString(2, attrs.get("title").getAsString());
-			pstmt.setString(3, attrs.get("date").getAsString());
-			pstmt.setString(4, attrs.get("time").getAsString());
+	        // 2. TITLE (VARCHAR2)
+	        // JSON: {"title":"sxafdsaf"}
+	        pstmt.setString(index++, attrs.get("title").getAsString()); 
 
-			// people 필드 처리
-			String peopleValue = attrs.get("people").isJsonPrimitive()
-					? attrs.get("people").getAsJsonPrimitive().getAsString()
-					: String.valueOf(attrs.get("people"));
-			pstmt.setString(5, peopleValue);
+	        // 3. MEET_DATE (VARCHAR2)
+	        // JSON: {"meetDate":"2222-02-22"}
+	        pstmt.setString(index++, attrs.get("meetDate").getAsString()); 
 
-			pstmt.executeUpdate();
+	        // 4. MEET_TIME (VARCHAR2)
+	        // JSON: {"meetTime":"14:22"}
+	        pstmt.setString(index++, attrs.get("meetTime").getAsString()); 
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	        // 5. MAX_PEOPLE (NUMBER)
+	        // JSON: {"maxPeople":2}
+	        int maxPeople = attrs.has("maxPeople") ? attrs.get("maxPeople").getAsInt() : 0;
+	        pstmt.setInt(index++, maxPeople); 
+
+	        // 6. CURRENT_PEOPLE (NUMBER)
+	        // JSON: {"currentPeople":0}
+	        int currentPeople = attrs.has("currentPeople") ? attrs.get("currentPeople").getAsInt() : 0;
+	        pstmt.setInt(index++, currentPeople); 
+
+	        pstmt.executeUpdate();
+
+	    } catch (SQLException e) {
+	        System.err.println("Error inserting schedule for postId: " + postId + ". Details: " + e.getMessage());
+	        e.printStackTrace();
+	        // 실제 애플리케이션에서는 ServiceException으로 감싸서 상위 레이어에 예외를 던지는 것이 좋습니다.
+	    }
 	}
 
 	// 이미지 삽입 (R2 업로드 포함)

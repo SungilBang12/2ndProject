@@ -72,8 +72,8 @@ export function openScheduleModal(editor, node = null, pos = null, mode = "creat
 				return;
 			}
 		}
-
-		const attrs = { title, meetDate, meetTime, currentPeople, maxPeople };
+		let postId = window.getPostIdFromUrl;
+		const attrs = { title, meetDate, meetTime, currentPeople, maxPeople , postId};
 
 		if (mode === "edit" && node && pos != null) {
 			editor.chain().focus().command(({ tr }) => {
