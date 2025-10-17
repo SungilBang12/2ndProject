@@ -14,9 +14,7 @@ const CONTEXT = window.APP_CONTEXT || "";
    DOM 요소
    ======================================================================== */
 const chatModule = document.getElementById("chatModule");
-if (!chatModule) {
-  console.warn("⚠️ chatModule not found. 채팅 기능을 건너뜁니다.");
-}
+if (!chatModule) console.warn("⚠️ chatModule not found.");
 
 const postId = chatModule?.dataset.postId || null;
 const userId = chatModule?.dataset.userId;
@@ -45,37 +43,27 @@ const $participantCount = $("#participantCount");
 async function init() {
   if (!chatModule) return;
 
-  // 위젯 초기 상태: 숨김
   $chatWidget.hide();
-
-  // 토글 버튼 클릭
   $chatToggleBtn.on("click", toggleChatWidget);
-
-  // 최소화 버튼 클릭
   $minimizeBtn.on("click", minimizeChatWidget);
-
-  // 리스트로 돌아가기 버튼
   $backToListBtn.on("click", showChatList);
 
   try {
-    // /chat/init 호출하여 설정 가져오기
     const res = await $.getJSON(`${CONTEXT}/chat/init`, { postId: postId || "" });
     const { ablyConfig, firebaseConfig, userId: serverUserId } = res;
 
-    // Ably 초기화
     if (ablyConfig?.pubKey) {
       window.ably = new Ably.Realtime({ 
         key: ablyConfig.pubKey, 
         clientId: userId || serverUserId 
       });
 
-      window.ably.connection.on("connected", () => {
+      window.ably.connection.on("connected", async () => {
         console.log("✅ Ably 연결 성공");
         initFirebase(firebaseConfig);
-        
-        // postId 있으면 채팅방, 없으면 리스트
+
         if (postId) {
-          checkUserParticipation();
+          await checkUserParticipation();
         } else {
           loadChatList();
         }
@@ -85,9 +73,7 @@ async function init() {
         console.error("❌ Ably 연결 실패");
         displayMessage('<div class="system-message error">Ably 연결 실패</div>');
       });
-    } else {
-      console.error("❌ Ably 설정 누락");
-    }
+    } else console.error("❌ Ably 설정 누락");
   } catch (err) {
     console.error("❌ /chat/init 요청 실패:", err);
   }
@@ -97,9 +83,8 @@ async function init() {
    위젯 토글/최소화
    ======================================================================== */
 function toggleChatWidget() {
-  if ($chatWidget.is(":visible")) {
-    $chatWidget.fadeOut(200);
-  } else {
+  if ($chatWidget.is(":visible")) $chatWidget.fadeOut(200);
+  else {
     $chatWidget.fadeIn(200);
     if (isMinimized) {
       isMinimized = false;
@@ -152,7 +137,6 @@ function loadChatList() {
 }
 
 function showChatList() {
-  // 현재 채팅방에서 나가기
   if (channel) {
     channel.presence.leave();
     channel.unsubscribe();
@@ -170,16 +154,12 @@ function showChatList() {
 async function checkUserParticipation() {
   try {
     const res = await $.getJSON(`${CONTEXT}/chat/status`, { postId });
-    const { joined, currentPeople: serverCount } = res;
+    const { joined } = res;
 
-    participantCount = serverCount || 0;
-    updateCountDisplay();
+    await updateParticipantCount(); // DB 기준 참가자 수
 
-    if (joined) {
-      // 참여 중이면 채팅방 표시
-      initChatRoom();
-    } else {
-      // 참여 안 했으면 위젯 숨김 (리스트만 표시)
+    if (joined) initChatRoom();
+    else {
       $chatWidget.hide();
       console.log("ℹ️ 사용자가 이 채팅방에 참여하지 않았습니다.");
     }
@@ -207,19 +187,13 @@ function initChatRoom() {
    Firebase 초기화
    ======================================================================== */
 function initFirebase(firebaseConfig) {
-  if (!firebaseConfig?.apiKey) {
-    console.warn("⚠️ Firebase 설정 누락");
-    return;
-  }
+  if (!firebaseConfig?.apiKey) return;
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
   firebaseDb = firebase.database();
   messagesRef = firebaseDb.ref(`chat/${postId}/messages`);
 
-  // 기존 메시지 로드
   messagesRef.once("value", (snap) => {
     const messages = snap.val();
     if (messages) {
@@ -231,10 +205,9 @@ function initFirebase(firebaseConfig) {
     }
   });
 
-  // 새 메시지 실시간 수신
   messagesRef.on("child_added", (snap) => {
     const msg = snap.val();
-    if (!msg || msg.user === userId) return; // 내가 보낸 메시지는 Ably로 이미 표시됨
+    if (!msg || msg.user === userId) return;
     displayMessage(`<div class="chat-message-other"><strong>${msg.user}</strong>: ${msg.text}</div>`);
   });
 }
@@ -243,21 +216,16 @@ function initFirebase(firebaseConfig) {
    Ably 채널 구독
    ======================================================================== */
 function setupChannel(channelName) {
-  if (!window.ably) {
-    console.error("❌ Ably가 초기화되지 않았습니다.");
-    return;
-  }
+  if (!window.ably) return;
 
   channel = window.ably.channels.get(channelName);
 
-  // 메시지 수신
   channel.subscribe("message", (msg) => {
     const mine = msg.data.user === userId;
     const cls = mine ? "chat-message-mine" : "chat-message-other";
     const userName = mine ? "나" : msg.data.user;
     displayMessage(`<div class="${cls}"><strong>${userName}</strong>: ${msg.data.text}</div>`);
 
-    // 내가 보낸 메시지만 Firebase에 저장 (중복 방지)
     if (mine && firebaseDb) {
       firebaseDb.ref(`chat/${postId}/messages`).push({
         user: msg.data.user,
@@ -267,26 +235,10 @@ function setupChannel(channelName) {
     }
   });
 
-  // Presence 변화 감지
-  channel.presence.subscribe(["enter", "leave"], (member) => {
+  channel.presence.subscribe(["enter", "leave"], async (member) => {
     const actionText = member.action === "enter" ? "참가했습니다." : "퇴장했습니다.";
     displayMessage(`<div class="system-message">${member.clientId} 님이 ${actionText}</div>`);
-
-    // 실시간 참여자 수 업데이트
-    channel.presence.get((err, members) => {
-      if (!err) {
-        participantCount = members.length;
-        updateCountDisplay();
-      }
-    });
-  });
-
-  // 초기 참여자 수 가져오기
-  channel.presence.get((err, members) => {
-    if (!err) {
-      participantCount = members.length;
-      updateCountDisplay();
-    }
+    await updateParticipantCount(); // DB 기준 참가자 수 반영
   });
 
   $sendBtn.prop("disabled", false);
@@ -298,65 +250,54 @@ function setupChannel(channelName) {
 function setupJoinLeaveButtons() {
   let joined = false;
 
-  // 참가하기
   $joinBtn.off("click").on("click", async () => {
     if (joined) return;
 
     try {
-      const res = await $.post(`${CONTEXT}/chat/update`, { 
-        postId, 
-        action: "join" 
-      });
-
+      const res = await $.post(`${CONTEXT}/chat/update`, { postId, action: "join" });
       if (!res.chatResult?.success) {
         displayMessage(`<div class="system-message error">참가 실패: ${res.chatResult?.message}</div>`);
         return;
       }
 
-      // Ably Presence 참가
       channel.presence.enter({ user: userId });
       joined = true;
       $joinBtn.hide();
       $leaveBtn.show();
       displayMessage('<div class="system-message">채팅방에 참가했습니다.</div>');
+
+      await updateParticipantCount(); // DB 기준 참가자 수 반영
     } catch (err) {
       console.error("❌ 참가 요청 실패:", err);
       displayMessage('<div class="system-message error">참가 실패</div>');
     }
   });
 
-  // 나가기
   $leaveBtn.off("click").on("click", async () => {
     if (!joined || !channel) return;
 
     try {
-      await $.post(`${CONTEXT}/chat/update`, { 
-        postId, 
-        action: "leave" 
-      });
-
+      await $.post(`${CONTEXT}/chat/update`, { postId, action: "leave" });
       channel.presence.leave();
       joined = false;
       $chatMessages.empty();
       $joinBtn.show();
       $leaveBtn.hide();
       displayMessage('<div class="system-message">채팅방에서 나갔습니다.</div>');
+
+      await updateParticipantCount(); // DB 기준 참가자 수 반영
     } catch (err) {
       console.error("❌ 나가기 요청 실패:", err);
     }
   });
 
-  // 메시지 전송
   $sendBtn.off("click").on("click", sendMessage);
-  $chatInput.off("keypress").on("keypress", (e) => {
-    if (e.key === "Enter") sendMessage();
-  });
+  $chatInput.off("keypress").on("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 }
 
 function sendMessage() {
   const text = $chatInput.val().trim();
   if (!text || !channel) return;
-
   channel.publish("message", { user: userId, text });
   $chatInput.val("").focus();
 }
@@ -371,6 +312,20 @@ function displayMessage(content) {
 
 function updateCountDisplay() {
   $participantCount.text(`${participantCount}/${maxPeople}`);
+}
+
+/* ========================================================================
+   DB 기준 참가자 수 업데이트
+   ======================================================================== */
+async function updateParticipantCount() {
+  if (!postId) return;
+  try {
+    const res = await $.getJSON(`${CONTEXT}/chat/participants`, { postId });
+    participantCount = res.currentPeople || 0;
+    updateCountDisplay();
+  } catch (err) {
+    console.error("❌ 참가자 수 업데이트 실패:", err);
+  }
 }
 
 /* ========================================================================
