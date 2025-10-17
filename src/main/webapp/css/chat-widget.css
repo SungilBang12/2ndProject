@@ -1,5 +1,5 @@
 /* =========================
-   채팅 위젯 전체
+   채팅 위젯 전체 (노을 컨셉)
    ========================= */
 #chatWidget {
     position: fixed;
@@ -7,36 +7,50 @@
     right: 20px;
     width: 320px;
     height: 480px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: linear-gradient(145deg, #ff9a9e, #fad0c4);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
     font-family: 'Arial', sans-serif;
-    z-index: 9999;
+    z-index: 1201;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 채팅 리스트 열면 숨기기 */
+#chatWidget.hidden {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
 }
 
 /* =========================
-   채팅 토글 버튼
+   토글 버튼 (미니 버튼)
    ========================= */
 #chatToggleBtn {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
+    bottom: 30px;
+    right: 30px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     border: none;
-    background-color: #007bff;
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
     color: white;
-    font-size: 24px;
+    font-size: 26px;
     cursor: pointer;
-    z-index: 10000;
+    z-index: 900; /* 버튼은 위젯 뒤 */
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#chatToggleBtn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
 /* =========================
@@ -46,80 +60,106 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #007bff;
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
     color: #fff;
-    padding: 10px;
+    padding: 12px 15px;
+    flex-shrink: 0;
 }
 
 .chat-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 17px;
 }
 
 .chat-header .participant-info {
     font-size: 12px;
-    margin-top: 2px;
-    color: #e0e0e0;
+    color: #ffe4e1;
 }
 
 .chat-header-buttons {
     display: flex;
-    gap: 5px;
+    gap: 8px;
 }
 
+/* 나가기 버튼 숨김 */
 #leaveBtn {
-    background-color: #ff4d4f;
+    display: none;
+}
+
+/* 미니마이즈 버튼 */
+#minimizeBtn {
+    background: rgba(255,255,255,0.2);
     border: none;
-    color: white;
-    padding: 5px 8px;
-    border-radius: 5px;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 16px;
     cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+#minimizeBtn:hover {
+    background: rgba(255,255,255,0.35);
 }
 
 /* =========================
-   채팅 리스트
+   채팅 리스트 패널
    ========================= */
 #chatListPanel {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 12px;
+    padding-top: 20px; /* 헤더 높이 고려 */
+    background-color: rgba(255,255,255,0.15);
+    backdrop-filter: blur(5px);
     overflow-y: auto;
-    padding: 10px;
-    background-color: #f5f5f5;
+    text-align: center;
+    z-index:1200;
 }
 
 .chat-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: 100%;
 }
 
 .chat-room-item {
-    padding: 8px 10px;
-    margin-bottom: 5px;
-    border-radius: 5px;
-    background-color: #fff;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.25);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .chat-room-item:hover {
-    background-color: #e6f0ff;
+    background: rgba(255,255,255,0.4);
+    transform: translateX(3px);
 }
 
 .no-rooms,
 .error-message {
     text-align: center;
-    color: #999;
+    color: #fff3f3;
 }
 
 /* =========================
-   채팅 메시지 패널
+   채팅 패널
    ========================= */
 #chatPanel {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     padding: 10px;
-    background-color: #fafafa;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(3px);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    z-index: 1002; /* 위젯보다 위 */
 }
 
 #chatMessages {
@@ -131,31 +171,31 @@
 
 .chat-message-mine {
     text-align: right;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 .chat-message-mine strong {
-    color: #007bff;
+    color: #ff6f61;
 }
 
 .chat-message-other {
     text-align: left;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 .chat-message-other strong {
-    color: #333;
+    color: #fff;
 }
 
 .system-message {
     text-align: center;
     font-size: 12px;
-    color: #888;
+    color: #fff7f0;
     margin-bottom: 5px;
 }
 
 .system-message.info {
-    color: #007bff;
+    color: #ffd700;
 }
 
 .system-message.error {
@@ -166,50 +206,98 @@
    입력 영역
    ========================= */
 .chat-input-area {
+    flex: 0 0 auto;
     display: flex;
-    gap: 5px;
+    gap: 6px;
 }
 
 .chat-input {
     flex: 1;
-    padding: 6px 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background-color: rgba(255,255,255,0.8);
+    color: #333;
 }
 
 .send-btn {
-    background-color: #007bff;
+    background: #ff7e5f;
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: 5px;
+    padding: 8px 14px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.send-btn:hover {
+    background: #ff5e3a;
+    transform: translateY(-2px);
 }
 
 /* =========================
-   참가/나가기 버튼 영역
+   참가/나가기/리스트 버튼 영역
    ========================= */
 .chat-action-buttons {
     display: flex;
-    justify-content: flex-start; /* 나가기 버튼 헤더처럼 왼쪽 */
-    gap: 5px;
-    margin-bottom: 5px;
+    justify-content: flex-start;
+    gap: 6px;
+    margin-bottom: 6px;
 }
 
 #joinBtn {
     background-color: #28a745;
     border: none;
     color: white;
-    padding: 5px 8px;
-    border-radius: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: bold;
+}
+
+#joinBtn:hover {
+    background-color: #1e7e34;
 }
 
 #backToListBtn {
     background-color: #6c757d;
     border: none;
     color: white;
-    padding: 5px 8px;
-    border-radius: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
     cursor: pointer;
+}
+
+#backToListBtn:hover {
+    background-color: #5a6268;
+}
+
+/* =========================
+   모바일 대응 (가로 990px 이하)
+   ========================= */
+@media screen and (max-width: 990px) {
+    #chatWidget {
+        width: 90%;
+        height: 60%;
+        position: relative;
+        bottom: auto;
+        top: auto;
+        right: auto;
+        transform: none;
+        margin: 0 auto;
+    }
+
+    .slot-board #chatWidget {
+        position: relative;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    #chatToggleBtn {
+        bottom: 20px;
+        right: 20px;
+        z-index: 900;
+    }
 }

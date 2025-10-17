@@ -5,6 +5,7 @@ window.ably = window.ably || null;
 
 const chatStates = {}; // roomId => { channel, joined, messagesRef, participantCount, maxPeople, scrollPos, isMinimized }
 let activeRoomId = null; // 현재 활성 채팅방
+const CONTEXT = window.APP_CONTEXT || "";
 
 /* ========================================================================
    DOM 요소
@@ -25,7 +26,6 @@ const $maxPeople = $("#maxPeople");
 const $chatTitle = $("#chatTitle");
 const $minimizeBtn = $("#minimizeBtn");
 const $backToListBtn = $("#backToListBtn");
-const $leaveBtn = $("#leaveBtn");
 const $chatToggleBtn = $("#chatToggleBtn");
 
 /* ========================================================================
@@ -36,13 +36,12 @@ $(document).ready(async () => {
     $chatToggleBtn.on("click", toggleChatWidget);
     $minimizeBtn.on("click", minimizeChatWidget);
     $backToListBtn.on("click", showChatList);
-    $leaveBtn.on("click", setupLeaveButton);
     $sendBtn.on("click", sendMessage);
     $chatInput.on("input", toggleSendBtn);
     $chatInput.on("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
     try {
-        const res = await $.getJSON(`/chat/init`, { postId: postId || "" });
+        const res = await $.getJSON(`${CONTEXT}/chat/init`, { postId: postId || "" });
         const { ablyConfig, firebaseConfig, userId: serverUserId, rooms, schedules } = res;
 
         initAblyAndFirebase(ablyConfig, firebaseConfig, serverUserId);
@@ -92,6 +91,7 @@ function toggleChatWidget() {
         } else {
             $chatListPanel.show();
         }
+		$chatPanel.css("z-index", 1002); // 채팅 패널이 위젯보다 위
     }
 }
 
@@ -110,10 +110,9 @@ async function loadChatList(existingRooms = []) {
     $chatListPanel.show();
     $chatPanel.hide();
     $backToListBtn.hide();
-    $leaveBtn.hide();
     $chatTitle.text("채팅 리스트");
 
-    let rooms = existingRooms.length ? existingRooms : (await $.getJSON(`/chat/init`)).rooms || [];
+    let rooms = existingRooms.length ? existingRooms : (await $.getJSON(`${CONTEXT}/chat/init`)).rooms || [];
     rooms = rooms.filter(r => !r.scheduleOnly);
 
     if (!rooms.length) {
@@ -146,7 +145,6 @@ async function enterChatRoom(roomId, title = null) {
     $chatListPanel.hide();
     $chatPanel.show();
     $backToListBtn.show();
-    $leaveBtn.show();
     $chatMessages.empty();
     state.participantCount = 0;
     updateCountDisplay(roomId);
@@ -155,7 +153,7 @@ async function enterChatRoom(roomId, title = null) {
     setupChannel(`channel-${roomId}`, roomId);
 
     try {
-        const res = await $.post(`/chat/update`, { postId: roomId, action: "join" });
+        const res = await $.post(`${CONTEXT}/chat/update`, { postId: roomId, action: "join" });
         const alreadyJoined = res.chatResult?.message?.includes("이미 참가");
 
         if (res.chatResult?.success || alreadyJoined) {
@@ -165,7 +163,6 @@ async function enterChatRoom(roomId, title = null) {
             displayMessage(`<div class="system-message info">${alreadyJoined ? "이미 참가 중입니다." : "채팅방에 참가했습니다."}</div>`);
         } else {
             state.joined = false;
-            $leaveBtn.hide();
             $sendBtn.prop("disabled", true);
             displayMessage(`<div class="system-message error">자동 참가 실패: ${res.chatResult?.message}</div>`);
         }
@@ -247,31 +244,6 @@ function setupChannel(channelName, roomId) {
 }
 
 /* ========================================================================
-   나가기 버튼
-   ======================================================================== */
-function setupLeaveButton() {
-    $leaveBtn.off("click").on("click", async () => {
-        if (!activeRoomId) return;
-        const state = chatStates[activeRoomId];
-        if (!state?.joined || !state.channel) return;
-
-        try {
-            await $.post(`/chat/update`, { postId: activeRoomId, action: "leave" });
-            state.channel.presence.leave();
-
-            cleanupCurrentRoom(activeRoomId);
-            $chatPanel.hide();
-            displayMessage('<div class="system-message">채팅방에서 나갔습니다.</div>');
-            $chatTitle.text("채팅 리스트");
-            await loadChatList();
-            activeRoomId = null;
-        } catch (err) {
-            console.error("❌ 나가기 요청 실패:", err);
-        }
-    });
-}
-
-/* ========================================================================
    메시지 전송
    ======================================================================== */
 function sendMessage() {
@@ -318,7 +290,7 @@ async function updateParticipantCount(roomId) {
     if (!roomId) return;
     const state = chatStates[roomId];
     try {
-        const res = await $.getJSON(`/chat/participants`, { postId: roomId });
+        const res = await $.getJSON(`${CONTEXT}/chat/participants`, { postId: roomId });
         state.participantCount = res.currentPeople || 0;
         state.maxPeople = res.maxPeople || state.maxPeople;
         updateCountDisplay(roomId);
@@ -357,7 +329,6 @@ function cleanupCurrentRoom(roomId) {
 
     $chatMessages.empty();
     $sendBtn.prop("disabled", true);
-    $leaveBtn.hide();
 }
 
 /* ========================================================================
@@ -369,3 +340,5 @@ function showChatList() {
     $chatTitle.text("채팅 리스트");
     loadChatList();
 }
+
+
