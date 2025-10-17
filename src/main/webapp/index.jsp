@@ -265,6 +265,93 @@
       font-size: 20px;
     }
   }
+  
+  /* 1) 슬라이더 좌상단 배지 */
+.slot-board .hero-slider::before{
+  content: '인기 Top10';
+  position: absolute;
+  top: 12px; left: 12px;
+  z-index: 4;
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: .875rem;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: rgba(0,0,0,.78);
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+@media (max-width: 768px){
+  .slot-board .hero-slider::before{
+    top: 10px; left: 10px;
+    padding: 5px 9px;
+    font-size: .8rem;
+  }
+}
+
+/* 2) 기존 H1은 화면에서만 숨기기(접근성/SEO 유지) */
+.slot-board > h1{
+  position: absolute !important;
+  width:1px; height:1px; margin:-1px; padding:0; border:0;
+  overflow:hidden; clip:rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ===== 슬라이더 아래 2열: 좌 공지 / 우 통계 ===== */
+.slot-board .home-row{
+  display:grid;
+  grid-template-columns: 1.6fr 1fr; /* 좌측 약간 더 넓게 */
+  gap:16px;
+  margin-top:16px;
+}
+
+/* 공통 카드 */
+.card-panel{
+  background: rgba(26,19,17,.72);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  color:#fff;
+  padding:14px 16px;
+}
+.card-panel h3{ margin:0 0 10px 0; font-size:1rem; font-weight:700; letter-spacing:-0.01em; }
+
+/* 공지 리스트 */
+.notice-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.notice-list li a{
+  display:flex; align-items:center; gap:8px;
+  color:#fff; text-decoration:none;
+  padding:8px 10px;
+  border-radius:10px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+}
+.notice-list li a:hover{ background: rgba(255,255,255,.08); }
+.notice-badge{
+  flex:0 0 auto; font-size:.75rem; font-weight:700;
+  padding:2px 6px; border-radius:6px;
+  background:#111; color:#fff; border:1px solid rgba(255,255,255,.15);
+}
+.notice-title{
+  flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-weight:600; letter-spacing:-0.01em;
+}
+.notice-meta{ opacity:.8; font-size:.8rem; }
+
+/* 통계 */
+.stats-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.stat{ background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:12px; }
+.stat .label{ font-size:.8rem; opacity:.85; margin-bottom:6px; }
+.stat .value{ font-size:1.6rem; font-weight:800; line-height:1; }
+
+/* 반응형: 태블릿 이하는 한 줄씩 */
+@media (max-width: 768px){
+  .slot-board .home-row{ grid-template-columns: 1fr; }
+}
+
+  
 </style>
 </head>
 
@@ -427,46 +514,51 @@
       }
     }
 
-    // ===== 지도 포함 여부 (기존 로직 유지) =====
+ // ===== 지도 포함 여부 (hasMap 함수 수정) =====
     function hasMap(p){
-      if (!p) return false;
-      if ((p.maps && p.maps.length) || (p.mapList && p.mapList.length)) return true;
+        if (!p) return false;
+        // 1. Post 객체 자체의 mapList/maps 속성 체크 (JSON 파싱 전에 체크)
+        if ((p.maps && p.maps.length) || (p.mapList && p.mapList.length)) return true;
 
-      const content = p.content;
-      if (!content) return false;
+        const content = p.content;
+        if (!content) return false;
 
-      if (typeof content === 'string') {
-        // 문자열이면 간단 키워드 체크 + 안전 파싱 후 탐색 시도
-        if (/kakao|map|lat|lng|latitude|longitude/i.test(content)) return true;
-        const json = safeParseJSON(content);
-        if (!json) return false;
-        let found=false;
-        (function walk(node){
-          if (found) return;
-          if (Array.isArray(node)){ node.forEach(walk); return; }
-          if (!node || typeof node !== 'object') return;
-          if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
-          if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
-          if (node.content) walk(node.content);
-        })(json);
-        return found;
-      }
+        // 2. content가 문자열일 경우, 키워드 체크를 제거하고 JSON 파싱만 시도
+        if (typeof content === 'string') {
+            // 🚨 이 라인을 제거하거나 주석 처리하세요. (오탐의 주범)
+            // if (/kakao|map|lat|lng|latitude|longitude/i.test(content)) return true;
 
-      // 객체
-      try{
-        let found=false;
-        (function walk(node){
-          if (found) return;
-          if (Array.isArray(node)){ node.forEach(walk); return; }
-          if (!node || typeof node !== 'object') return;
-          if (node.type && /map|place|location/i.test(node.type)) { found=true; return; }
-          if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
-          if (node.content) walk(node.content);
-        })(content);
-        return found;
-      }catch(_){ return false; }
+            const json = safeParseJSON(content);
+            if (!json) return false; // JSON이 아니면 지도가 없는 것으로 확정
+
+            let found=false;
+            (function walk(node){
+                if (found) return;
+                if (Array.isArray(node)){ node.forEach(walk); return; }
+                if (!node || typeof node !== 'object') return;
+                // 지도의 고유 타입 체크
+                if (node.type && /kakao-map|map|place|location/i.test(node.type)) { found=true; return; }
+                if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
+                if (node.content) walk(node.content);
+            })(json);
+            return found;
+        }
+
+        // 3. content가 이미 객체인 경우 (기존 JSON 탐색 로직 유지)
+        // (여기서는 수정할 필요 없음)
+        try{
+            let found=false;
+            (function walk(node){
+                if (found) return;
+                if (Array.isArray(node)){ node.forEach(walk); return; }
+                if (!node || typeof node !== 'object') return;
+                if (node.type && /kakao-map|map|place|location/i.test(node.type)) { found=true; return; }
+                if (node.attrs && (node.attrs.lat || node.attrs.lng || node.attrs.latitude || node.attrs.longitude)) { found=true; return; }
+                if (node.content) walk(node.content);
+            })(content);
+            return found;
+        }catch(_){ return false; }
     }
-
     function esc(s){ return (s==null?'':String(s))
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') }
@@ -610,6 +702,301 @@
     }
 
     loadTop10();
+  })();
+  
+  
+  (function(){
+	  const ctx = "<%= request.getContextPath() %>/";
+	  const API_LIST = ctx + "postList2.async";
+	  const POST_DETAIL = ctx + "post-detail.post";
+	  const LIMIT = 12;
+
+	  const $board = document.querySelector('.slot-board');
+	  const $slider = document.getElementById('top10-root');
+	  const hide = el => el && (el.style.display = 'none');
+	  const show = el => el && (el.style.display = '');
+
+	  let $result; // 동적 결과 영역
+
+	  function ensureResultRoot(){
+	    if ($result) return $result;
+	    $result = document.createElement('section');
+	    $result.id = 'search-list-root';
+	    $result.style.display = 'none';
+	    $board.appendChild($result);
+	    return $result;
+	  }
+
+	  function esc(s){ return (s==null?'':String(s))
+	    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+	    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+	  function detailUrl(p){
+	    const id  = p.postId || p.id;
+	    const cid = p.categoryId || '';
+	    const tid = p.postTypeId || '';
+	    let url = POST_DETAIL + "?postId=" + encodeURIComponent(id);
+	    if (cid) url += "&categoryId=" + encodeURIComponent(cid);
+	    if (tid) url += "&postTypeId=" + encodeURIComponent(tid);
+	    return url;
+	  }
+
+	  // 간단 썸네일 추출 (가벼운 버전)
+	  function pickThumb(p){
+	    if (!p) return null;
+	    if (p.thumbnail || p.thumb || p.imageSrc || p.imageUrl)
+	      return p.thumbnail || p.thumb || p.imageSrc || p.imageUrl;
+
+	    const list = p.images || p.imageList || p.image_list || [];
+	    if (Array.isArray(list) && list.length){
+	      const i0 = list[0] || {};
+	      return i0.imageSrc || i0.src || i0.url || null;
+	    }
+
+	    const c = p.content;
+	    if (!c) return null;
+
+	    if (typeof c === 'string'){
+	      if (/^[{\[]/.test(c.trim())){ // JSON 같으면 파싱해서 image 탐색
+	        try{
+	          const json = JSON.parse(
+	            c.replace(/&quot;/g,'"').replace(/&#34;/g,'"')
+	             .replace(/&apos;|&#39;/g,"'").replace(/&amp;/g,'&')
+	             .replace(/,\s*([}\]])/g,'$1')
+	          );
+	          let found = null;
+	          (function walk(n){
+	            if (found) return;
+	            if (Array.isArray(n)) return n.forEach(walk);
+	            if (n && typeof n === 'object'){
+	              if (n.type === 'image' && n.attrs && n.attrs.src){ found = n.attrs.src; return; }
+	              if (n.content) walk(n.content);
+	            }
+	          })(json);
+	          if (found) return found;
+	        }catch(_){}
+	      } else {
+	        const m = c.match(/<img[^>]*\s+src\s*=\s*['"]([^'"]+)['"][^>]*>/i);
+	        return m && m[1] ? m[1] : null;
+	      }
+	    }
+	    return null;
+	  }
+
+	  // 홈 전용: 검색 → 보드 섹션만 AJAX로 교체 / 검색어 비우면 슬라이더 복귀
+	  window.loadPosts = async function(){
+	    const q = (window.currentQuery || '').trim();
+	    const page = window.currentPage || 1;
+	    const $root = ensureResultRoot();
+
+	    if (!q){
+	      // 검색어 비우면 원래 슬라이더 UI 복귀
+	      hide($root);
+	      show(document.getElementById('hsPrev'));
+	      show(document.getElementById('hsNext'));
+	      show(document.getElementById('hsDots'));
+	      show($slider);
+	      return;
+	    }
+
+	    // 슬라이더 UI 숨기고 결과 영역 표시
+	    hide($slider);
+	    hide(document.getElementById('hsPrev'));
+	    hide(document.getElementById('hsNext'));
+	    hide(document.getElementById('hsDots'));
+	    show($root);
+	    $root.innerHTML = `<div class="hs-empty">"${esc(q)}" 검색 중…</div>`;
+
+	    // 목록 가져오기
+	    const url = new URL(API_LIST, location.origin);
+	    url.searchParams.set('q', q);
+	    url.searchParams.set('limit', String(LIMIT));
+	    url.searchParams.set('page', String(page));
+
+	    try{
+	      const res = await fetch(url.toString(), { headers: { 'X-Requested-With': 'fetch' }});
+	      if (!res.ok) throw new Error('HTTP '+res.status);
+	      const json = await res.json();
+	      const items = json.posts || json.items || json.list || json.data || [];
+
+	      if (!Array.isArray(items) || !items.length){
+	        $root.innerHTML = `<div class="hs-empty">"${esc(q)}"에 대한 결과가 없습니다.</div>`;
+	        return;
+	      }
+
+	      // 심플 카드 그리드로 보드 영역만 교체
+	       $root.innerHTML = `
+			<h2 style="margin:0 0 12px 0;color:#fff">"${esc(q)}" 검색 결과</h2>
+			<ul class="search-cards"
+			style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin:0;padding:0;list-style:none;color:#fff;"></ul>
+		   `;
+	      const $ul = $root.querySelector('.search-cards');
+	      $ul.innerHTML = items.map(p=>{
+	        const href = detailUrl(p);
+	        const img = pickThumb(p);
+	        const ttl = esc(p.title || '제목 없음');
+	        const cat = esc(p.category || '');
+	        const views = (p.hit != null ? p.hit : 0);
+	        return `
+	           <li class="card" style="background:#1a1311;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);">
+	             <a href="${href}" style="display:block;color:inherit;text-decoration:none">
+	              ${img ? `<img src="${img}" alt="${ttl}" style="width:100%;height:140px;object-fit:cover;display:block">` : ''}
+	              <div style="padding:12px 14px">
+	              <div style="font-size:.8rem;color:rgba(255,255,255,.85);margin-bottom:4px">${cat}</div>
+	              <div style="font-weight:700;line-height:1.4;color:#fff">${ttl}</div>
+	              <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:6px">👁️ ${views} views</div>
+	              </div>
+	            </a>
+	          </li>`;
+	      }).join('');
+	    }catch(err){
+	      console.error(err);
+	      $root.innerHTML = `<div class="hs-empty">검색을 불러오지 못했습니다.</div>`;
+	    }
+	  };
+	})();
+  
+  /* ===== 슬라이더 아래: 공지(listId=9) + 통계(게시물/유저 수) ===== */
+  (function(){
+    const ctx = "<%= request.getContextPath() %>/";
+    const NOTICE_API = ctx + "postList2.async";      // ★ 기존 API 재활용
+    const USER_COUNT_API = ctx + "users/count.async"; // ★ 아주 작은 새 엔드포인트 1개만 추가
+    const NOTICE_LIMIT = 6;
+
+    // 슬라이더 바로 아래에 마크업 주입
+    const slider = document.getElementById('top10-root');
+    if (slider){
+      slider.insertAdjacentHTML('afterend', `
+        <div class="home-row" id="homeRow">
+          <section class="card-panel home-notice">
+            <h3>📌 공지</h3>
+            <ul class="notice-list" id="noticeList">
+              <li><a><span class="notice-title">불러오는 중…</span></a></li>
+            </ul>
+          </section>
+          <section class="card-panel home-stats">
+            <h3>🌇 노을 맛집 정보</h3>
+            <div class="stats-grid">
+              <div class="stat">
+                <div class="label">게시물 수</div>
+                <div class="value" id="statPosts">—</div>
+              </div>
+              <div class="stat">
+                <div class="label">유저 수</div>
+                <div class="value" id="statUsers">—</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      `);
+    }
+
+    // 공지 로드: listId=9
+    async function loadNotices(){
+      const url = new URL(NOTICE_API, location.origin);
+      url.searchParams.set('listId', '9');
+      url.searchParams.set('limit',  String(NOTICE_LIMIT));
+      url.searchParams.set('sort',   'latest');
+      try{
+        const res = await fetch(url.toString(), { headers: { 'X-Requested-With':'fetch' }});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const json = await res.json();
+        const list = json.posts || json.items || json.list || json.data || [];
+        const notices = Array.isArray(list) ? list.slice(0, NOTICE_LIMIT) : [];
+
+        const $ul = document.getElementById('noticeList');
+        if (!$ul) return;
+        if (!notices.length){
+          $ul.innerHTML = `<li><a><span class="notice-title">공지 글이 없습니다.</span></a></li>`;
+          return;
+        }
+        $ul.innerHTML = notices.map(p=>{
+          const href = buildDetailUrl(p);
+          const ttl  = esc(p.title || '제목 없음');
+          const date = formatDate(p.createdAt || p.regDate || p.created || p.date);
+          return `
+            <li>
+              <a href="${href}">
+                <span class="notice-badge">공지</span>
+                <span class="notice-title">${ttl}</span>
+                <span class="notice-meta">${date}</span>
+              </a>
+            </li>`;
+        }).join('');
+      }catch(err){
+        console.error(err);
+        const $ul = document.getElementById('noticeList');
+        if ($ul) $ul.innerHTML = `<li><a><span class="notice-title">공지 로드 실패</span></a></li>`;
+      }
+    }
+
+    // 통계 로드: 게시물 수는 postList2의 total(있으면) 활용, 유저 수는 초미니 API
+    async function loadStats(){
+      // 게시물 수 (total/totalCount/count 중 존재하는 값 사용)
+      try{
+        const url = new URL(NOTICE_API, location.origin);
+        url.searchParams.set('limit','1'); url.searchParams.set('page','1');
+        const res = await fetch(url.toString(), { headers:{'X-Requested-With':'fetch'} });
+        const j = await res.json();
+        const postTotal = j.total ?? j.totalCount ?? j.count ?? null;
+        if (postTotal != null) setText('#statPosts', String(postTotal));
+      }catch(_){
+        setText('#statPosts', '—');
+      }
+
+      // 유저 수 (초소형 /users/count.async 사용)
+      try{
+        const res = await fetch(USER_COUNT_API, { headers:{'X-Requested-With':'fetch'} });
+        if (!res.ok) throw 0;
+        const j = await res.json();
+        setText('#statUsers', (j.userCount != null ? String(j.userCount) : '—'));
+      }catch(_){
+        setText('#statUsers', '—');
+      }
+    }
+
+    // ===== helpers =====
+    function esc(s){ return (s==null?'':String(s))
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    function buildDetailUrl(p){
+      const POST_DETAIL = ctx + "post-detail.post";
+      const id  = p.postId || p.id;
+      const cid = p.categoryId || '';
+      const tid = p.postTypeId || '';
+      let url = POST_DETAIL + "?postId=" + encodeURIComponent(id);
+      if (cid) url += "&categoryId=" + encodeURIComponent(cid);
+      if (tid) url += "&postTypeId=" + encodeURIComponent(tid);
+      return url;
+    }
+
+    function formatDate(d){
+      try{
+        const dt = (d ? new Date(d) : null);
+        if (!dt || isNaN(+dt)) return '';
+        const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,'0'), day=String(dt.getDate()).padStart(2,'0');
+        return `${y}.${m}.${day}`;
+      }catch{ return ''; }
+    }
+
+    function setText(sel, v){ const el = document.querySelector(sel); if (el) el.textContent = v; }
+
+    // 초기 로드
+    loadNotices();
+    loadStats();
+
+    // 검색 중일 땐 하단(공지/통계) 숨기고, 검색 해제 시 다시 표시
+    const originalLoadPosts = window.loadPosts;
+    window.loadPosts = async function(){
+      const q = (window.currentQuery || '').trim();
+      const row = document.getElementById('homeRow');
+      if (q){ if (row) row.style.display = 'none'; }
+      else { if (row) row.style.display = ''; }
+      if (typeof originalLoadPosts === 'function'){
+        return originalLoadPosts.apply(this, arguments);
+      }
+    };
   })();
   </script>
 </body>

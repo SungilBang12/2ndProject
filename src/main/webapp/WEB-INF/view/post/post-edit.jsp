@@ -5,11 +5,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>게시글 작성 - '해'쳐 모여</title>
+    <title>게시글 작성</title>
 
     <!-- 공통 CSS -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=5">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/post-create-edit.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/post-create-edit.css?v=1">
     <link rel="icon" href="${pageContext.request.contextPath}/images/favicon.ico?v=1">
 
     <!-- jQuery -->
