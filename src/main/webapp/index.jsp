@@ -8,46 +8,264 @@
   <link rel="icon" href="<%=request.getContextPath()%>/images/favicon.ico?v=1">
 
   <style>
-    /* ====== Top10 Hero Slider (scoped to .slot-board) ====== */
-    .slot-board .hero-slider{ position:relative; border-radius:16px; overflow:hidden; background:#111; box-shadow:0 8px 24px rgba(0,0,0,.08); }
-    .slot-board .hs-viewport{ position:relative; width:100%; aspect-ratio: 16/9; overflow:hidden; }
-    .slot-board .hs-track{ display:flex; width:100%; height:100%; transform:translate3d(0,0,0); transition:transform .45s ease; will-change:transform; margin:0; padding:0; list-style:none; }
-    .slot-board .hs-slide{ flex:0 0 100%; height:100%; position:relative; }
-    .slot-board .hs-link{ display:block; width:100%; height:100%; color:inherit; text-decoration:none; }
-    .slot-board .hs-figure{ position:relative; width:100%; height:100%; margin:0; }
-    .slot-board .hs-img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .slot-board .hs-overlay{ position:absolute; inset:0; background:
-      linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%),
-      linear-gradient(90deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 40%); }
-    .slot-board .hs-caption{ position:absolute; left:20px; right:20px; bottom:18px; color:#fff; }
-    .slot-board .hs-chip{ display:inline-block; padding:6px 10px; font-weight:700; border-radius:9999px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.25); margin-bottom:8px; }
-    .slot-board .hs-chip.is-map{ margin-left:6px; background:rgba(31,122,31,.6); border-color:rgba(255,255,255,.25); }
-    .slot-board .hs-title{ margin:0 0 6px 0; font-size:1.35rem; line-height:1.35; letter-spacing:-0.01em; text-shadow:0 2px 8px rgba(0,0,0,.35); }
-    .slot-board .hs-meta{ margin:0; opacity:.85; font-size:.95rem; }
-    .slot-board .hs-nav{ position:absolute; top:50%; transform:translateY(-50%); z-index:3; width:42px; height:42px; border-radius:50%; border:1px solid rgba(255,255,255,.35);
-      background:rgba(0,0,0,.25); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-    .slot-board .hs-prev{ left:10px; } .slot-board .hs-next{ right:10px; }
-    .slot-board .hs-nav:hover{ background:rgba(0,0,0,.4); }
-    .slot-board .hs-dots{ position:absolute; left:0; right:0; bottom:8px; display:flex; gap:6px; justify-content:center; list-style:none; margin:0; padding:0; z-index:3; }
-    .slot-board .hs-dots button{ width:8px; height:8px; border-radius:50%; border:none; background:rgba(255,255,255,.45); cursor:pointer; }
-    .slot-board .hs-dots .is-active button{ background:#fff; }
-    .slot-board .hs-empty{ padding:20px; text-align:center; color:#555; background:#fafafa; border:1px dashed #e5e5e5; border-radius:12px; }
+  /* ====== 전역 폰트 임포트 ====== */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap');
 
-    /* ====== 이미지가 없을 때: 본문을 흐릿 배경으로 ====== */
-    .slot-board .hs-textposter{ position:relative; width:100%; height:100%; background:
-      radial-gradient(120% 120% at 80% 10%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 60%),
-      linear-gradient(180deg, #2f2b27 0%, #1f1b18 100%); }
-    .slot-board .hs-textbg{ position:absolute; inset:0; padding:28px; color:#fff; font-weight:700;
-      font-size:clamp(16px, 2.8vw, 22px); line-height:1.6; white-space:pre-line; overflow:hidden;
-      opacity:.28; filter:blur(6px); }
-    .slot-board .hs-textposter .hs-overlay{ position:absolute; inset:0;
-      background:linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.55) 100%); }
+  /* ====== Top10 Hero Slider (Sunset 테마) ====== */
+  .slot-board .hero-slider {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #2a1f1a 0%, #1a1311 100%);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(255, 139, 122, 0.1);
+  }
 
-    @media (max-width: 720px){
-      .slot-board .hs-title{ font-size:1.05rem; }
-      .slot-board .hs-meta{ font-size:.85rem; }
+  .slot-board .hs-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+  }
+
+  .slot-board .hs-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .slot-board .hs-slide {
+    flex: 0 0 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .slot-board .hs-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .slot-board .hs-figure {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .slot-board .hs-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* 석양 그라데이션 오버레이 */
+  .slot-board .hs-overlay {
+    position: absolute;
+    inset: 0;
+    background: 
+      linear-gradient(180deg, 
+        rgba(0, 0, 0, 0) 0%,
+        rgba(26, 19, 17, 0.3) 50%,
+        rgba(26, 19, 17, 0.85) 100%
+      ),
+      linear-gradient(90deg,
+        rgba(255, 107, 107, 0.15) 0%,
+        rgba(255, 139, 122, 0.08) 50%,
+        rgba(0, 0, 0, 0) 100%
+      );
+  }
+
+  .slot-board .hs-caption {
+    position: absolute;
+    left: 32px;
+    right: 32px;
+    bottom: 32px;
+    color: #fff;
+    z-index: 2;
+  }
+
+  /* 산호색 칩 디자인 */
+  .slot-board .hs-chip {
+    display: inline-block;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8B7A 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    letter-spacing: -0.01em;
+  }
+
+  .slot-board .hs-chip.is-map {
+    margin-left: 8px;
+    background: linear-gradient(135deg, #48BB78 0%, #38A169 100%);
+    box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+  }
+
+  .slot-board .hs-title {
+    margin: 0 0 10px 0;
+    font-family: 'Noto Serif KR', serif;
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    text-shadow: 
+      0 2px 12px rgba(0, 0, 0, 0.5),
+      0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .slot-board .hs-meta {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* 산호색 네비게이션 버튼 */
+  .slot-board .hs-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 139, 122, 0.4);
+    background: rgba(26, 19, 17, 0.6);
+    backdrop-filter: blur(8px);
+    color: #FF8B7A;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .slot-board .hs-prev { left: 16px; }
+  .slot-board .hs-next { right: 16px; }
+
+  .slot-board .hs-nav:hover {
+    background: rgba(255, 139, 122, 0.25);
+    border-color: rgba(255, 139, 122, 0.6);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+  }
+
+  /* 점 네비게이션 */
+  .slot-board .hs-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    z-index: 3;
+  }
+
+  .slot-board .hs-dots button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .slot-board .hs-dots .is-active button {
+    background: #FF8B7A;
+    box-shadow: 0 0 8px rgba(255, 139, 122, 0.6);
+    width: 12px;
+    height: 12px;
+  }
+
+  .slot-board .hs-dots button:hover {
+    background: rgba(255, 139, 122, 0.8);
+  }
+
+  /* 이미지 없을 때 텍스트 포스터 */
+  .slot-board .hs-textposter {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 80% 20%, rgba(255, 107, 107, 0.15) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(255, 139, 122, 0.1) 0%, transparent 50%),
+      linear-gradient(135deg, #2f2520 0%, #1a1311 100%);
+  }
+
+  .slot-board .hs-textbg {
+    position: absolute;
+    inset: 0;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
+    font-size: clamp(16px, 2.5vw, 20px);
+    line-height: 1.8;
+    white-space: pre-line;
+    overflow: hidden;
+    opacity: 0.3;
+    filter: blur(8px);
+  }
+
+  /* 빈 상태 */
+  .slot-board .hs-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: #888;
+    background: linear-gradient(135deg, rgba(42, 31, 26, 0.5) 0%, rgba(26, 19, 17, 0.5) 100%);
+    border: 2px dashed rgba(255, 139, 122, 0.2);
+    border-radius: 20px;
+    font-size: 1.125rem;
+  }
+
+  /* 반응형 */
+  @media (max-width: 768px) {
+    .slot-board .hs-caption {
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
     }
-  </style>
+
+    .slot-board .hs-title {
+      font-size: 1.125rem;
+    }
+
+    .slot-board .hs-meta {
+      font-size: 0.875rem;
+    }
+
+    .slot-board .hs-chip {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+
+    .slot-board .hs-nav {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+    }
+  }
+</style>
 </head>
 
 <body>

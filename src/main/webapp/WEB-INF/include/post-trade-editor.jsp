@@ -5,39 +5,220 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>게시글 작성</title>
+  <title>게시글 작성 - Sunset Community</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    /* 툴바 레이아웃 개선 */
+    /* ========== Sunset Theme Variables ========== */
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-tertiary: #0f1624;
+      --text-primary: #e8e8f0;
+      --text-secondary: #a8a8b8;
+      --text-tertiary: #7a7a8a;
+      --accent-coral: #ff6b6b;
+      --accent-orange: #ffa45c;
+      --accent-pink: #ff6b9d;
+      --accent-purple: #c44569;
+      --gradient-sunset: linear-gradient(135deg, #ff6b6b 0%, #ffa45c 50%, #ff6b9d 100%);
+      --gradient-dark: linear-gradient(135deg, #16213e 0%, #0f1624 100%);
+      --shadow-soft: 0 8px 32px rgba(255, 107, 107, 0.15);
+      --shadow-hover: 0 12px 48px rgba(255, 107, 107, 0.25);
+      --border-color: rgba(255, 107, 107, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: var(--bg-tertiary);
+      background-image: 
+        radial-gradient(ellipse at top, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(255, 164, 92, 0.08) 0%, transparent 50%);
+      min-height: 100vh;
+      padding: 24px 16px;
+      color: var(--text-primary);
+    }
+
+    /* ========== 컨테이너 ========== */
+    .container { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      padding: 0;
+    }
+
+    /* ========== 폼 그룹 ========== */
+    .form-group { 
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-primary);
+      text-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+    }
+
+    .required { 
+      color: var(--accent-coral);
+      margin-left: 4px;
+    }
+
+    .form-control {
+      width: 100%; 
+      padding: 14px 16px; 
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 15px; 
+      background: rgba(26, 26, 46, 0.6);
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .form-control:focus { 
+      outline: none; 
+      border-color: var(--accent-coral);
+      box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.15);
+      background: rgba(26, 26, 46, 0.8);
+    }
+
+    .form-control::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    select.form-control {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff6b6b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+
+    select.form-control option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 10px;
+    }
+
+    .form-help { 
+      font-size: 13px; 
+      color: var(--text-tertiary);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-help::before {
+      content: "💡";
+      font-size: 14px;
+    }
+
+    /* ========== 툴바 ========== */
     .toolbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      padding: 12px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      margin-bottom: 12px;
+      padding: 14px 16px;
+      background: rgba(26, 26, 46, 0.6);
+      border: 2px solid var(--border-color);
+      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 0;
+      backdrop-filter: blur(20px);
     }
-    .toolbar-group { display: flex; gap: 4px; align-items: center; }
-    .toolbar-divider { width: 1px; height: 24px; background: #ddd; margin: 0 4px; }
-    .toolbar-media { display: flex; gap: 4px; flex-wrap: wrap; }
-    .toolbar-feature { display: inline-block; }
-    .toolbar-feature[data-feature]:not([data-feature="emoji"]):not([data-feature="link"]) { display: none; }
-    .toolbar-feature[data-feature].active { display: inline-block; }
 
-    /* 에디터 영역 */
+    .toolbar-group { 
+      display: flex; 
+      gap: 6px; 
+      align-items: center;
+    }
+
+    .toolbar-divider { 
+      width: 1px; 
+      height: 28px; 
+      background: var(--border-color);
+      margin: 0 8px;
+    }
+
+    .toolbar-media { 
+      display: flex; 
+      gap: 6px; 
+      flex-wrap: wrap;
+    }
+
+    .toolbar-feature { 
+      display: inline-block;
+    }
+
+    .toolbar-feature[data-feature]:not([data-feature="emoji"]):not([data-feature="link"]) { 
+      display: none;
+    }
+
+    .toolbar-feature[data-feature].active { 
+      display: inline-block;
+    }
+
+    .toolbar button {
+      padding: 8px 14px;
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      min-width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar button:hover {
+      background: rgba(255, 107, 107, 0.2);
+      border-color: var(--accent-coral);
+      color: var(--accent-coral);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .toolbar button:active,
+    .toolbar button.is-active {
+      background: rgba(255, 107, 107, 0.3);
+      border-color: var(--accent-coral);
+      color: var(--accent-coral);
+      transform: translateY(0);
+    }
+
+    .toolbar button strong { font-weight: 700; }
+    .toolbar button i { font-style: italic; }
+    .toolbar button s { text-decoration: line-through; }
+
+    /* ========== 에디터 영역 ========== */
     .board {
       min-height: 500px;
       max-height: none;
-      border: 1px solid #d1d7df;
-      border-radius: 8px;
-      background: white;
-      padding: 20px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      border: 2px solid var(--border-color);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      background: rgba(26, 26, 46, 0.4);
+      padding: 24px;
+      box-shadow: var(--shadow-soft);
       overflow: auto;
+      backdrop-filter: blur(20px);
     }
     
     .board .schedule-block {
@@ -45,63 +226,279 @@
       cursor: default;
       pointer-events: auto;
     }
+
     .board .schedule-block * {
       user-select: none;
       cursor: default;
     }
-    .board .ProseMirror { min-height: 460px; outline: none; }
 
-    /* 폼 공통 */
-    .container { max-width: 880px; margin: 24px auto; padding: 0 16px; }
-    .form-group { margin-bottom: 16px; }
-    .form-control {
-      width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;
-      font-size: 14px; transition: border-color 0.2s;
+    .board .ProseMirror { 
+      min-height: 460px; 
+      outline: none;
+      color: var(--text-secondary);
+      line-height: 1.8;
     }
-    .form-control:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
-    .required { color: #dc3545; }
-    .form-help { font-size: 12px; color: #666; margin-top: 4px; }
 
-    /* 버튼 */
-    .actions { display: flex; gap: 8px; margin-top: 16px; }
-    .btn-primary, .btn-secondary {
-      border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer;
+    .board .ProseMirror p {
+      margin: 0.8em 0;
     }
-    .btn-primary { background: #1a73e8; color: #fff; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-secondary { background: #f1f3f4; color: #333; }
 
+    .board .ProseMirror h1,
+    .board .ProseMirror h2,
+    .board .ProseMirror h3 {
+      color: var(--text-primary);
+      margin: 1.2em 0 0.6em;
+      font-weight: 700;
+    }
+
+    .board .ProseMirror h1 {
+      font-size: 2em;
+      background: var(--gradient-sunset);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .board .ProseMirror h2 {
+      font-size: 1.6em;
+      color: var(--accent-orange);
+    }
+
+    .board .ProseMirror h3 {
+      font-size: 1.3em;
+      color: var(--accent-pink);
+    }
+
+    .board .ProseMirror p.is-editor-empty:first-child::before {
+      content: "여기에 내용을 작성하세요...";
+      float: left;
+      color: var(--text-tertiary);
+      pointer-events: none;
+      height: 0;
+      font-style: italic;
+    }
+
+    .board .ProseMirror img {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      margin: 16px 0;
+    }
+
+    .board .ProseMirror ul,
+    .board .ProseMirror ol {
+      padding-left: 24px;
+      margin: 1em 0;
+    }
+
+    .board .ProseMirror li {
+      margin: 0.4em 0;
+      color: var(--text-secondary);
+    }
+
+    .board .ProseMirror code {
+      background: rgba(255, 107, 107, 0.1);
+      color: var(--accent-coral);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    .board .ProseMirror a {
+      color: var(--accent-coral);
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+
+    .board .ProseMirror a:hover {
+      color: var(--accent-orange);
+    }
+
+    /* ========== 버튼 ========== */
+    .actions { 
+      display: flex; 
+      gap: 12px; 
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .btn-primary, 
+    .btn-secondary {
+      border: none; 
+      border-radius: 12px; 
+      padding: 14px 32px; 
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary { 
+      background: var(--gradient-sunset);
+      color: white;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .btn-primary:disabled { 
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary { 
+      background: rgba(168, 168, 184, 0.2);
+      color: var(--text-primary);
+      border: 2px solid rgba(168, 168, 184, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(168, 168, 184, 0.3);
+      border-color: rgba(168, 168, 184, 0.5);
+      transform: translateY(-2px);
+    }
+
+    /* ========== 페이지 헤더 ========== */
+    .page-header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .page-title {
+      font-size: 2.5em;
+      font-weight: 700;
+      background: var(--gradient-sunset);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      text-shadow: 0 4px 16px rgba(255, 107, 107, 0.3);
+    }
+
+    .page-subtitle {
+      color: var(--text-tertiary);
+      font-size: 1.1em;
+    }
+
+    /* ========== 반응형 ========== */
     @media (max-width: 768px) {
-      .toolbar { gap: 4px; padding: 8px; }
-      .toolbar-group { gap: 2px; }
-      .toolbar button { padding: 6px 10px; font-size: 12px; }
+      body {
+        padding: 16px 12px;
+      }
+
+      .page-title {
+        font-size: 1.8em;
+      }
+
+      .toolbar { 
+        gap: 6px; 
+        padding: 10px 12px;
+      }
+
+      .toolbar-group { 
+        gap: 4px;
+      }
+
+      .toolbar button { 
+        padding: 6px 10px; 
+        font-size: 12px;
+        min-width: 34px;
+        height: 34px;
+      }
+
+      .toolbar-divider {
+        height: 24px;
+        margin: 0 4px;
+      }
+
+      .board {
+        padding: 16px;
+      }
+
+      .form-control {
+        padding: 12px 14px;
+        font-size: 14px;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+
+      .actions {
+        flex-direction: column-reverse;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+    }
+
+    /* ========== 스크롤바 커스텀 ========== */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--gradient-sunset);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-coral);
+    }
+
+    /* ========== 로딩 애니메이션 ========== */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
   </style>
 </head>
 <body>
 
-<!-- ★ Front Controller로 제출 -->
 <form action="<c:url value='/create.post'/>" method="post" onsubmit="return prepareAndSubmit()">
   <div class="container">
+
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <h1 class="page-title">새 게시글 작성</h1>
+      <p class="page-subtitle">커뮤니티와 당신의 이야기를 공유하세요 ✨</p>
+    </div>
 
     <!-- 카테고리 선택 -->
     <div class="form-group">
       <label for="listId">
         카테고리 선택 <span class="required">*</span>
       </label>
-      <!-- ★ URL 파라미터로 초기값 설정 -->
       <select id="listId" name="listId" class="form-control" required>
         <option value="">-- 카테고리를 선택하세요 --</option>
-        <option value="1" ${param.listId == '1' ? 'selected' : ''}>노을</option>
-        <option value="2" ${param.listId == '2' ? 'selected' : ''}>맛집 추천</option>
-        <option value="3" ${param.listId == '3' ? 'selected' : ''}>맛집 후기</option>
-        <option value="4" ${param.listId == '4' ? 'selected' : ''}>촬영 TIP</option>
-        <option value="5" ${param.listId == '5' ? 'selected' : ''}>장비 추천</option>
-        <option value="6" ${param.listId == '6' ? 'selected' : ''}>중고 거래</option>
-        <option value="7" ${param.listId == '7' ? 'selected' : ''}>해'쳐 모여</option>
-        <option value="8" ${param.listId == '8' ? 'selected' : ''}>장소 추천</option>
+        <option value="1" ${param.listId == '1' ? 'selected' : ''}>🌅 노을</option>
+        <option value="2" ${param.listId == '2' ? 'selected' : ''}>🍽️ 맛집 추천</option>
+        <option value="3" ${param.listId == '3' ? 'selected' : ''}>⭐ 맛집 후기</option>
+        <option value="4" ${param.listId == '4' ? 'selected' : ''}>📸 촬영 TIP</option>
+        <option value="5" ${param.listId == '5' ? 'selected' : ''}>🎥 장비 추천</option>
+        <option value="6" ${param.listId == '6' ? 'selected' : ''}>💰 중고 거래</option>
+        <option value="7" ${param.listId == '7' ? 'selected' : ''}>👥 해'쳐 모여</option>
+        <option value="8" ${param.listId == '8' ? 'selected' : ''}>📍 장소 추천</option>
       </select>
-      <div class="form-help">게시글을 작성할 카테고리를 선택하세요.</div>
+      <div class="form-help">게시글을 작성할 카테고리를 선택하세요</div>
     </div>
 
     <!-- 제목 입력 -->
@@ -114,11 +511,11 @@
         id="title"
         name="title"
         class="form-control"
-        placeholder="제목을 입력하세요"
+        placeholder="멋진 제목을 입력하세요"
         required
         maxlength="100"
       />
-      <div class="form-help">최대 100자까지 입력 가능합니다.</div>
+      <div class="form-help">최대 100자까지 입력 가능합니다</div>
     </div>
 
     <!-- 에디터 툴바 -->
@@ -193,8 +590,8 @@
 
     <!-- 액션 버튼 -->
     <div class="actions">
-      <button type="submit" class="btn-primary">저장</button>
       <button type="button" class="btn-secondary" onclick="cancelPost()">취소</button>
+      <button type="submit" class="btn-primary">저장</button>
     </div>
 
   </div>
