@@ -1,19 +1,26 @@
 // chat.js (Type: module)
 
-// ✅ 전역 Ably 인스턴스 (공용)
+// ✅ 전역 Ably 인스턴스
 window.ably = window.ably || null;
 let channel = null;
+let participantCount = 0;
+
+// Firebase
+let firebaseDb = null;
+let messagesRef = null; // ✅ Firebase 메시지 참조 추가
 
 const chatModule = document.getElementById("chatModule");
 if (!chatModule) throw new Error("❌ chatModule not found.");
 
 const postId = chatModule.dataset.postId || null;
 const userId = chatModule.dataset.userId;
-// ✅ 수정: 전역 window 객체에 'userId' 그대로 노출하여 schedule-block.js가 사용할 수 있게 함
-window.userId = userId; 
+window.userId = userId;
 const maxPeople = parseInt(chatModule.dataset.maxPeople, 10);
 
 const $joinBtn = $("#joinBtn");
+const $leaveBtn = $('<button id="leaveBtn" class="leave-btn">나가기</button>').hide();
+$("#chatPanel .chat-header").append($leaveBtn);
+
 const $chatPanel = $("#chatPanel");
 const $chatListPanel = $("#chatListPanel");
 const $chatList = $("#chatList");
@@ -25,12 +32,12 @@ const $participantCount = $("#participantCount");
 $chatPanel.hide();
 $chatListPanel.hide();
 
-// ✅ postId 없으면 채팅 리스트, 있으면 방 입장
+// postId 없으면 채팅 리스트, 있으면 방 입장
 if (!postId) loadChatList();
 else initChatRoom();
 
 /* =====================================================
- 🟢 Ably Chat API 기반 채팅방 리스트 로드
+ 🟢 채팅 리스트 로드
 ===================================================== */
 function loadChatList() {
   console.log("🗂️ 채팅 리스트 로드 중...");
@@ -68,135 +75,195 @@ function loadChatList() {
   });
 }
 
-
 /* =====================================================
- 🟢 Realtime 기반 채팅방 초기화
+ 🟢 Realtime 채팅방 초기화
 ===================================================== */
 async function initChatRoom() {
-    console.log("🔹 initChatRoom 시작, postId:", postId);
-    $.ajax({
-        url: "/chat/join",
-        method: "GET",
-        data: { postId },
-        dataType: "json",
-        success: (res) => {
-            console.log("✅ /chat/join 응답:", res);
+  console.log("🔹 initChatRoom 시작, postId:", postId);
+  $.ajax({
+    url: "/chat/join",
+    method: "GET",
+    data: { postId },
+    dataType: "json",
+    success: (res) => {
+      console.log("✅ /chat/join 응답:", res);
 
-            const { ablyConfig } = res;
+      const { ablyConfig, firebaseConfig, channelName } = res;
 
-            if (!ablyConfig?.pubKey) {
-                console.error("❌ Ably pubKey 누락!", ablyConfig);
-                $chatMessages.append('<div class="system-message">Ably 설정 누락</div>');
-                return;
-            }
+      // 1️⃣ Ably 연결
+      if (!ablyConfig?.pubKey) {
+        console.error("❌ Ably pubKey 누락!", ablyConfig);
+        $chatMessages.append('<div class="system-message">Ably 설정 누락</div>');
+        return;
+      }
 
-            try {
-                console.log("🔹 Ably 연결 시도, key:", ablyConfig.pubKey);
-                ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId });
-            } catch (err) {
-                console.error("❌ Ably Realtime 연결 실패:", err);
-            }
+      try {
+        ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId });
+      } catch (err) {
+        console.error("❌ Ably Realtime 연결 실패:", err);
+      }
 
-            ably.connection.on("connected", () => {
-                console.log("✅ Ably Realtime 연결 성공");
-                // ✅ 수정: setupChannel 바로 호출
-                setupChannel(res.channelName); 
-                setupJoinHandler(res); // 버튼 핸들러는 그대로 유지
-            });
+      ably.connection.on("connected", () => {
+        console.log("✅ Ably Realtime 연결 성공");
+        setupChannel(channelName);
+        setupJoinHandler(res); // 참가 버튼
+        // 2️⃣ Firebase 초기화
+        initFirebase(firebaseConfig);
+      });
 
-            ably.connection.on("failed", () => {
-                console.error("❌ Ably Realtime 연결 실패 상태 발생");
-            });
-        },
-        error: (err) => {
-            console.error("❌ /chat/join AJAX 요청 실패:", err);
-        }
-    });
+      ably.connection.on("failed", () => {
+        console.error("❌ Ably Realtime 연결 실패 상태 발생");
+      });
+    },
+    error: (err) => {
+      console.error("❌ /chat/join AJAX 요청 실패:", err);
+    },
+  });
 }
 
+/* =====================================================
+ 🟢 Firebase 초기화
+===================================================== */
+function initFirebase(firebaseConfig) {
+  if (!firebaseConfig || !firebaseConfig.apiKey) {
+    console.warn("Firebase config 누락");
+    return;
+  }
+
+  // ✅ Firebase App 초기화
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  firebaseDb = firebase.database();
+  messagesRef = firebaseDb.ref(`chat/${postId}/messages`);
+
+  // ✅ 기존 메시지 불러오기
+  messagesRef.once("value", (snapshot) => {
+    const messages = snapshot.val();
+    if (messages) {
+      Object.values(messages).forEach((msg) => {
+        const cls = msg.user === userId ? "chat-message-mine" : "chat-message-other";
+        displayMessage(`<div class="${cls}"><strong>${msg.user === userId ? "나" : msg.user}</strong>: ${msg.text}</div>`);
+      });
+    }
+  });
+
+  // ✅ 새로운 메시지 실시간 수신
+  messagesRef.on("child_added", (snapshot) => {
+    const msg = snapshot.val();
+    if (!msg) return;
+    if (msg.user === userId) return; // 이미 내 메시지는 Ably로 표시됨
+    const cls = "chat-message-other";
+    displayMessage(`<div class="${cls}"><strong>${msg.user}</strong>: ${msg.text}</div>`);
+  });
+}
 
 /* =====================================================
  🟢 채널 구독 및 메시지 처리
 ===================================================== */
 function setupChannel(channelName) {
-    const ably = window.ably;
-    channel = ably.channels.get(channelName);
-    
-    // ✅ 메시지 구독을 join 전에 미리 설정
-    channel.subscribe("message", (msg) => {
-        const mine = msg.data.user === userId;
-        const cls = mine ? "chat-message-mine" : "chat-message-other";
-        displayMessage(`<div class="${cls}"><strong>${mine ? "나" : msg.data.user}</strong>: ${msg.data.text}</div>`);
-    });
-    
-    // ✅ Presence 구독으로 실시간 인원 카운트 업데이트
-    channel.presence.subscribe(["enter", "leave", "update"], (member) => {
-        channel.presence.get((err, members) => {
-            if (!err) updateCount(members);
-        });
-        
-        // 참가/퇴장 시스템 메시지
-        if (member.action === 'enter') {
-            displayMessage(`<div class="system-message">${member.clientId} 님이 참가했습니다.</div>`);
-        } else if (member.action === 'leave') {
-            displayMessage(`<div class="system-message">${member.clientId} 님이 퇴장했습니다.</div>`);
-        }
-    });
-    
-    // 초기 인원 로드
-    channel.presence.get((err, members) => {
-        if (!err) updateCount(members);
-    });
-    
-    // ✅ 전송 버튼 활성화 (Join은 별개)
-    $sendBtn.prop("disabled", false);
-    $chatPanel.show();
+  channel = ably.channels.get(channelName);
+
+  // ✅ Ably → 화면 표시 + Firebase 저장
+  channel.subscribe("message", (msg) => {
+    const mine = msg.data.user === userId;
+    const cls = mine ? "chat-message-mine" : "chat-message-other";
+    displayMessage(`<div class="${cls}"><strong>${mine ? "나" : msg.data.user}</strong>: ${msg.data.text}</div>`);
+
+    // Firebase에도 저장 (중복 저장 방지)
+    if (!mine && firebaseDb) {
+      firebaseDb.ref(`chat/${postId}/messages`).push({
+        user: msg.data.user,
+        text: msg.data.text,
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  channel.presence.subscribe(["enter", "leave"], (member) => {
+    if (member.action === "enter") participantCount++;
+    else if (member.action === "leave") participantCount--;
+    updateCountDisplay();
+
+    const actionText = member.action === "enter" ? "참가했습니다." : "퇴장했습니다.";
+    displayMessage(`<div class="system-message">${member.clientId} 님이 ${actionText}</div>`);
+  });
+
+  channel.presence.get((err, members) => {
+    if (!err) {
+      participantCount = members.length;
+      updateCountDisplay();
+    }
+  });
+
+  $sendBtn.prop("disabled", false);
+  $chatPanel.show();
 }
 
-
 /* =====================================================
- 🟢 채팅방 참가 처리 (버튼 클릭 이벤트만 담당)
+ 🟢 참가 버튼 / 메시지 전송
 ===================================================== */
 function setupJoinHandler(config) {
-  const { postId } = config; // userId는 전역 상수 userId를 사용
-  const ably = window.ably;
+  const { postId } = config;
   let joined = false;
 
-  ably.connection.on("connected", () => {
-    $joinBtn.prop("disabled", false);
-  });
+  $joinBtn.prop("disabled", true);
+  ably.connection.on("connected", () => $joinBtn.prop("disabled", false));
 
   $joinBtn.on("click", () => {
     if (joined) return;
-    
-    // ✅ POST 요청으로 서버에 참가 요청
-    $.post("/chat/join", { postId, userId }, function (res) {
+    $.post("/chat/join", { postId, userId }, (res) => {
       if (!res.success) {
         displayMessage(`<div class="system-message" style="color:red;">참가 실패: ${res.message}</div>`);
         return;
       }
-
-      // ✅ Ably Presence에 참가
       channel.presence.enter({ user: userId });
       joined = true;
-      $joinBtn.hide(); // 참가 후 버튼 숨기기
+      $joinBtn.hide();
+      $leaveBtn.show();
     });
+  });
+
+  $leaveBtn.on("click", () => {
+    if (!joined || !channel) return;
+    channel.presence.leave();
+    channel.unsubscribe();
+    channel.presence.unsubscribe();
+    channel = null;
+
+    $chatMessages.empty();
+    $joinBtn.show();
+    $leaveBtn.hide();
+    joined = false;
+    displayMessage('<div class="system-message">채팅방에서 나갔습니다.</div>');
   });
 
   $sendBtn.on("click", () => {
     const text = $chatInput.val().trim();
     if (!text || !channel) return;
     channel.publish("message", { user: userId, text });
+
+    // ✅ Firebase에 메시지 저장
+    if (firebaseDb) {
+      firebaseDb.ref(`chat/${postId}/messages`).push({
+        user: userId,
+        text,
+        timestamp: Date.now(),
+      });
+    }
+
     $chatInput.val("").focus();
   });
 }
 
+/* =====================================================
+ 🟢 화면 업데이트 헬퍼
+===================================================== */
 function displayMessage(content) {
   $chatMessages.append(content);
   $chatMessages.scrollTop($chatMessages[0].scrollHeight);
 }
 
-function updateCount(members) {
-  const count = members.length;
-  $participantCount.text(`${count}/${maxPeople}`);
+function updateCountDisplay() {
+  $participantCount.text(`${participantCount}/${maxPeople}`);
 }

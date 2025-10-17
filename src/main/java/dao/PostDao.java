@@ -14,7 +14,6 @@ import com.google.gson.JsonObject;
 
 import dto.Post;
 import dto.PostSummary;
-import dto.Post;
 import utils.ConnectionPoolHelper;
 import utils.s3.R2Helper;
 
@@ -108,282 +107,227 @@ public class PostDao {
 
 		return posts;
 	}
-	
+
 	public List<Post> getPostsByNewest(int limit) {
-        // POST_ID가 AUTO_INCREMENT거나 SEQUENCE 기반이면 최신순 정렬과 동일
+		// POST_ID가 AUTO_INCREMENT거나 SEQUENCE 기반이면 최신순 정렬과 동일
 		String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY POST_ID DESC) WHERE ROWNUM <= ?";
-        return getPostsByQuery(sql, limit);
-    }
-	
-    public List<Post> getPostsByOldest(int limit) {
-    	String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY POST_ID ASC) WHERE ROWNUM <= ?";
-        return getPostsByQuery(sql, limit);
-    }
-    
-    public List<Post> getPostsByViews(int limit) {
-    	String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY HIT DESC, POST_ID DESC) WHERE ROWNUM <= ?";
-        return getPostsByQuery(sql, limit);
-    }
+		return getPostsByQuery(sql, limit);
+	}
 
-    private List<Post> getPostsByQuery(String sql) {
-        List<Post> posts = new ArrayList<>();
+	public List<Post> getPostsByOldest(int limit) {
+		String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY POST_ID ASC) WHERE ROWNUM <= ?";
+		return getPostsByQuery(sql, limit);
+	}
 
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+	public List<Post> getPostsByViews(int limit) {
+		String sql = "SELECT * FROM (SELECT * FROM POST ORDER BY HIT DESC, POST_ID DESC) WHERE ROWNUM <= ?";
+		return getPostsByQuery(sql, limit);
+	}
 
-            while (rs.next()) {
-                posts.add(mapRowToPost(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+	private List<Post> getPostsByQuery(String sql) {
+		List<Post> posts = new ArrayList<>();
 
-        return posts;
-    }
-    
-    private List<Post> getPostsByQuery(String sql, int limit) {
-        List<Post> posts = new ArrayList<>();
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
 
-            pstmt.setInt(1, limit); // ✅ LIMIT 바인딩
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    posts.add(mapRowToPost(rs));
-                }
-            }
+			while (rs.next()) {
+				posts.add(mapRowToPost(rs));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return posts;
-    }
-    
- // ✅ 전체 게시글 수 조회
-    public int getTotalPostCount() {
-        String sql = "SELECT COUNT(*) FROM POST";
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-    
-    public List<Post> getPagedPosts(String sort, int page, int limit) {
-        String orderBy;
-        switch (sort) {
-            case "views":
-                orderBy = "ORDER BY P.HIT DESC";
-                break;
-            case "oldest":
-                orderBy = "ORDER BY P.POST_ID ASC";
-                break;
-            default:
-                orderBy = "ORDER BY P.POST_ID DESC";
-        }
+		return posts;
+	}
 
-        int start = (page - 1) * limit + 1;
-        int end = start + limit - 1;
+	private List<Post> getPostsByQuery(String sql, int limit) {
+		List<Post> posts = new ArrayList<>();
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        // ✅ categoryId, typeId, categoryName, postTypeName까지 전부 조회
-        String sql =
-                "SELECT * FROM ( " +
-                "  SELECT ROWNUM AS rnum, inner_query.* " +
-                "  FROM ( " +
-                "    SELECT " +
-                "      P.POST_ID, " +
-                "      P.USER_ID, " +
-                "      P.TITLE, " +
-                "      P.CONTENT, " +
-                "      P.HIT, " +
-                "      P.CREATED_AT, " +
-                "      PL.LIST_ID, " +
-                "      PL.CATEGORY_ID, " +
-                "      PL.TYPE_ID, " +
-                "      C.CATEGORY_NAME AS CATEGORY, " +
-                "      PT.TYPE_NAME AS POST_TYPE " +
-                "    FROM POST P " +
-                "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
-                "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
-                "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
-                     orderBy + " " +
-                "  ) inner_query " +
-                "  WHERE ROWNUM <= ? " +
-                ") WHERE rnum >= ?";
+			pstmt.setInt(1, limit); // ✅ LIMIT 바인딩
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					posts.add(mapRowToPost(rs));
+				}
+			}
 
-        List<Post> posts = new ArrayList<>();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return posts;
+	}
 
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	// ✅ 전체 게시글 수 조회
+	public int getTotalPostCount() {
+		String sql = "SELECT COUNT(*) FROM POST";
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+			if (rs.next())
+				return rs.getInt(1);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
 
-            pstmt.setInt(1, end);
-            pstmt.setInt(2, start);
+	public List<Post> getPagedPosts(String sort, int page, int limit) {
+		String orderBy;
+		switch (sort) {
+		case "views":
+			orderBy = "ORDER BY P.HIT DESC";
+			break;
+		case "oldest":
+			orderBy = "ORDER BY P.POST_ID ASC";
+			break;
+		default:
+			orderBy = "ORDER BY P.POST_ID DESC";
+		}
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    Post post = Post.builder()
-                            .postId(rs.getInt("POST_ID"))
-                            .userId(rs.getString("USER_ID"))
-                            .title(rs.getString("TITLE"))
-                            .content(rs.getString("CONTENT"))
-                            .hit(rs.getInt("HIT"))
-                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
-                            .listId(rs.getInt("LIST_ID"))
-                            .categoryId(rs.getInt("CATEGORY_ID"))
-                            .postTypeId(rs.getInt("TYPE_ID"))
-                            .category(rs.getString("CATEGORY"))
-                            .postType(rs.getString("POST_TYPE"))
-                            .build();
+		int start = (page - 1) * limit + 1;
+		int end = start + limit - 1;
 
-                    posts.add(post);
-                }
-            }
+		// ✅ categoryId, typeId, categoryName, postTypeName까지 전부 조회
+		String sql = "SELECT * FROM ( " + "  SELECT ROWNUM AS rnum, inner_query.* " + "  FROM ( " + "    SELECT "
+				+ "      P.POST_ID, " + "      P.USER_ID, " + "      P.TITLE, " + "      P.CONTENT, " + "      P.HIT, "
+				+ "      P.CREATED_AT, " + "      PL.LIST_ID, " + "      PL.CATEGORY_ID, " + "      PL.TYPE_ID, "
+				+ "      C.CATEGORY_NAME AS CATEGORY, " + "      PT.TYPE_NAME AS POST_TYPE " + "    FROM POST P "
+				+ "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID "
+				+ "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID "
+				+ "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " + orderBy + " " + "  ) inner_query "
+				+ "  WHERE ROWNUM <= ? " + ") WHERE rnum >= ?";
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+		List<Post> posts = new ArrayList<>();
 
-        return posts;
-    }
-    
-    public List<Post> searchPosts(String keyword) {
-        String sql = 
-            "SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, " +
-            "       PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, " +
-            "       C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " +
-            "FROM POST P " +
-            "LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
-            "LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
-            "LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
-            "WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) " +
-            "ORDER BY P.CREATED_AT DESC";
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        List<Post> posts = new ArrayList<>();
+			pstmt.setInt(1, end);
+			pstmt.setInt(2, start);
 
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Post post = Post.builder().postId(rs.getInt("POST_ID")).userId(rs.getString("USER_ID"))
+							.title(rs.getString("TITLE")).content(rs.getString("CONTENT")).hit(rs.getInt("HIT"))
+							.createdAt(rs.getDate("CREATED_AT").toLocalDate()).listId(rs.getInt("LIST_ID"))
+							.categoryId(rs.getInt("CATEGORY_ID")).postTypeId(rs.getInt("TYPE_ID"))
+							.category(rs.getString("CATEGORY")).postType(rs.getString("POST_TYPE")).build();
 
-            String pattern = "%" + keyword + "%";
-            pstmt.setString(1, pattern);
-            pstmt.setString(2, pattern);
+					posts.add(post);
+				}
+			}
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    posts.add(Post.builder()
-                            .postId(rs.getInt("POST_ID"))
-                            .userId(rs.getString("USER_ID"))
-                            .title(rs.getString("TITLE"))
-                            .content(rs.getString("CONTENT"))
-                            .hit(rs.getInt("HIT"))
-                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
-                            .listId(rs.getInt("LIST_ID"))
-                            .categoryId(rs.getInt("CATEGORY_ID"))
-                            .postTypeId(rs.getInt("TYPE_ID"))
-                            .category(rs.getString("CATEGORY"))
-                            .postType(rs.getString("POST_TYPE"))
-                            .build());
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return posts;
-    }
-    
- // 아래 부분만 기존 PostDao.java 하단에 추가해줘도 돼.
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 
-    public int getSearchPostCount(String keyword) {
-        String sql = "SELECT COUNT(*) FROM POST WHERE LOWER(TITLE) LIKE LOWER(?) OR LOWER(CONTENT) LIKE LOWER(?)";
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            String pattern = "%" + keyword + "%";
-            pstmt.setString(1, pattern);
-            pstmt.setString(2, pattern);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
+		return posts;
+	}
 
-    public List<Post> getPagedPostsByKeyword(String sort, int page, int limit, String keyword) {
-        String orderBy;
-        switch (sort) {
-            case "views":
-                orderBy = "ORDER BY P.HIT DESC";
-                break;
-            case "oldest":
-                orderBy = "ORDER BY P.POST_ID ASC";
-                break;
-            default:
-                orderBy = "ORDER BY P.POST_ID DESC";
-        }
+	public List<Post> searchPosts(String keyword) {
+		String sql = "SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, "
+				+ "       PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, "
+				+ "       C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " + "FROM POST P "
+				+ "LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID "
+				+ "LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID "
+				+ "LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID "
+				+ "WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) "
+				+ "ORDER BY P.CREATED_AT DESC";
 
-        int start = (page - 1) * limit + 1;
-        int end = start + limit - 1;
+		List<Post> posts = new ArrayList<>();
 
-        String sql =
-            "SELECT * FROM ( " +
-            "  SELECT ROWNUM AS rnum, inner_query.* " +
-            "  FROM ( " +
-            "    SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, " +
-            "           PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, " +
-            "           C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " +
-            "    FROM POST P " +
-            "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID " +
-            "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID " +
-            "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID " +
-            "    WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) " +
-            orderBy + " " +
-            "  ) inner_query " +
-            "  WHERE ROWNUM <= ? " +
-            ") WHERE rnum >= ?";
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        List<Post> posts = new ArrayList<>();
-        try (Connection conn = ConnectionPoolHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            String pattern = "%" + keyword + "%";
-            pstmt.setString(1, pattern);
-            pstmt.setString(2, pattern);
-            pstmt.setInt(3, end);
-            pstmt.setInt(4, start);
+			String pattern = "%" + keyword + "%";
+			pstmt.setString(1, pattern);
+			pstmt.setString(2, pattern);
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    posts.add(Post.builder()
-                            .postId(rs.getInt("POST_ID"))
-                            .userId(rs.getString("USER_ID"))
-                            .title(rs.getString("TITLE"))
-                            .content(rs.getString("CONTENT"))
-                            .hit(rs.getInt("HIT"))
-                            .createdAt(rs.getDate("CREATED_AT").toLocalDate())
-                            .listId(rs.getInt("LIST_ID"))
-                            .categoryId(rs.getInt("CATEGORY_ID"))
-                            .postTypeId(rs.getInt("TYPE_ID"))
-                            .category(rs.getString("CATEGORY"))
-                            .postType(rs.getString("POST_TYPE"))
-                            .build());
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return posts;
-    }
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					posts.add(Post.builder().postId(rs.getInt("POST_ID")).userId(rs.getString("USER_ID"))
+							.title(rs.getString("TITLE")).content(rs.getString("CONTENT")).hit(rs.getInt("HIT"))
+							.createdAt(rs.getDate("CREATED_AT").toLocalDate()).listId(rs.getInt("LIST_ID"))
+							.categoryId(rs.getInt("CATEGORY_ID")).postTypeId(rs.getInt("TYPE_ID"))
+							.category(rs.getString("CATEGORY")).postType(rs.getString("POST_TYPE")).build());
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return posts;
+	}
 
+	// 아래 부분만 기존 PostDao.java 하단에 추가해줘도 돼.
 
+	public int getSearchPostCount(String keyword) {
+		String sql = "SELECT COUNT(*) FROM POST WHERE LOWER(TITLE) LIKE LOWER(?) OR LOWER(CONTENT) LIKE LOWER(?)";
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			String pattern = "%" + keyword + "%";
+			pstmt.setString(1, pattern);
+			pstmt.setString(2, pattern);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next())
+					return rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
 
+	public List<Post> getPagedPostsByKeyword(String sort, int page, int limit, String keyword) {
+		String orderBy;
+		switch (sort) {
+		case "views":
+			orderBy = "ORDER BY P.HIT DESC";
+			break;
+		case "oldest":
+			orderBy = "ORDER BY P.POST_ID ASC";
+			break;
+		default:
+			orderBy = "ORDER BY P.POST_ID DESC";
+		}
 
+		int start = (page - 1) * limit + 1;
+		int end = start + limit - 1;
 
+		String sql = "SELECT * FROM ( " + "  SELECT ROWNUM AS rnum, inner_query.* " + "  FROM ( "
+				+ "    SELECT P.POST_ID, P.USER_ID, P.TITLE, P.CONTENT, P.HIT, P.CREATED_AT, "
+				+ "           PL.LIST_ID, PL.CATEGORY_ID, PL.TYPE_ID, "
+				+ "           C.CATEGORY_NAME AS CATEGORY, PT.TYPE_NAME AS POST_TYPE " + "    FROM POST P "
+				+ "    LEFT JOIN POST_LIST PL ON P.LIST_ID = PL.LIST_ID "
+				+ "    LEFT JOIN CATEGORY C ON PL.CATEGORY_ID = C.CATEGORY_ID "
+				+ "    LEFT JOIN POST_TYPE PT ON PL.TYPE_ID = PT.TYPE_ID "
+				+ "    WHERE LOWER(P.TITLE) LIKE LOWER(?) OR LOWER(P.CONTENT) LIKE LOWER(?) " + orderBy + " "
+				+ "  ) inner_query " + "  WHERE ROWNUM <= ? " + ") WHERE rnum >= ?";
 
+		List<Post> posts = new ArrayList<>();
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			String pattern = "%" + keyword + "%";
+			pstmt.setString(1, pattern);
+			pstmt.setString(2, pattern);
+			pstmt.setInt(3, end);
+			pstmt.setInt(4, start);
 
-
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					posts.add(Post.builder().postId(rs.getInt("POST_ID")).userId(rs.getString("USER_ID"))
+							.title(rs.getString("TITLE")).content(rs.getString("CONTENT")).hit(rs.getInt("HIT"))
+							.createdAt(rs.getDate("CREATED_AT").toLocalDate()).listId(rs.getInt("LIST_ID"))
+							.categoryId(rs.getInt("CATEGORY_ID")).postTypeId(rs.getInt("TYPE_ID"))
+							.category(rs.getString("CATEGORY")).postType(rs.getString("POST_TYPE")).build());
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return posts;
+	}
 
 	/**
 	 * 게시글을 수정합니다. (TITLE, CONTENT, LIST_ID, UPDATED_AT 갱신)
@@ -535,26 +479,28 @@ public class PostDao {
 		// String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME,
 		// MEET_LOCATION, PEOPLE) VALUES (?, ?, ?, ?, ?, ?)";
 
-		// SQL 문 수정: post_schedule -> DATE_POST, 컬럼명 일치
-		String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, PEOPLE) VALUES (?, ?, ?, ?, ?)";
+		// SQL 문 수정: DATE_POST 구조에 맞게 컬럼명 수정 (PEOPLE -> MAX_PEOPLE, CURRENT_PEOPLE 추가)
+		String sql = "INSERT INTO DATE_POST (POST_ID, TITLE, MEET_DATE, MEET_TIME, MAX_PEOPLE, CURRENT_PEOPLE) VALUES (?, ?, ?, ?, ?, ?)";
 
 		try (Connection conn = ConnectionPoolHelper.getConnection();
 				PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			pstmt.setInt(1, postId);
+			pstmt.setInt(1, postId); // 1. POST_ID
 
-			// JSON 필드를 DATE_POST 컬럼에 맞게 바인딩
+			// 2. TITLE
 			pstmt.setString(2, attrs.get("title").getAsString());
-			pstmt.setString(3, attrs.get("date").getAsString());
-			pstmt.setString(4, attrs.get("time").getAsString());
-			// TODO 위치 지정시 location 필드 추가
-//			pstmt.setString(5, attrs.get("location").getAsString());
+			// 3. MEET_DATE
+			pstmt.setString(3, attrs.get("meetDate").getAsString());
+			// 4. MEET_TIME
+			pstmt.setString(4, attrs.get("meetTime").getAsString());
 
-			// people 필드 처리
-			String peopleValue = attrs.get("people").isJsonPrimitive()
-					? attrs.get("people").getAsJsonPrimitive().getAsString()
-					: String.valueOf(attrs.get("people"));
-			pstmt.setString(5, peopleValue);
+			// 5. MAX_PEOPLE (모집 정원)
+			// 참고: MAX_PEOPLE이 NUMBER 타입이므로 Integer.parseInt()로 변환하여 setInt()를 사용하는 것이 더
+			// 안전합니다.
+			pstmt.setInt(5, Integer.parseInt(attrs.get("maxPeople").getAsString()));
+
+			// 6. CURRENT_PEOPLE (현재 인원: 새로 생성 시 0)
+			pstmt.setInt(6, 0);
 
 			pstmt.executeUpdate();
 
@@ -685,7 +631,7 @@ public class PostDao {
 		}
 	}
 
-	public void parseAndSaveCustomNodes(JsonArray contentArray, int postId) {
+	public void parseAndSaveCustomNodes(JsonArray contentArray, int postId, String userName) {
 		PostDao dao = new PostDao();
 
 		for (JsonElement element : contentArray) {
@@ -701,6 +647,13 @@ public class PostDao {
 			case "scheduleBlock":
 				JsonObject schedAttrs = node.getAsJsonObject("attrs");
 				dao.insertSchedule(postId, schedAttrs);
+				ChatDao chat = new ChatDao();
+				try {
+					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(), postId, userName);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				break;
 
 			case "image":
@@ -716,227 +669,226 @@ public class PostDao {
 			// 다른 블록이 추가되면 여기에 case 추가
 			}
 
-			
-			
-		
 			// 하위 content 안에 nested node가 있으면 재귀 탐색
 			if (node.has("content")) {
-				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId);
+				parseAndSaveCustomNodes(node.getAsJsonArray("content"), postId, userName);
 			}
 		}
 	}
-	
-	 private Connection getConn() throws SQLException {
-	        // TODO: 커넥션 풀/DS로 교체
-	        // return dataSource.getConnection();
-	        throw new UnsupportedOperationException("Implement getConn()");
-	    }
 
-	
-	public int getListIdByPostId(int postId) {
-	    String sql = "SELECT LIST_ID FROM POST WHERE POST_ID = ?";
-	    try (Connection conn = ConnectionPoolHelper.getConnection();
-	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-	        
-	        pstmt.setInt(1, postId);
-	        
-	        try (ResultSet rs = pstmt.executeQuery()) {
-	            if (rs.next()) {
-	                return rs.getInt("LIST_ID");
-	            }
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return 0;
+	private Connection getConn() throws SQLException {
+		// TODO: 커넥션 풀/DS로 교체
+		// return dataSource.getConnection();
+		throw new UnsupportedOperationException("Implement getConn()");
 	}
-	
+
+	public int getListIdByPostId(int postId) {
+		String sql = "SELECT LIST_ID FROM POST WHERE POST_ID = ?";
+		try (Connection conn = ConnectionPoolHelper.getConnection();
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+			pstmt.setInt(1, postId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt("LIST_ID");
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
 	// ✅ Oracle POST 테이블 단독, CLOB 검색(dbms_lob.instr) 사용
-	public int countPosts(String q, Integer listId){
-	    StringBuilder sql = new StringBuilder(
-	        "SELECT COUNT(*) " +
-	        "FROM POST p " +
-	        "WHERE 1=1 "
-	    );
-	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
-	    if (q != null && !q.isBlank()) {
-	        sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
-	    }
+	public int countPosts(String q, Integer listId) {
+		StringBuilder sql = new StringBuilder("SELECT COUNT(*) " + "FROM POST p " + "WHERE 1=1 ");
+		if (listId != null)
+			sql.append("AND p.LIST_ID = ? ");
+		if (q != null && !q.isBlank()) {
+			sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
+		}
 
-	    try (Connection con = ConnectionPoolHelper.getConnection();
-	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+		try (Connection con = ConnectionPoolHelper.getConnection();
+				PreparedStatement ps = con.prepareStatement(sql.toString())) {
 
-	        int idx = 1;
-	        if (listId != null) ps.setInt(idx++, listId);
-	        if (q != null && !q.isBlank()){
-	            String like = "%" + q.toLowerCase() + "%";
-	            ps.setString(idx++, like);  // TITLE LIKE
-	            ps.setString(idx++, q);     // CONTENT CLOB INSTR
-	        }
+			int idx = 1;
+			if (listId != null)
+				ps.setInt(idx++, listId);
+			if (q != null && !q.isBlank()) {
+				String like = "%" + q.toLowerCase() + "%";
+				ps.setString(idx++, like); // TITLE LIKE
+				ps.setString(idx++, q); // CONTENT CLOB INSTR
+			}
 
-	        try (ResultSet rs = ps.executeQuery()){
-	            if (rs.next()) return rs.getInt(1);
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return 0;
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next())
+					return rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
 
 	// ✅ Oracle OFFSET/FETCH 페이지네이션, POST 테이블만 사용, 정렬: newest|views|oldest
-	public List<Post> listPosts(String sort, int limit, int offset, String q, Integer listId){
-	    String orderBy;
-	    switch (sort == null ? "newest" : sort) {
-	        case "views":  orderBy = "p.HIT DESC, p.CREATED_AT DESC"; break;
-	        case "oldest": orderBy = "p.CREATED_AT ASC";              break;
-	        default:       orderBy = "p.CREATED_AT DESC";             break; // newest
-	    }
+	public List<Post> listPosts(String sort, int limit, int offset, String q, Integer listId) {
+		String orderBy;
+		switch (sort == null ? "newest" : sort) {
+		case "views":
+			orderBy = "p.HIT DESC, p.CREATED_AT DESC";
+			break;
+		case "oldest":
+			orderBy = "p.CREATED_AT ASC";
+			break;
+		default:
+			orderBy = "p.CREATED_AT DESC";
+			break; // newest
+		}
 
-	    StringBuilder sql = new StringBuilder(
-	        "SELECT " +
-	        "  p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, p.CONTENT, p.HIT, " +
-	        "  p.CREATED_AT, p.UPDATED_AT " +
-	        "FROM POST p " +
-	        "WHERE 1=1 "
-	    );
-	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
-	    if (q != null && !q.isBlank()) {
-	        sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
-	    }
-	    sql.append("ORDER BY ").append(orderBy).append(" ");
-	    sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+		StringBuilder sql = new StringBuilder(
+				"SELECT " + "  p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, p.CONTENT, p.HIT, "
+						+ "  p.CREATED_AT, p.UPDATED_AT " + "FROM POST p " + "WHERE 1=1 ");
+		if (listId != null)
+			sql.append("AND p.LIST_ID = ? ");
+		if (q != null && !q.isBlank()) {
+			sql.append("AND ( LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(p.CONTENT, ?) > 0 ) ");
+		}
+		sql.append("ORDER BY ").append(orderBy).append(" ");
+		sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
 
-	    List<Post> list = new ArrayList<>();
-	    try (Connection con = ConnectionPoolHelper.getConnection();
-	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+		List<Post> list = new ArrayList<>();
+		try (Connection con = ConnectionPoolHelper.getConnection();
+				PreparedStatement ps = con.prepareStatement(sql.toString())) {
 
-	        int idx = 1;
-	        if (listId != null) ps.setInt(idx++, listId);
-	        if (q != null && !q.isBlank()){
-	            String like = "%" + q.toLowerCase() + "%";
-	            ps.setString(idx++, like);  // TITLE LIKE
-	            ps.setString(idx++, q);     // CONTENT CLOB INSTR
-	        }
-	        ps.setInt(idx++, offset);
-	        ps.setInt(idx,   limit);
+			int idx = 1;
+			if (listId != null)
+				ps.setInt(idx++, listId);
+			if (q != null && !q.isBlank()) {
+				String like = "%" + q.toLowerCase() + "%";
+				ps.setString(idx++, like); // TITLE LIKE
+				ps.setString(idx++, q); // CONTENT CLOB INSTR
+			}
+			ps.setInt(idx++, offset);
+			ps.setInt(idx, limit);
 
-	        try (ResultSet rs = ps.executeQuery()){
-	            while (rs.next()){
-	                Post p = new Post();
-	                p.setPostId(rs.getInt("POST_ID"));
-	                p.setUserId(rs.getString("USER_ID"));
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					Post p = new Post();
+					p.setPostId(rs.getInt("POST_ID"));
+					p.setUserId(rs.getString("USER_ID"));
 
-	                int li = rs.getInt("LIST_ID");
-	                if (!rs.wasNull()) p.setListId(li);
+					int li = rs.getInt("LIST_ID");
+					if (!rs.wasNull())
+						p.setListId(li);
 
-	                p.setTitle(rs.getString("TITLE"));
-	                // CONTENT이 CLOB이어도 Oracle JDBC는 getString 가능 (대용량/성능 이슈는 별도 고려)
-	                p.setContent(rs.getString("CONTENT"));
+					p.setTitle(rs.getString("TITLE"));
+					// CONTENT이 CLOB이어도 Oracle JDBC는 getString 가능 (대용량/성능 이슈는 별도 고려)
+					p.setContent(rs.getString("CONTENT"));
 
-	                int hit = rs.getInt("HIT");
-	                if (!rs.wasNull()) p.setHit(hit);
+					int hit = rs.getInt("HIT");
+					if (!rs.wasNull())
+						p.setHit(hit);
 
-	                // createdAt / updatedAt: DTO 타입에 맞춰 변환 (네 mapRowToPost가 LocalDate 사용 중)
-	                java.sql.Date created = rs.getDate("CREATED_AT");
-	                if (created != null) p.setCreatedAt(created.toLocalDate());
+					// createdAt / updatedAt: DTO 타입에 맞춰 변환 (네 mapRowToPost가 LocalDate 사용 중)
+					java.sql.Date created = rs.getDate("CREATED_AT");
+					if (created != null)
+						p.setCreatedAt(created.toLocalDate());
 
-	                java.sql.Date updated = rs.getDate("UPDATED_AT");
-	                if (updated != null) p.setUpdatedAt(updated.toLocalDate());
+					java.sql.Date updated = rs.getDate("UPDATED_AT");
+					if (updated != null)
+						p.setUpdatedAt(updated.toLocalDate());
 
-	                list.add(p);
-	            }
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return list;
+					list.add(p);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return list;
 	}
 
-	
 	// ✅ Oracle 11g 호환 PostSummary 조회 (JOIN 포함)
-	public List<PostSummary> listPostSummaries(String sort, int limit, int offset, String q, Integer listId){
-	    String orderBy;
-	    switch (sort == null ? "newest" : sort) {
-	        case "views":  orderBy = "p.HIT DESC, p.CREATED_AT DESC"; break;
-	        case "oldest": orderBy = "p.CREATED_AT ASC";              break;
-	        default:       orderBy = "p.CREATED_AT DESC";             break;
-	    }
+	public List<PostSummary> listPostSummaries(String sort, int limit, int offset, String q, Integer listId) {
+		String orderBy;
+		switch (sort == null ? "newest" : sort) {
+		case "views":
+			orderBy = "p.HIT DESC, p.CREATED_AT DESC";
+			break;
+		case "oldest":
+			orderBy = "p.CREATED_AT ASC";
+			break;
+		default:
+			orderBy = "p.CREATED_AT DESC";
+			break;
+		}
 
-	    // ✅ ROWNUM 방식 페이징 + JOIN으로 카테고리/타입 정보 포함
-	    int startRow = offset + 1;
-	    int endRow = offset + limit;
+		// ✅ ROWNUM 방식 페이징 + JOIN으로 카테고리/타입 정보 포함
+		int startRow = offset + 1;
+		int endRow = offset + limit;
 
-	    StringBuilder sql = new StringBuilder(
-	        "SELECT * FROM ( " +
-	        "  SELECT ROWNUM AS rnum, inner_query.* FROM ( " +
-	        "    SELECT " +
-	        "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, " +
-	        "      SUBSTR(p.CONTENT, 1, 200) AS CONTENT, " +
-	        "      p.HIT, " +
-	        "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, " +
-	        "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, " +
-	        "      c.CATEGORY_NAME AS CATEGORY, " +
-	        "      pt.TYPE_NAME AS POST_TYPE " +
-	        "    FROM POST p " +
-	        "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID " +
-	        "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID " +
-	        "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID " +
-	        "    WHERE 1=1 "
-	    );
-	    
-	    if (listId != null) sql.append("AND p.LIST_ID = ? ");
-	    if (q != null && !q.isBlank()) {
-	        sql.append("AND (LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(LOWER(p.CONTENT), LOWER(?)) > 0) ");
-	    }
-	    
-	    sql.append("    ORDER BY ").append(orderBy).append(" ");
-	    sql.append("  ) inner_query ");
-	    sql.append("  WHERE ROWNUM <= ? ");
-	    sql.append(") WHERE rnum >= ?");
+		StringBuilder sql = new StringBuilder("SELECT * FROM ( " + "  SELECT ROWNUM AS rnum, inner_query.* FROM ( "
+				+ "    SELECT " + "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, "
+				+ "      SUBSTR(p.CONTENT, 1, 200) AS CONTENT, " + "      p.HIT, "
+				+ "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, "
+				+ "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, " + "      c.CATEGORY_NAME AS CATEGORY, "
+				+ "      pt.TYPE_NAME AS POST_TYPE " + "    FROM POST p "
+				+ "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID "
+				+ "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID "
+				+ "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID " + "    WHERE 1=1 ");
 
-	    List<PostSummary> list = new ArrayList<>();
-	    try (Connection con = ConnectionPoolHelper.getConnection();
-	         PreparedStatement ps = con.prepareStatement(sql.toString())) {
+		if (listId != null)
+			sql.append("AND p.LIST_ID = ? ");
+		if (q != null && !q.isBlank()) {
+			sql.append("AND (LOWER(p.TITLE) LIKE ? OR dbms_lob.instr(LOWER(p.CONTENT), LOWER(?)) > 0) ");
+		}
 
-	        int idx = 1;
-	        if (listId != null) ps.setInt(idx++, listId);
-	        if (q != null && !q.isBlank()){
-	            String like = "%" + q.toLowerCase() + "%";
-	            ps.setString(idx++, like);
-	            ps.setString(idx++, q);
-	        }
-	        ps.setInt(idx++, endRow);
-	        ps.setInt(idx,   startRow);
+		sql.append("    ORDER BY ").append(orderBy).append(" ");
+		sql.append("  ) inner_query ");
+		sql.append("  WHERE ROWNUM <= ? ");
+		sql.append(") WHERE rnum >= ?");
 
-	        try (ResultSet rs = ps.executeQuery()){
-	            while (rs.next()){
-	                PostSummary p = PostSummary.builder()
-	                    .postId(rs.getInt("POST_ID"))
-	                    .userId(rs.getString("USER_ID"))
-	                    .title(rs.getString("TITLE"))
-	                    .content(rs.getString("CONTENT"))
-	                    .hit(rs.getInt("HIT"))
-	                    .createdAt(rs.getString("CREATED_AT"))
-	                    .category(rs.getString("CATEGORY"))
-	                    .postType(rs.getString("POST_TYPE"))
-	                    .build();
-	                
-	                // NULL 체크
-	                int li = rs.getInt("LIST_ID");
-	                if (!rs.wasNull()) p.setListId(li);
-	                
-	                int catId = rs.getInt("CATEGORY_ID");
-	                if (!rs.wasNull()) p.setCategoryId(catId);
-	                
-	                int typeId = rs.getInt("POST_TYPE_ID");
-	                if (!rs.wasNull()) p.setPostTypeId(typeId);
-	                
-	                list.add(p);
-	            }
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return list;
+		List<PostSummary> list = new ArrayList<>();
+		try (Connection con = ConnectionPoolHelper.getConnection();
+				PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+			int idx = 1;
+			if (listId != null)
+				ps.setInt(idx++, listId);
+			if (q != null && !q.isBlank()) {
+				String like = "%" + q.toLowerCase() + "%";
+				ps.setString(idx++, like);
+				ps.setString(idx++, q);
+			}
+			ps.setInt(idx++, endRow);
+			ps.setInt(idx, startRow);
+
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					PostSummary p = PostSummary.builder().postId(rs.getInt("POST_ID")).userId(rs.getString("USER_ID"))
+							.title(rs.getString("TITLE")).content(rs.getString("CONTENT")).hit(rs.getInt("HIT"))
+							.createdAt(rs.getString("CREATED_AT")).category(rs.getString("CATEGORY"))
+							.postType(rs.getString("POST_TYPE")).build();
+
+					// NULL 체크
+					int li = rs.getInt("LIST_ID");
+					if (!rs.wasNull())
+						p.setListId(li);
+
+					int catId = rs.getInt("CATEGORY_ID");
+					if (!rs.wasNull())
+						p.setCategoryId(catId);
+
+					int typeId = rs.getInt("POST_TYPE_ID");
+					if (!rs.wasNull())
+						p.setPostTypeId(typeId);
+
+					list.add(p);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return list;
 	}
 }

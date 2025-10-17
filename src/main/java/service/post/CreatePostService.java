@@ -88,7 +88,7 @@ public class CreatePostService implements Action {
                     JsonArray contentArray = contentObject.getAsJsonArray("content");
                     
                     // Use the existing DAO method to parse and save these nodes
-                    dao.parseAndSaveCustomNodes(contentArray, newPostId);
+                    dao.parseAndSaveCustomNodes(contentArray, newPostId, user.getUserName());
                 }
             } catch (JsonSyntaxException e) {
                 // Log the error if JSON is malformed

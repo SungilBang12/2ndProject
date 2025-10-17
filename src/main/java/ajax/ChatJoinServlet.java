@@ -1,30 +1,33 @@
 package ajax;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
 import com.google.gson.Gson;
 import dto.ChatJoinRequest;
 import dto.ChatJoinResponse;
+import dto.Users;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import service.chat.ChatService;
-import vo.Users;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.*;
+import utils.AblyChatConfig;
+import utils.ConfigLoader;
 
 /**
  * /chat/join
- * - GET : Ably 설정 및 유저정보 전달, postId 없으면 채팅 리스트 반환
- * - POST : 특정 채팅방 참가 처리
+ * - GET : Ably + Firebase 설정 및 유저정보 전달, postId 없으면 채팅 리스트 반환
+ * - POST : 특정 채팅방 참가 처리 (join or leave)
  */
 @WebServlet("/chat/join")
 public class ChatJoinServlet extends HttpServlet {
 
     private final ChatService service = new ChatService();
-    private static final String ABLY_API_KEY = "YOUR_ABLY_API_KEY"; // 🔹 Chat용 API Key
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -41,37 +44,23 @@ public class ChatJoinServlet extends HttpServlet {
         String userId = user.getUserId();
         String postIdParam = req.getParameter("postId");
 
-        // ✅ postId가 없으면: Ably Chat API로 채팅방 목록 가져오기
-        if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
-            try {
-                URL url = new URL("https://chat.ably.io/v1/conversations");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Authorization", "Bearer " + ABLY_API_KEY);
+        // Ably 설정
+        Map<String, String> ablyConfig = loadAblyConfig();
+        Map<String, String> firebaseConfig = loadFirebaseConfig();
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                String response = in.lines().reduce("", (a, b) -> a + b);
-                in.close();
-
-                res.getWriter().write(response);
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.setStatus(500);
-                res.getWriter().write("{\"error\":\"Ably Chat API 요청 실패\"}");
-            }
-            return;
-        }
-
-        // ✅ postId가 있으면: Realtime 채팅 초기 설정 반환
-        int postId = Integer.parseInt(postIdParam);
         Map<String, Object> result = new HashMap<>();
         result.put("userId", userId);
-        result.put("postId", postId);
-        result.put("maxPeople", 5);
-
-        Map<String, String> ablyConfig = new HashMap<>();
-        ablyConfig.put("pubKey", "YOUR_ABLY_REALTIME_KEY");
         result.put("ablyConfig", ablyConfig);
+        result.put("firebaseConfig", firebaseConfig);
+
+        if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
+            // postId 없으면 채팅방 리스트
+            result.put("rooms", new String[]{}); 
+        } else {
+            int postId = Integer.parseInt(postIdParam);
+            result.put("postId", postId);
+            result.put("maxPeople", 5);
+        }
 
         new Gson().toJson(result, res.getWriter());
     }
@@ -79,11 +68,54 @@ public class ChatJoinServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
         res.setContentType("application/json;charset=UTF-8");
+        HttpSession session = req.getSession();
+        Users user = (Users) session.getAttribute("user");
 
+        if (user == null) {
+            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            res.getWriter().write("{\"error\":\"로그인이 필요합니다.\"}");
+            return;
+        }
+
+        String userId = user.getUserId();
         int postId = Integer.parseInt(req.getParameter("postId"));
-        String userId = (String) req.getSession().getAttribute("user.userId");
+        String action = req.getParameter("action"); // join / leave
 
-        ChatJoinResponse result = service.joinChat(new ChatJoinRequest(postId, userId));
+        ChatJoinResponse result;
+        if ("leave".equals(action)) {
+            result = service.leaveChat(postId, userId);
+        } else {
+            result = service.joinChat(new ChatJoinRequest(postId, userId));
+        }
+
         new Gson().toJson(result, res.getWriter());
+    }
+
+    // 🔹 Ably 설정 로딩
+    private Map<String, String> loadAblyConfig() {
+        Map<String, String> ablyConfig = new HashMap<>();
+        Optional<Properties> ablyPropsOpt = AblyChatConfig.getAblyConfig(getServletContext());
+        ablyPropsOpt.ifPresent(props -> {
+            String pubKey = props.getProperty("ably.pubkey", "");
+            if (!pubKey.isEmpty()) ablyConfig.put("pubKey", pubKey);
+        });
+        return ablyConfig;
+    }
+
+    // 🔹 Firebase 설정 로딩
+    private Map<String, String> loadFirebaseConfig() {
+        Map<String, String> firebaseConfig = new HashMap<>();
+        Optional<Properties> firebasePropsOpt = ConfigLoader.getFirebaseConfig(getServletContext());
+        firebasePropsOpt.ifPresent(props -> {
+            firebaseConfig.put("apiKey", props.getProperty("firebase.apiKey"));
+            firebaseConfig.put("authDomain", props.getProperty("firebase.authDomain"));
+            firebaseConfig.put("projectId", props.getProperty("firebase.projectId"));
+            firebaseConfig.put("storageBucket", props.getProperty("firebase.storageBucket"));
+            firebaseConfig.put("messagingSenderId", props.getProperty("firebase.messagingSenderId"));
+            firebaseConfig.put("appId", props.getProperty("firebase.appId"));
+            firebaseConfig.put("measurementId", props.getProperty("firebase.measurementId"));
+            firebaseConfig.put("databaseURL", props.getProperty("firebase.databaseURL"));
+        });
+        return firebaseConfig;
     }
 }
