@@ -31,6 +31,7 @@ public class ChatJoinServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    	String postIdParam = req.getParameter("postId");
         res.setContentType("application/json;charset=UTF-8");
         HttpSession session = req.getSession();
         Users user = (Users) session.getAttribute("user");
@@ -42,9 +43,9 @@ public class ChatJoinServlet extends HttpServlet {
         }
 
         String userId = user.getUserId();
-        String postIdParam = req.getParameter("postId");
+        System.out.println("채팅 조인 리퀘스트로 들어온 postId"+postIdParam);
 
-        // Ably 설정
+        // Ably/Firebase 설정 로딩
         Map<String, String> ablyConfig = loadAblyConfig();
         Map<String, String> firebaseConfig = loadFirebaseConfig();
 
@@ -54,12 +55,17 @@ public class ChatJoinServlet extends HttpServlet {
         result.put("firebaseConfig", firebaseConfig);
 
         if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
-            // postId 없으면 채팅방 리스트
-            result.put("rooms", new String[]{}); 
+            // postId 없으면 채팅방 리스트 반환
+        	System.out.println("postId가 없습니다. = " + postIdParam);
+            result.put("rooms", new String[]{});
         } else {
             int postId = Integer.parseInt(postIdParam);
             result.put("postId", postId);
-            result.put("maxPeople", 5);
+            result.put("channelName", "channel-" + postId);
+
+            // DB에서 실제 maxPeople 조회
+            var post = service.getPostDetails(postId);
+            if (post != null) result.put("maxPeople", post.getMaxPeople());
         }
 
         new Gson().toJson(result, res.getWriter());
@@ -81,11 +87,13 @@ public class ChatJoinServlet extends HttpServlet {
         int postId = Integer.parseInt(req.getParameter("postId"));
         String action = req.getParameter("action"); // join / leave
 
+        ChatJoinRequest reqDto = new ChatJoinRequest(postId, userId);
         ChatJoinResponse result;
-        if ("leave".equals(action)) {
-            result = service.leaveChat(postId, userId);
+
+        if ("leave".equalsIgnoreCase(action)) {
+            result = service.leaveChat(reqDto);
         } else {
-            result = service.joinChat(new ChatJoinRequest(postId, userId));
+            result = service.joinChat(reqDto);
         }
 
         new Gson().toJson(result, res.getWriter());
