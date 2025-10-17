@@ -110,12 +110,12 @@
         
         <!-- 현재 세션 정보 표시 -->
         <%
-            Users loggedInUser = (Users) session.getAttribute("loggedInUser");
-            if (loggedInUser != null) {
+            Users user = (Users) session.getAttribute("user");
+            if (user != null) {
         %>
         <div class="current-session">
-            <strong>현재 로그인:</strong> <%= loggedInUser.getUserId() %>
-            <% if ("ADMIN".equalsIgnoreCase(loggedInUser.getROLE())) { %>
+            <strong>현재 로그인:</strong> <%= user.getUserId() %>
+            <% if ("ADMIN".equalsIgnoreCase(user.getROLE())) { %>
                 <span class="role-badge role-admin">ADMIN</span>
             <% } else { %>
                 <span class="role-badge role-user">USER</span>
@@ -159,7 +159,7 @@
         </div>
         
         <!-- 로그아웃 버튼 -->
-        <% if (loggedInUser != null) { %>
+        <% if (user != null) { %>
         <form method="post" action="test-login.jsp">
             <input type="hidden" name="action" value="logout">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -182,8 +182,8 @@
             user.setUserId(userId.trim());
             user.setROLE(role.trim().toUpperCase()); // ROLE을 대문자로 설정
             
-            // ★ EncodingFilter가 확인하는 세션 키 이름: "loggedInUser"
-            session.setAttribute("loggedInUser", user);
+            // ★ EncodingFilter가 확인하는 세션 키 이름: "user"
+            session.setAttribute("user", user);
             
             // 기존 호환성을 위해 userId도 저장 (선택사항)
             session.setAttribute("userId", userId.trim());
