@@ -81,7 +81,7 @@ public class PostAsyncService {
 					
 					//TODO 게시글 작성되었을 시 게시자 채팅참가.
 					ChatDao chat = new ChatDao();
-					chat.insertChatParticipant(postId, post.getUserId());
+					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(),postId, post.getUserId());
 
 					// 성공 시 JSON 응답 Map 구성
 					responseMap.put("status", "success");
@@ -258,7 +258,7 @@ public class PostAsyncService {
 				//TODO 게시글 작성되었을 시 게시자 채팅참가.
 				ChatDao chat = new ChatDao();
 				try {
-					chat.insertChatParticipant(postId, userName);
+					chat.insertChatParticipant(ConnectionPoolHelper.getConnection(),postId, userName);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
