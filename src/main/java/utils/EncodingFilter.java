@@ -59,7 +59,6 @@ public class EncodingFilter implements Filter {
 	        // 3. request 영역에 사용자 정보를 다시 담아줌
 	        // 이렇게 하면 JSP에서 ${requestScope.user} 또는 ${user}로 접근 가능
 	        if (user != null) {
-	        	System.out.println("세션 담아서 리퀘스트 전송");
 	            req.setAttribute("user", user);
 	        }
 	    }
