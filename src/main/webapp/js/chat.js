@@ -1,4 +1,3 @@
-//chat.js
 /* ========================================================================
    전역 변수 및 설정
    ======================================================================== */
@@ -23,7 +22,7 @@ const userId = chatModule?.dataset.userId;
 window.userId = userId;
 window.postId = postId;
 
-const maxPeople = parseInt(chatModule?.dataset.maxPeople || "5", 10);
+let maxPeople = parseInt(chatModule?.dataset.maxPeople || "5", 10);
 
 const $chatWidget = $("#chatWidget");
 const $chatToggleBtn = $("#chatToggleBtn");
@@ -48,9 +47,19 @@ $(document).ready(async () => {
 	$minimizeBtn.on("click", minimizeChatWidget);
 	$backToListBtn.on("click", showChatList);
 
+	// ✅ 메시지 전송 이벤트 바인딩 (전역)
+	$sendBtn.on("click", sendMessage);
+	$chatInput.on("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
 	try {
 		const res = await $.getJSON(`${CONTEXT}/chat/init`, { postId: postId || "" });
-		const { ablyConfig, firebaseConfig, userId: serverUserId, rooms } = res;
+		const { ablyConfig, firebaseConfig, userId: serverUserId, rooms, currentPeople, maxPeople: serverMaxPeople } = res;
+
+		// ✅ 서버에서 maxPeople 동기화
+		if (serverMaxPeople) {
+			maxPeople = serverMaxPeople;
+			updateCountDisplay();
+		}
 
 		// Ably 초기화
 		if (ablyConfig?.pubKey) {
@@ -65,7 +74,11 @@ $(document).ready(async () => {
 				await loadChatList(rooms);
 
 				// postId가 있으면 자동 참가
-				if (postId) await enterChatRoom(postId);
+				if (postId) {
+					await enterChatRoom(postId);
+					// ✅ 참가/나가기 버튼 설정
+					setupJoinLeaveButtons();
+				}
 			});
 
 			window.ably.connection.on("failed", () => {
@@ -150,34 +163,48 @@ async function enterChatRoom(roomId) {
 	const channelName = `channel-${roomId}`;
 	window.chatChannelName = channelName;
 
-	if (!channel || channel.name !== channelName) {
-		setupChannel(channelName);
+	// ✅ 기존 채널 정리
+	if (channel && channel.name !== channelName) {
+		if (joined) channel.presence.leave();
+		channel.unsubscribe();
+		channel.presence.unsubscribe();
+		channel = null;
 	}
+
+	// ✅ 새 채널 설정
+	setupChannel(channelName, roomId);
 
 	try {
 		const res = await $.post(`${CONTEXT}/chat/update`, { postId: roomId, action: "join" });
 
 		if (res.chatResult?.success) {
 			joined = true;
+			// ✅ Ably presence 참가
+			channel.presence.enter({ user: userId });
 			$joinBtn.hide();
 			$leaveBtn.show();
+			$sendBtn.prop("disabled", false);
 			displayMessage('<div class="system-message">채팅방에 참가했습니다.</div>');
 		} else if (res.chatResult?.message?.includes("이미 참가")) {
-			joined = true;  // 이미 참가 상태라면 joined=true
+			joined = true;
+			// ✅ Ably presence 참가
+			channel.presence.enter({ user: userId });
 			$joinBtn.hide();
 			$leaveBtn.show();
+			$sendBtn.prop("disabled", false);
 			displayMessage('<div class="system-message info">이미 참가 중입니다.</div>');
 		} else {
 			joined = false;
 			$joinBtn.show();
 			$leaveBtn.hide();
+			$sendBtn.prop("disabled", true);
 			displayMessage(`<div class="system-message error">자동 참가 실패: ${res.chatResult?.message}</div>`);
 		}
 
-		await updateParticipantCount();
-		$sendBtn.prop("disabled", false);
+		await updateParticipantCount(roomId);
 	} catch (err) {
 		console.error("❌ 자동 참가 실패:", err);
+		$sendBtn.prop("disabled", true);
 	}
 }
 
@@ -189,43 +216,53 @@ function initFirebase(firebaseConfig) {
 	if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
 	firebaseDb = firebase.database();
-	messagesRef = firebaseDb.ref(`chat/${postId}/messages`);
-
-	messagesRef.once("value", snap => {
-		const messages = snap.val();
-		if (messages) {
-			Object.values(messages).forEach(msg => {
-				const cls = msg.user === userId ? "chat-message-mine" : "chat-message-other";
-				const userName = msg.user === userId ? "나" : msg.user;
-				displayMessage(`<div class="${cls}"><strong>${userName}</strong>: ${msg.text}</div>`);
-			});
-		}
-	});
-
-	messagesRef.on("child_added", snap => {
-		const msg = snap.val();
-		if (!msg || msg.user === userId) return;
-		displayMessage(`<div class="chat-message-other"><strong>${msg.user}</strong>: ${msg.text}</div>`);
-	});
 }
 
 /* ========================================================================
    Ably 채널 구독
    ======================================================================== */
-function setupChannel(channelName) {
-	if (!window.ably) return;
+function setupChannel(channelName, roomId) {
+	if (!window.ably) {
+		console.error("❌ Ably 미초기화");
+		return;
+	}
 
 	channel = window.ably.channels.get(channelName);
 
-	// 메시지 수신
+	// ✅ Firebase 메시지 참조 설정
+	if (firebaseDb) {
+		messagesRef = firebaseDb.ref(`chat/${roomId}/messages`);
+
+		// 기존 메시지 로드
+		messagesRef.once("value", snap => {
+			const messages = snap.val();
+			if (messages) {
+				Object.values(messages).forEach(msg => {
+					const cls = msg.user === userId ? "chat-message-mine" : "chat-message-other";
+					const userName = msg.user === userId ? "나" : msg.user;
+					displayMessage(`<div class="${cls}"><strong>${userName}</strong>: ${msg.text}</div>`);
+				});
+			}
+		});
+
+		// 새 메시지 실시간 수신
+		messagesRef.on("child_added", snap => {
+			const msg = snap.val();
+			if (!msg || msg.user === userId) return;
+			displayMessage(`<div class="chat-message-other"><strong>${msg.user}</strong>: ${msg.text}</div>`);
+		});
+	}
+
+	// 메시지 수신 (Ably)
 	channel.subscribe("message", msg => {
 		const mine = msg.data.user === userId;
 		const cls = mine ? "chat-message-mine" : "chat-message-other";
 		const userName = mine ? "나" : msg.data.user;
 		displayMessage(`<div class="${cls}"><strong>${userName}</strong>: ${msg.data.text}</div>`);
 
-		if (mine && firebaseDb) {
-			firebaseDb.ref(`chat/${postId}/messages`).push({
+		// ✅ 내가 보낸 메시지만 Firebase에 저장
+		if (mine && firebaseDb && messagesRef) {
+			messagesRef.push({
 				user: msg.data.user,
 				text: msg.data.text,
 				timestamp: Date.now(),
@@ -233,11 +270,19 @@ function setupChannel(channelName) {
 		}
 	});
 
-	// 참가/퇴장 실시간 감지
+	// ✅ 참가/퇴장 실시간 감지
 	channel.presence.subscribe(["enter", "leave"], async member => {
 		const actionText = member.action === "enter" ? "참가했습니다." : "퇴장했습니다.";
 		displayMessage(`<div class="system-message">${member.clientId} 님이 ${actionText}</div>`);
-		await updateParticipantCount();
+		await updateParticipantCount(roomId);
+	});
+
+	// ✅ 초기 참가자 수 가져오기
+	channel.presence.get((err, members) => {
+		if (!err) {
+			participantCount = members.length;
+			updateCountDisplay();
+		}
 	});
 }
 
@@ -245,31 +290,29 @@ function setupChannel(channelName) {
    참가/나가기 버튼 상태
    ======================================================================== */
 function setupJoinLeaveButtons() {
-  $joinBtn.off("click").on("click", async () => {
-    if (joined) return;  // 이미 참가한 경우 무시
-    await enterChatRoom(postId);
-  });
+	$joinBtn.off("click").on("click", async () => {
+		if (joined) return;
+		await enterChatRoom(postId);
+	});
 
-  $leaveBtn.off("click").on("click", async () => {
-    if (!joined || !channel) return;
+	$leaveBtn.off("click").on("click", async () => {
+		if (!joined || !channel) return;
 
-    try {
-      await $.post(`${CONTEXT}/chat/update`, { postId, action: "leave" });
-      channel.presence.leave();
-      joined = false;
-      $chatMessages.empty();
-      $joinBtn.hide();   // 참가 버튼 숨김
-      $leaveBtn.hide();  // 나가기 버튼 숨김
-      displayMessage('<div class="system-message">채팅방에서 나갔습니다.</div>');
-      await updateParticipantCount();
-      loadChatList();
-    } catch (err) {
-      console.error("❌ 나가기 요청 실패:", err);
-    }
-  });
-
-  $sendBtn.off("click").on("click", sendMessage);
-  $chatInput.off("keypress").on("keypress", e => { if (e.key === "Enter") sendMessage(); });
+		try {
+			await $.post(`${CONTEXT}/chat/update`, { postId, action: "leave" });
+			channel.presence.leave();
+			joined = false;
+			$chatMessages.empty();
+			$joinBtn.hide();
+			$leaveBtn.hide();
+			$sendBtn.prop("disabled", true);
+			displayMessage('<div class="system-message">채팅방에서 나갔습니다.</div>');
+			await updateParticipantCount(postId);
+			loadChatList();
+		} catch (err) {
+			console.error("❌ 나가기 요청 실패:", err);
+		}
+	});
 }
 
 /* ========================================================================
@@ -277,7 +320,12 @@ function setupJoinLeaveButtons() {
    ======================================================================== */
 function sendMessage() {
 	const text = $chatInput.val().trim();
-	if (!text || !channel) return;
+	if (!text || !channel || !joined) {
+		console.warn("⚠️ 메시지 전송 불가:", { text, channel: !!channel, joined });
+		return;
+	}
+
+	console.log("📤 메시지 전송:", text);
 	channel.publish("message", { user: userId, text });
 	$chatInput.val("").focus();
 }
@@ -297,18 +345,29 @@ function updateCountDisplay() {
 /* ========================================================================
    DB 기반 참가자 수 갱신
    ======================================================================== */
-async function updateParticipantCount() {
-	if (!postId) return;
+async function updateParticipantCount(roomId) {
+	const targetPostId = roomId || postId;
+	if (!targetPostId) return;
+
 	try {
-		const res = await $.getJSON(`${CONTEXT}/chat/participants`, { postId });
+		const res = await $.getJSON(`${CONTEXT}/chat/participants`, { postId: targetPostId });
 		participantCount = res.currentPeople || 0;
+		maxPeople = res.maxPeople || maxPeople; // ✅ maxPeople도 동기화
 		updateCountDisplay();
 
-		const $scheduleBlock = $(`.schedule-current-people[data-post-id="${postId}"]`);
+		// ✅ schedule-block에 실시간 반영
+		const $scheduleBlock = $(`.schedule-block[data-post-id="${targetPostId}"]`);
 		if ($scheduleBlock.length) {
-			const max = $scheduleBlock.data("max-people") || maxPeople;
-			$scheduleBlock.text(`${participantCount}/${max}`);
+			const $currentPeopleSpan = $scheduleBlock.find(".currentPeople");
+			if ($currentPeopleSpan.length) {
+				$currentPeopleSpan.text(participantCount);
+			}
 		}
+
+		// ✅ CustomEvent 발행 (schedule-block.js에서 구독 가능)
+		document.dispatchEvent(new CustomEvent("chatParticipantUpdate", {
+			detail: { postId: targetPostId, currentPeople: participantCount, maxPeople }
+		}));
 	} catch (err) {
 		console.error("❌ 참가자 수 업데이트 실패:", err);
 	}
@@ -328,5 +387,11 @@ function showChatList() {
 	joined = false;
 	$joinBtn.show();
 	$leaveBtn.hide();
+	$sendBtn.prop("disabled", true);
 	loadChatList();
 }
+
+/* ========================================================================
+   전역 함수 노출 (schedule-block.js에서 사용)
+   ======================================================================== */
+window.chatUpdateParticipantCount = updateParticipantCount;
