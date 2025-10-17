@@ -821,15 +821,21 @@ public class PostDao {
 		int startRow = offset + 1;
 		int endRow = offset + limit;
 
-		StringBuilder sql = new StringBuilder("SELECT * FROM ( " + "  SELECT ROWNUM AS rnum, inner_query.* FROM ( "
-				+ "    SELECT " + "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, "
-				+ "      SUBSTR(p.CONTENT, 1, 200) AS CONTENT, " + "      p.HIT, "
-				+ "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, "
-				+ "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, " + "      c.CATEGORY_NAME AS CATEGORY, "
-				+ "      pt.TYPE_NAME AS POST_TYPE " + "    FROM POST p "
-				+ "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID "
-				+ "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID "
-				+ "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID " + "    WHERE 1=1 ");
+		StringBuilder sql = new StringBuilder("SELECT * FROM ( " 
+			    + "  SELECT ROWNUM AS rnum, inner_query.* FROM ( "
+			    + "    SELECT " 
+			    + "      p.POST_ID, p.USER_ID, p.LIST_ID, p.TITLE, "
+			    + "      p.CONTENT AS CONTENT, "
+			    + "      p.HIT, "
+			    + "      TO_CHAR(p.CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT, "
+			    + "      pl.CATEGORY_ID, pl.TYPE_ID AS POST_TYPE_ID, "
+			    + "      c.CATEGORY_NAME AS CATEGORY, "
+			    + "      pt.TYPE_NAME AS POST_TYPE "
+			    + "    FROM POST p "
+			    + "    LEFT JOIN POST_LIST pl ON p.LIST_ID = pl.LIST_ID "
+			    + "    LEFT JOIN CATEGORY c ON pl.CATEGORY_ID = c.CATEGORY_ID "
+			    + "    LEFT JOIN POST_TYPE pt ON pl.TYPE_ID = pt.TYPE_ID "
+			    + "    WHERE 1=1 ");
 
 		if (listId != null)
 			sql.append("AND p.LIST_ID = ? ");
