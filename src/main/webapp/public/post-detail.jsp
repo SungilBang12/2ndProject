@@ -6,7 +6,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${post.title}</title>
-
+<!-- 스케쥴 블록 형태잡기 -->
+<link rel="stylesheet" href="<c:url value='./css/post-create-edit.css'/>?v=6" />
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
