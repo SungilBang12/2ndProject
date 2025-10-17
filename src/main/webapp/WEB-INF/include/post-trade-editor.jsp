@@ -38,8 +38,17 @@
       padding: 20px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       overflow: auto;
-      cursor: text;
     }
+    
+    .board .schedule-block {
+    user-select: none;
+    cursor: default;
+    pointer-events: auto;
+  }
+  .board .schedule-block * {
+    user-select: none;
+    cursor: default; // 커서 이동 방지
+  }
     .board .ProseMirror { min-height: 460px; outline: none; }
 
     /* 폼 공통 */

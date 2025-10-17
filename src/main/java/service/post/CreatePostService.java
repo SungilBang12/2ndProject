@@ -11,6 +11,7 @@ import action.Action;
 import action.ActionForward;
 import dao.PostDao;
 import dto.Post;
+import dto.Users;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -43,10 +44,12 @@ public class CreatePostService implements Action {
         int listId = Integer.parseInt(listIdStr);
 
         // 2. Get user ID from the session (assuming it's stored as "userId")
+        // 로그인 성공 후
         HttpSession session = request.getSession();
-        String userId = (String) session.getAttribute("userId");
+        Users user = (Users) session.getAttribute("user");
+        System.out.println("user" + user);
 
-        if (userId == null) {
+        if (user == null) {
             // If the user is not logged in, redirect to the login page
             ActionForward forward = new ActionForward();
             forward.setRedirect(true);
@@ -56,7 +59,7 @@ public class CreatePostService implements Action {
 
         // 3. Build the Post DTO
         Post post = Post.builder()
-                      .userId(userId)
+                      .userId(user.getUserId())
                       .listId(listId)
                       .title(title)
                       .content(contentJson) // Store the raw JSON content

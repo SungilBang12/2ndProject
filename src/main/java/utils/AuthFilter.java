@@ -115,7 +115,7 @@ public class AuthFilter implements Filter {
 
 		if (session != null) {
 			// 로그인 세션 이름은 "user" 대신 "loggedInUser"를 사용한다고 가정합니다. (기존 코드 유지)
-			Users user = (Users) session.getAttribute("loggedInUser"); 
+			Users user = (Users) session.getAttribute("user"); 
             
 			if (user != null && user.getROLE() != null) {
 				// 사용자의 권한(user.getROLE())이 페이지에 필요한 권한(requiredRole) 중 하나라도 포함되는지 확인
@@ -139,7 +139,7 @@ public class AuthFilter implements Filter {
 			String redirectUrl = httpRequest.getContextPath() + "/users/login"; // 기본적으로 로그인 페이지로 유도
 			String alertMessage = "접근 권한이 없습니다. 로그인이 필요합니다.";
 
-			if (session != null && session.getAttribute("loggedInUser") != null) {
+			if (session != null && session.getAttribute("user") != null) {
 				// 로그인되어 있지만 권한(ADMIN/USER)이 부족할 경우
 				alertMessage = "접근 권한이 부족합니다. 관리자에게 문의하세요.";
                 // 권한 부족 시 메인 페이지 또는 이전 페이지로 이동
