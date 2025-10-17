@@ -1,23 +1,15 @@
 package ajax;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 
 import com.google.gson.Gson;
-
 import dto.ChatJoinRequest;
 import dto.ChatJoinResponse;
 import dto.SchedulePostDto;
 import dto.Users;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
 import service.chat.ChatService;
 import utils.AblyChatConfig;
 import utils.ConfigLoader;
@@ -30,158 +22,154 @@ public class ChatJoinServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        res.setContentType("application/json;charset=UTF-8");
-        HttpSession session = req.getSession();
-        Users user = (Users) session.getAttribute("user");
-
-        if (user == null) {
-            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            res.getWriter().write("{\"error\":\"로그인이 필요합니다.\"}");
-            return;
-        }
-
-        String path = req.getPathInfo();
-        if (path == null) path = "";
-
-        switch (path) {
-            case "/init": handleInit(req, res, user); break;
-            case "/status": handleStatus(req, res, user); break;
-            default:
-                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");
-        }
+        handleRequest(req, res, "GET");
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        res.setContentType("application/json;charset=UTF-8");
-        HttpSession session = req.getSession();
-        Users user = (Users) session.getAttribute("user");
+        handleRequest(req, res, "POST");
+    }
 
+    // ==========================================
+    // 🔹 공통 요청 핸들러
+    // ==========================================
+    private void handleRequest(HttpServletRequest req, HttpServletResponse res, String method) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        HttpSession session = req.getSession(false);
+
+        Users user = (session != null) ? (Users) session.getAttribute("user") : null;
         if (user == null) {
-            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            res.getWriter().write("{\"error\":\"로그인이 필요합니다.\"}");
+            writeError(res, HttpServletResponse.SC_UNAUTHORIZED, "로그인이 필요합니다.");
             return;
         }
 
-        String path = req.getPathInfo();
-        if (path == null) path = "";
+        String path = Optional.ofNullable(req.getPathInfo()).orElse("");
 
-        switch (path) {
-            case "/update": handleUpdate(req, res, user); break;
-            default:
-                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                res.getWriter().write("{\"error\":\"Invalid endpoint\"}");
+        try {
+            switch (path) {
+                case "/init":
+                    if ("GET".equals(method)) handleInit(req, res, user);
+                    else writeError(res, 405, "Invalid method: use GET for /init");
+                    break;
+
+                case "/update":
+                    if ("POST".equals(method)) handleUpdate(req, res, user);
+                    else writeError(res, 405, "Invalid method: use POST for /update");
+                    break;
+
+                case "/status":
+                    if ("GET".equals(method)) handleStatus(req, res, user);
+                    else writeError(res, 405, "Invalid method: use GET for /status");
+                    break;
+
+                default:
+                    writeError(res, 404, "Invalid endpoint: " + path);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            writeError(res, 500, "서버 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
-    // ===========================
+    // ==========================================
     // 1️⃣ /chat/init
-    // ===========================
+    // ==========================================
     private void handleInit(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         String postIdParam = req.getParameter("postId");
 
-        Map<String,String> ablyConfig = loadAblyConfig();
-        Map<String,String> firebaseConfig = loadFirebaseConfig();
-
         Map<String,Object> result = new HashMap<>();
         result.put("userId", user.getUserId());
-        result.put("ablyConfig", ablyConfig);
-        result.put("firebaseConfig", firebaseConfig);
 
         if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
+            // 참여 중인 채팅방 리스트
             List<SchedulePostDto> joinedRooms = service.getUserJoinedRooms(user.getUserId());
             result.put("rooms", joinedRooms);
         } else {
             int postId = Integer.parseInt(postIdParam);
-            result.put("postId", postId);
-            result.put("channelName", "channel-" + postId);
-
             SchedulePostDto post = service.getPostDetails(postId);
             if (post != null) {
-                result.put("maxPeople", post.getMaxPeople());
+                result.put("postId", postId);
+                result.put("channelName", "channel-" + postId);
                 result.put("currentPeople", post.getCurrentPeople());
+                result.put("maxPeople", post.getMaxPeople());
             }
         }
 
         gson.toJson(result, res.getWriter());
     }
 
-    // ===========================
+    // ==========================================
     // 2️⃣ /chat/update
-    // ===========================
+    // ==========================================
     private void handleUpdate(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
-        int postId = Integer.parseInt(req.getParameter("postId"));
-        String action = req.getParameter("action"); // join / leave
-
-        ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
-        Map<String, Object> result = new HashMap<>();
-
-        ChatJoinResponse chatResult;
-        if ("leave".equalsIgnoreCase(action)) {
-            chatResult = service.leaveChat(dto);
-        } else {
-            chatResult = service.joinChat(dto);
-        }
-
-        // 결과 객체 포함
-        result.put("chatResult", chatResult);
-
-        // Ably 설정 포함 (선택적으로 전달)
-        Map<String, String> ablyConfig = loadAblyConfig();
-        result.put("ablyConfig", ablyConfig);
-
-        gson.toJson(result, res.getWriter());
-    }
-
-    // ===========================
-    // 3️⃣ /chat/status
-    // ===========================
-    private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
         int postId = Integer.parseInt(req.getParameter("postId"));
         Map<String,Object> result = new HashMap<>();
 
-        boolean joined = service.isUserInChat(postId, user.getUserId());
+        ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
+        ChatJoinResponse chatResult = service.leaveChat(dto); // leave만
+
+        result.put("chatResult", chatResult);
+        gson.toJson(result, res.getWriter());
+    }
+
+    // ==========================================
+    // 3️⃣ /chat/status
+    // ==========================================
+    private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
+        int postId = Integer.parseInt(req.getParameter("postId"));
         SchedulePostDto post = service.getPostDetails(postId);
+
+        Map<String,Object> result = new HashMap<>();
+        boolean joined = service.isUserInChat(postId, user.getUserId());
 
         result.put("joined", joined);
         if (post != null) {
-            result.put("maxPeople", post.getMaxPeople());
             result.put("currentPeople", post.getCurrentPeople());
+            result.put("maxPeople", post.getMaxPeople());
         }
 
         gson.toJson(result, res.getWriter());
     }
 
-    // ===========================
+    // ==========================================
     // 🔹 Ably 설정 로딩
-    // ===========================
+    // ==========================================
     private Map<String, String> loadAblyConfig() {
-        Map<String, String> ablyConfig = new HashMap<>();
-        Optional<Properties> ablyPropsOpt = AblyChatConfig.getAblyConfig(getServletContext());
-        ablyPropsOpt.ifPresent(props -> {
-            String pubKey = props.getProperty("ably.pubkey", "");
-            if (!pubKey.isEmpty()) ablyConfig.put("pubKey", pubKey);
-        });
-        return ablyConfig;
+        Map<String, String> config = new HashMap<>();
+        AblyChatConfig.getAblyConfig(getServletContext())
+            .ifPresent(props -> {
+                String pubKey = props.getProperty("ably.pubkey", "");
+                if (!pubKey.isEmpty()) config.put("pubKey", pubKey);
+            });
+        return config;
     }
 
-    // ===========================
+    // ==========================================
     // 🔹 Firebase 설정 로딩
-    // ===========================
+    // ==========================================
     private Map<String, String> loadFirebaseConfig() {
-        Map<String, String> firebaseConfig = new HashMap<>();
-        Optional<Properties> firebasePropsOpt = ConfigLoader.getFirebaseConfig(getServletContext());
-        firebasePropsOpt.ifPresent(props -> {
-            firebaseConfig.put("apiKey", props.getProperty("firebase.apiKey"));
-            firebaseConfig.put("authDomain", props.getProperty("firebase.authDomain"));
-            firebaseConfig.put("projectId", props.getProperty("firebase.projectId"));
-            firebaseConfig.put("storageBucket", props.getProperty("firebase.storageBucket"));
-            firebaseConfig.put("messagingSenderId", props.getProperty("firebase.messagingSenderId"));
-            firebaseConfig.put("appId", props.getProperty("firebase.appId"));
-            firebaseConfig.put("measurementId", props.getProperty("firebase.measurementId"));
-            firebaseConfig.put("databaseURL", props.getProperty("firebase.databaseURL"));
-        });
-        return firebaseConfig;
+        Map<String, String> config = new HashMap<>();
+        ConfigLoader.getFirebaseConfig(getServletContext())
+            .ifPresent(props -> {
+                List<String> keys = Arrays.asList(
+                    "apiKey", "authDomain", "projectId", "storageBucket",
+                    "messagingSenderId", "appId", "measurementId", "databaseURL"
+                );
+                for (String key : keys) {
+                    config.put(key, props.getProperty("firebase." + key, ""));
+                }
+            });
+        return config;
+    }
+
+    // ==========================================
+    // 🔹 에러 응답 유틸
+    // ==========================================
+    private void writeError(HttpServletResponse res, int status, String message) throws IOException {
+        res.setStatus(status);
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", status);
+        error.put("error", message);
+        gson.toJson(error, res.getWriter());
     }
 }
