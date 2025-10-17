@@ -7,6 +7,7 @@ const postId = document.getElementById("hiddenPostId")?.value || null;
 
 // 서버 참가 요청
 async function joinSchedule(postId, userId) {
+  console.log("참가시도 = "+postId + userId);
   if (!postId || !userId) {
     alert("참가 정보를 확인할 수 없습니다.");
     return null;
@@ -85,19 +86,18 @@ export const ScheduleBlock = Node.create({
           handleKeyDown(view, event) {
             const { $from } = view.state.selection;
             const nodeAfter = $from.nodeAfter;
-            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock"; // 블록 앞만
-
+            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock";
             if (isBeforeBlock) {
               if (event.key.startsWith("Arrow") || event.key === "Tab" || event.ctrlKey || event.metaKey)
                 return false;
-              return true; // 나머지 키 차단
+              return true;
             }
-            return false; // 일반 입력 정상
+            return false;
           },
           handleTextInput(view, from, to, text) {
             const { $from } = view.state.selection;
             const nodeAfter = $from.nodeAfter;
-            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock"; // 블록 앞만
+            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock";
             return isBeforeBlock;
           },
         },
@@ -113,6 +113,7 @@ export const ScheduleBlock = Node.create({
 
       const { title = "미정 모임", maxPeople, currentPeople: initPeople, editMode, postId } = node.attrs;
       let currentPeople = initPeople;
+      let joined = false;
 
       dom.innerHTML = `
         <div class="schedule-title">📅 ${title}</div>
@@ -127,8 +128,8 @@ export const ScheduleBlock = Node.create({
       const joinBtn = dom.querySelector(".schedule-join-btn");
       const cancelBtn = dom.querySelector(".schedule-cancel-btn");
       const currentPeopleSpan = dom.querySelector(".currentPeople");
-      let joined = false;
 
+      // 현재 참가자 수 업데이트
       const updatePresenceCount = (membersLength) => {
         currentPeople = membersLength;
         currentPeopleSpan.textContent = currentPeople;
@@ -136,64 +137,47 @@ export const ScheduleBlock = Node.create({
         if (!editMode && joinBtn) joinBtn.disabled = currentPeople >= maxPeople;
       };
 
-      // 드래그/드롭/키보드 차단
+      // 드래그/드롭 차단
       dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
       dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
-      dom.addEventListener("keydown", e => e.stopPropagation());
 
-      // 비동기 Ably 연결 및 Presence 처리
-      (async () => {
-        if (!postId) return;
+      // ✅ 버튼 이벤트는 Ably 연결과 무관하게 등록
+      joinBtn?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (joined || currentPeople >= maxPeople) return;
+        const result = await joinSchedule(postId, userId);
+        if (!result) return;
 
         try {
           const channel = await setupAblyChannel(postId, userId);
+          await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
+          joined = true;
 
-          // 초기 참가자 수
+          // 초기 참가자 수 반영
           channel.presence.get((err, members) => {
             if (!err) updatePresenceCount(members?.length || 0);
           });
 
           // 참가자 변화 구독
-          channel.presence.subscribe(["enter", "leave"], (member) => {
+          channel.presence.subscribe(["enter", "leave"], () => {
             channel.presence.get((err, members) => {
               if (!err) updatePresenceCount(members?.length || 0);
             });
           });
 
-          // EditMode면 자동 참가
-          if (editMode && !joined) {
-            await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
-            joined = true;
-          }
-
-          // 참가 버튼 이벤트
-          joinBtn?.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            if (joined || currentPeople >= maxPeople) return;
-            const result = await joinSchedule(postId, userId);
-            if (!result) return;
-            await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
-            joined = true;
-            alert(`${title} 모임에 참가했습니다!`);
-          });
-
-          // 취소 버튼 이벤트
-          cancelBtn?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (!confirm("이 블록을 삭제하시겠습니까?")) return;
-            const pos = getPos();
-            if (pos != null) editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
-            if (joined) {
-              channel.presence.leave();
-              joined = false;
-              updatePresenceCount(currentPeople - 1);
-            }
-          });
-
-        } catch (err) {
-          console.warn("Ably 연결/참가 오류:", err);
+          alert(`${title} 모임에 참가했습니다!`);
+        } catch(err) {
+          console.warn(err);
+          alert("참가 실패");
         }
-      })();
+      });
+
+      cancelBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!confirm("이 블록을 삭제하시겠습니까?")) return;
+        const pos = getPos();
+        if (pos != null) editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+      });
 
       return { dom };
     };
