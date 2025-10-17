@@ -75,24 +75,25 @@ public class ChatJoinServlet extends HttpServlet {
     // 1️⃣ /chat/init
     // ==========================================
     private void handleInit(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", user.getUserId());
+        result.put("ablyConfig", loadAblyConfig());
+        result.put("firebaseConfig", loadFirebaseConfig());
+
         String postIdParam = req.getParameter("postId");
 
-        Map<String,Object> result = new HashMap<>();
-        result.put("userId", user.getUserId());
-
         if (postIdParam == null || postIdParam.isEmpty() || "null".equals(postIdParam)) {
-            // 참여 중인 채팅방 리스트
+            // 사용자가 참가한 전체 채팅방 조회
             List<SchedulePostDto> joinedRooms = service.getUserJoinedRooms(user.getUserId());
             result.put("rooms", joinedRooms);
         } else {
             int postId = Integer.parseInt(postIdParam);
             SchedulePostDto post = service.getPostDetails(postId);
-            if (post != null) {
-                result.put("postId", postId);
-                result.put("channelName", "channel-" + postId);
-                result.put("currentPeople", post.getCurrentPeople());
-                result.put("maxPeople", post.getMaxPeople());
-            }
+
+            result.put("postId", postId);
+            result.put("channelName", "channel-" + postId);
+            result.put("maxPeople", Optional.ofNullable(post).map(SchedulePostDto::getMaxPeople).orElse(0));
+            result.put("currentPeople", Optional.ofNullable(post).map(SchedulePostDto::getCurrentPeople).orElse(0));
         }
 
         gson.toJson(result, res.getWriter());
@@ -102,13 +103,25 @@ public class ChatJoinServlet extends HttpServlet {
     // 2️⃣ /chat/update
     // ==========================================
     private void handleUpdate(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
-        int postId = Integer.parseInt(req.getParameter("postId"));
-        Map<String,Object> result = new HashMap<>();
+        String postIdParam = req.getParameter("postId");
+        String action = Optional.ofNullable(req.getParameter("action")).orElse("").toLowerCase();
 
+        if (postIdParam == null || postIdParam.isEmpty()) {
+            writeError(res, 400, "postId가 필요합니다.");
+            return;
+        }
+
+        int postId = Integer.parseInt(postIdParam);
         ChatJoinRequest dto = new ChatJoinRequest(postId, user.getUserId());
-        ChatJoinResponse chatResult = service.leaveChat(dto); // leave만
 
+        ChatJoinResponse chatResult = "leave".equals(action)
+                ? service.leaveChat(dto)
+                : service.joinChat(dto);
+
+        Map<String, Object> result = new HashMap<>();
         result.put("chatResult", chatResult);
+        result.put("ablyConfig", loadAblyConfig());
+
         gson.toJson(result, res.getWriter());
     }
 
@@ -116,17 +129,20 @@ public class ChatJoinServlet extends HttpServlet {
     // 3️⃣ /chat/status
     // ==========================================
     private void handleStatus(HttpServletRequest req, HttpServletResponse res, Users user) throws IOException {
-        int postId = Integer.parseInt(req.getParameter("postId"));
+        String postIdParam = req.getParameter("postId");
+        if (postIdParam == null || postIdParam.isEmpty()) {
+            writeError(res, 400, "postId가 필요합니다.");
+            return;
+        }
+
+        int postId = Integer.parseInt(postIdParam);
+        boolean joined = service.isUserInChat(postId, user.getUserId());
         SchedulePostDto post = service.getPostDetails(postId);
 
-        Map<String,Object> result = new HashMap<>();
-        boolean joined = service.isUserInChat(postId, user.getUserId());
-
+        Map<String, Object> result = new HashMap<>();
         result.put("joined", joined);
-        if (post != null) {
-            result.put("currentPeople", post.getCurrentPeople());
-            result.put("maxPeople", post.getMaxPeople());
-        }
+        result.put("maxPeople", Optional.ofNullable(post).map(SchedulePostDto::getMaxPeople).orElse(0));
+        result.put("currentPeople", Optional.ofNullable(post).map(SchedulePostDto::getCurrentPeople).orElse(0));
 
         gson.toJson(result, res.getWriter());
     }
