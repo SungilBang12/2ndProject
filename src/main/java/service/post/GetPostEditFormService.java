@@ -26,7 +26,7 @@ public class GetPostEditFormService implements Action {
             String userId = null;
             
             if (session != null) {
-                userId = (String) session.getAttribute("userId");
+                userId = (String) session.getAttribute("user");
                 System.out.println("=== 세션에서 가져온 userId: " + userId + " ===");
             } else {
                 System.out.println("=== 세션이 존재하지 않음 ===");
