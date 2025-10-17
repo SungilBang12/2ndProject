@@ -201,7 +201,7 @@
 </form>
 
 <script type="module">
-  import { initEditor } from "${pageContext.request.contextPath}/js/editor-init.js";
+  import { initEditor, activateEditMode } from "${pageContext.request.contextPath}/js/editor-init.js";
   import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
 
   // ========================================
@@ -245,6 +245,13 @@
     return editor;
   }
   editor = initializeEditor();
+
+// 스케쥴 삭제 버튼 활성화
+// 이미 선언되었을 수 있으므로 window 객체에 저장
+window.isEditMode = window.isEditMode || true; // 수정 모드면 true
+if (isEditMode) {
+  activateEditMode(editor);
+}
   
   // ✅ 전역 변수로 에디터 등록 (이미지 모달 등에서 사용)
   window.currentEditor = editor;

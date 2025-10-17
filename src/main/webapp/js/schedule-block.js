@@ -1,210 +1,167 @@
-import { Node, mergeAttributes } from "https://esm.sh/@tiptap/core";
+import { Node } from "https://esm.sh/@tiptap/core";
 import { Plugin } from "https://esm.sh/prosemirror-state";
 
-/* =====================================================
- 🟢 전역 Ably 대기
-===================================================== */
-function waitForAbly() {
-  return new Promise((resolve, reject) => {
-    const check = () => {
-      if (window.ably && window.ably.connection?.state === "connected") resolve(window.ably);
-      else if (window.ably && window.ably.connection?.state === "failed") reject("Ably 연결 실패");
-      else setTimeout(check, 150);
-    };
-    check();
-  });
+const userId = document.getElementById("userId")?.value || `guest-${Math.random().toString(36).substr(2,6)}`;
+
+function sendChatAction(postId, userId, action, callback) {
+    if (!postId || !userId) return callback(null);
+    $.ajax({
+        url: "/chat/update",
+        method: "POST",
+        data: { postId, userId, action },
+        success: res => callback(res),
+        error: (xhr, status, err) => {
+            console.error(`❌ ${action} 요청 실패:`, err);
+            callback(null);
+        }
+    });
 }
 
-const generateBlockId = (title) => `schedule-${encodeURIComponent(title)}`;
-
 export const ScheduleBlock = Node.create({
-  name: "scheduleBlock",
-  group: "block",
-  atom: true,
-  draggable: false,
+    name: "scheduleBlock",
+    group: "block",
+    atom: true,
+    draggable: false,
 
-  addAttributes() {
-    return {
-      title: { default: "" },
-      meetDate: { default: "" },
-      meetTime: { default: "" },
-      currentPeople: { default: 0 },
-      maxPeople: { default: 2 },
-      editMode: { default: false },
-    };
-  },
-
-  addKeyboardShortcuts() {
-    return {
-      Backspace: ({ editor }) => {
-        const { $from } = editor.state.selection;
-        return $from.nodeAfter?.type.name === "scheduleBlock";
-      },
-      Delete: ({ editor }) => {
-        const { $from } = editor.state.selection;
-        return $from.nodeBefore?.type.name === "scheduleBlock";
-      },
-    };
-  },
-
-  addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        props: {
-			handleKeyDown(view, event) {
-			  const { $from } = view.state.selection;
-
-			  // 블록 바로 앞일 때만 차단
-			  const nodeAfter = $from.nodeAfter;
-			  const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock";
-
-			  if (isBeforeBlock) {
-			    if (
-			      event.key.startsWith("Arrow") ||
-			      event.key === "Tab" ||
-			      event.ctrlKey ||
-			      event.metaKey
-			    )
-			      return false;
-			    return true; // 나머지 키 차단
-			  }
-
-			  return false; // 일반 입력 정상
-			},
-
-			handleTextInput(view, from, to, text) {
-			  const { $from } = view.state.selection;
-			  const nodeAfter = $from.nodeAfter;
-			  const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock";
-
-			  return isBeforeBlock; // 블록 바로 앞에서만 입력 차단
-			},
-        },
-      }),
-    ];
-  },
-
-  parseHTML() {
-    return [{ tag: "div.schedule-block" }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { class: "schedule-block" }), 0];
-  },
-
-  addNodeView() {
-    return ({ node, getPos, editor }) => {
-      const dom = document.createElement("div");
-      dom.className = "schedule-block";
-      dom.dataset.type = "schedule-block";
-      dom.setAttribute("contenteditable", "false");
-
-      const title = node.attrs.title || "미정 모임";
-      const maxPeople = node.attrs.maxPeople;
-      let currentPeople = node.attrs.currentPeople;
-      const editMode = node.attrs.editMode === true;
-      const blockId = generateBlockId(title);
-
-      // DOM 구성
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "schedule-title";
-      titleDiv.textContent = `📅 ${title}`;
-
-      const dateDiv = document.createElement("div");
-      dateDiv.className = "schedule-date";
-      dateDiv.textContent = `🕐 ${node.attrs.meetDate} ${node.attrs.meetTime}`;
-
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "schedule-info-item";
-      const peopleSpan = document.createElement("span");
-      peopleSpan.className = "currentPeople";
-      peopleSpan.textContent = currentPeople;
-      infoDiv.append(`👥 `, peopleSpan, `/${maxPeople}명 모집`);
-
-      const btnContainer = document.createElement("div");
-      btnContainer.className = "schedule-btns";
-      btnContainer.style.display = "flex";
-      btnContainer.style.justifyContent = editMode ? "flex-end" : "space-between";
-      btnContainer.style.marginTop = "5px";
-
-      const joinBtn = document.createElement("button");
-      joinBtn.className = "schedule-join-btn";
-      joinBtn.textContent = "참가하기";
-      if (!editMode) btnContainer.appendChild(joinBtn);
-
-      const cancelBtn = document.createElement("button");
-      cancelBtn.className = "schedule-cancel-btn";
-      cancelBtn.textContent = "취소";
-      btnContainer.appendChild(cancelBtn);
-
-      dom.append(titleDiv, dateDiv, infoDiv, btnContainer);
-
-      let joined = false;
-      const userId = window.userId || "guest-" + Math.random().toString(36).substring(2, 9);
-
-      // 드래그/드롭/키보드 이벤트 차단
-      dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
-      dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
-      dom.addEventListener("keydown", e => e.stopPropagation());
-
-      setTimeout(async () => {
-        let ably;
-        try {
-          ably = await waitForAbly();
-        } catch (err) {
-          console.warn("❌ Ably 초기화 실패:", err);
-          return;
-        }
-
-        const channel = ably.channels.get(blockId);
-
-        const updatePresence = () => {
-          channel.presence.get((err, members) => {
-            if (err) return console.error(err);
-            currentPeople = members.length;
-            peopleSpan.textContent = currentPeople;
-            if (!editMode) joinBtn.disabled = currentPeople >= maxPeople;
-          });
+    addAttributes() {
+        return {
+            title: { default: "" },
+            meetDate: { default: "" },
+            meetTime: { default: "" },
+            currentPeople: { default: 0 },
+            maxPeople: { default: 2 },
+            editMode: { default: false },
+            postId: { default: null },
         };
+    },
 
-        updatePresence();
-        channel.presence.subscribe(["enter", "leave"], updatePresence);
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                props: {
+                    handleKeyDown(view, event) {
+                        const { $from } = view.state.selection;
+                        const nodeAfter = $from.nodeAfter;
+                        if (nodeAfter?.type.name === "scheduleBlock") {
+                            if (event.key.startsWith("Arrow") || event.key === "Tab" || event.ctrlKey || event.metaKey) return false;
+                            return true;
+                        }
+                        return false;
+                    },
+                    handleTextInput(view, from, to, text) {
+                        const { $from } = view.state.selection;
+                        return $from.nodeAfter?.type.name === "scheduleBlock";
+                    },
+                },
+            }),
+        ];
+    },
 
-        if (editMode && !joined) {
-          channel.presence.enter({ user: userId });
-          joined = true;
-          updatePresence();
-        }
+    addNodeView() {
+        return ({ node, getPos, editor }) => {
+            const dom = document.createElement("div");
+            dom.className = "schedule-block";
+            dom.setAttribute("contenteditable", "false");
 
-        // 참가 버튼
-        joinBtn.addEventListener("click", e => {
-          e.stopPropagation();
-          if (joined || currentPeople >= maxPeople) return;
-          channel.presence.enter({ user: userId });
-          joined = true;
-          updatePresence();
-          alert(`'${title}' 모임에 참가했습니다!`);
-        });
+            const { title = "미정 모임", maxPeople: initMaxPeople, currentPeople: initPeople, editMode, postId } = node.attrs;
+            let currentPeople = initPeople;
+            let maxPeople = initMaxPeople;
+            let joined = false;
 
-        // 취소 버튼
-        cancelBtn.addEventListener("click", e => {
-          e.stopPropagation();
-          const reallyDelete = currentPeople > 1
-            ? confirm("참가자가 1명입니다. 정말 삭제하시겠습니까?") && confirm("정말로 삭제하시겠습니까?")
-            : confirm("블록을 삭제하시겠습니까?");
-          if (!reallyDelete) return;
-          const pos = getPos();
-          if (pos != null) editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
-          if (joined) {
-            channel.presence.leave();
-            joined = false;
-            updatePresence();
-          }
-        });
+            if (postId) dom.setAttribute("data-post-id", postId);
 
-      }, 0);
+            dom.innerHTML = `
+                <div class="schedule-title">📅 ${title}</div>
+                <div class="schedule-date">🕐 ${node.attrs.meetDate} ${node.attrs.meetTime}</div>
+                <div class="schedule-info-item">
+                    👥 <span class="currentPeople">${currentPeople}</span>/<span class="maxPeople">${maxPeople}</span>명 모집
+                </div>
+                <div class="schedule-btns" style="display:flex; justify-content:space-between; margin-top:5px;">
+                    <button class="schedule-join-btn" ${postId ? "" : "disabled"}>참가하기</button>
+                    ${editMode ? '<button class="schedule-delete-btn btn-delete">삭제</button>' : ""}
+                </div>
+            `;
 
-      return { dom, contentDOM: null };
-    };
-  },
+            const joinBtn = dom.querySelector(".schedule-join-btn");
+            const deleteBtn = dom.querySelector(".schedule-delete-btn");
+            const currentPeopleSpan = dom.querySelector(".currentPeople");
+            const maxPeopleSpan = dom.querySelector(".maxPeople");
+
+            const updateCurrentPeople = (count, max) => {
+                currentPeople = count;
+                currentPeopleSpan.textContent = currentPeople;
+                if (max !== undefined) {
+                    maxPeople = max;
+                    maxPeopleSpan.textContent = maxPeople;
+                }
+                if (joinBtn) joinBtn.disabled = joined || currentPeople >= maxPeople;
+            };
+
+            const handleParticipantUpdate = (e) => {
+                if (e.detail.postId === postId) updateCurrentPeople(e.detail.currentPeople, e.detail.maxPeople);
+            };
+
+            document.addEventListener("chatParticipantUpdate", handleParticipantUpdate);
+
+            // 삭제 버튼 (editMode 전용)
+            if (editMode && deleteBtn) {
+                $(deleteBtn).on("click", e => {
+                    e.stopPropagation();
+                    if (!confirm("이 블록을 삭제하시겠습니까?")) return;
+                    const pos = getPos();
+                    if (pos != null) editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+                    document.removeEventListener("chatParticipantUpdate", handleParticipantUpdate);
+                });
+            }
+
+            // 페이지 로드 시 참가 상태 확인 + 참가자 수 가져오기
+            if (postId && !editMode) {
+                sendChatAction(postId, userId, "check", res => {
+                    if (res?.chatResult?.alreadyJoined) {
+                        joined = true;
+                        joinBtn.textContent = "참가중";
+                        joinBtn.disabled = true;
+                        joinBtn.classList.add("joined");
+                    }
+                });
+
+                $.getJSON(`/chat/participants?postId=${postId}`, data => {
+                    if (data?.currentPeople != null) updateCurrentPeople(data.currentPeople, data.maxPeople);
+                }).fail(err => console.warn("⚠️ 참가자 수 로드 실패:", err));
+            }
+
+            // 참가 버튼 클릭
+            $(joinBtn).on("click", e => {
+                e.stopPropagation();
+                if (!postId || joined || currentPeople >= maxPeople) {
+                    if (currentPeople >= maxPeople) alert("참가 인원이 가득 찼습니다.");
+                    return;
+                }
+                sendChatAction(postId, userId, "join", res => {
+                    if (!res?.chatResult?.success) return alert(res?.chatResult?.message || "참가 실패");
+                    joined = true;
+                    joinBtn.textContent = "참가중";
+                    joinBtn.disabled = true;
+                    joinBtn.classList.add("joined");
+                    if (typeof window.chatUpdateParticipantCount === "function") window.chatUpdateParticipantCount(postId);
+                    alert(`${title} 모임에 참가했습니다!`);
+                });
+            });
+
+            // 드래그 방지
+            dom.addEventListener("dragstart", e => e.preventDefault());
+            dom.addEventListener("drop", e => e.preventDefault());
+
+            return { dom, destroy: () => document.removeEventListener("chatParticipantUpdate", handleParticipantUpdate) };
+        };
+    },
 });
+
+export function activateScheduleBlockAbly(editor, postId) {
+    editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === "scheduleBlock") {
+            const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, postId });
+            editor.view.dispatch(tr);
+        }
+    });
+}

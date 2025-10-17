@@ -59,6 +59,8 @@
           <button class="page-btn sunset-ghost" id="writeBtn"><span>글쓰기</span></button>
         </div>
       </main>
+      <div class="slot-extra">
+<jsp:include page="/WEB-INF/include/chat.jsp"></jsp:include>
     </div>
   </main>
 
