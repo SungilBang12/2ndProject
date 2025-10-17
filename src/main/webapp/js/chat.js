@@ -39,6 +39,7 @@ const $chatMessages = $("#chatMessages");
 const $chatInput = $("#chatInput");
 const $sendBtn = $("#sendBtn");
 const $participantCount = $("#participantCount");
+const $chatTitle = $("#chatTitle");
 
 /* ========================================================================
    초기화
@@ -48,40 +49,50 @@ $(document).ready(async () => {
     $chatToggleBtn.on("click", toggleChatWidget);
     $minimizeBtn.on("click", minimizeChatWidget);
     $backToListBtn.on("click", showChatList);
-
     $sendBtn.on("click", sendMessage);
     $chatInput.on("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
     try {
         const res = await $.getJSON(`${CONTEXT}/chat/init`, { postId: postId || "" });
-        const { ablyConfig, firebaseConfig, userId: serverUserId, rooms, currentPeople, maxPeople: serverMax } = res;
+        const { ablyConfig, firebaseConfig, userId: serverUserId, rooms, schedules, maxPeople: serverMax } = res;
 
         chatState.maxPeople = serverMax || chatState.maxPeople;
         updateCountDisplay();
 
-        if (ablyConfig?.pubKey) {
-            window.ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId || serverUserId });
+        initAblyAndFirebase(ablyConfig, firebaseConfig, serverUserId);
+        setupJoinLeaveButtons();
 
-            window.ably.connection.on("connected", async () => {
-                console.log("✅ Ably 연결 성공");
-                initFirebase(firebaseConfig);
-                await loadChatList(rooms);
+        // postId 존재 시 schedule 체크 후 자동 참가
+        if (postId && schedules?.some(sch => sch.postId === postId)) {
+            const schedule = schedules.find(sch => sch.postId === postId);
+            await enterChatRoom(postId, schedule.title);
+        } else {
+            await loadChatList(rooms);
+        }
 
-                if (postId) {
-                    await enterChatRoom(postId);
-                    setupJoinLeaveButtons();
-                }
-            });
-
-            window.ably.connection.on("failed", () => {
-                console.error("❌ Ably 연결 실패");
-                displayMessage('<div class="system-message error">Ably 연결 실패</div>');
-            });
-        } else console.error("❌ Ably 설정 누락");
     } catch (err) {
         console.error("❌ /chat/init 요청 실패:", err);
     }
 });
+
+/* ========================================================================
+   Ably & Firebase 초기화
+   ======================================================================== */
+function initAblyAndFirebase(ablyConfig, firebaseConfig, serverUserId) {
+    if (!ablyConfig?.pubKey) return console.error("❌ Ably 설정 누락");
+    window.ably = new Ably.Realtime({ key: ablyConfig.pubKey, clientId: userId || serverUserId });
+
+    window.ably.connection.on("connected", () => {
+        console.log("✅ Ably 연결 성공");
+        if (firebaseConfig?.apiKey && !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        window.firebaseDb = firebase.database();
+    });
+
+    window.ably.connection.on("failed", () => {
+        console.error("❌ Ably 연결 실패");
+        displayMessage('<div class="system-message error">Ably 연결 실패</div>');
+    });
+}
 
 /* ========================================================================
    채팅 위젯 토글/최소화
@@ -106,61 +117,47 @@ function minimizeChatWidget() {
 }
 
 /* ========================================================================
-   채팅 리스트 로드
+   채팅 리스트 로드 (참가자 수는 숨김)
    ======================================================================== */
 async function loadChatList(existingRooms = []) {
     $chatListPanel.show();
     $chatPanel.hide();
     $backToListBtn.hide();
+    $chatTitle.text("채팅 리스트");
 
-    try {
-        let rooms = existingRooms;
-        if (!rooms.length) {
-            const res = await $.getJSON(`${CONTEXT}/chat/init`);
-            rooms = res.rooms || [];
-        }
+    let rooms = existingRooms.length ? existingRooms : (await $.getJSON(`${CONTEXT}/chat/init`)).rooms || [];
+    rooms = rooms.filter(r => !r.scheduleOnly);
 
-        if (!rooms.length) {
-            $chatList.html("<li class='no-rooms'>참여 가능한 채팅방이 없습니다.</li>");
-            return;
-        }
-
-        const listHtml = rooms
-            .map(room => `<li class="chat-room-item" data-id="${room.postId}">
-                <strong>${room.title || `채팅방 #${room.postId}`}</strong><br>
-                <span class="room-info">참여자: ${room.currentPeople || 0}/${room.maxPeople || 0}</span>
-            </li>`).join("");
-
-        $chatList.html(listHtml);
-
-        $chatList.off("click").on("click", ".chat-room-item", async function() {
-            const roomId = $(this).data("id");
-            await enterChatRoom(roomId);
-        });
-    } catch (err) {
-        console.error("❌ 채팅방 리스트 로드 실패:", err);
-        $chatList.html("<li class='error-message'>리스트를 불러올 수 없습니다.</li>");
+    if (!rooms.length) {
+        $chatList.html("<li class='no-rooms'>참여 가능한 채팅방이 없습니다.</li>");
+        return;
     }
-}
 
-/* ========================================================================
-   Firebase 초기화
-   ======================================================================== */
-function initFirebase(firebaseConfig) {
-    if (!firebaseConfig?.apiKey) return;
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    window.firebaseDb = firebase.database();
+    // 최대 참가자 수 갱신
+    chatState.maxPeople = Math.max(...rooms.map(r => r.maxPeople || chatState.maxPeople));
+    updateCountDisplay();
+
+    const listHtml = rooms.map(room => `
+        <li class="chat-room-item" data-id="${room.postId}">
+            <strong>${room.title || `채팅방 #${room.postId}`}</strong>
+        </li>
+    `).join("");
+
+    $chatList.html(listHtml);
+    $chatList.off("click").on("click", ".chat-room-item", async function() {
+        const roomId = $(this).data("id");
+        await enterChatRoom(roomId);
+    });
 }
 
 /* ========================================================================
    채팅방 참가/채널 설정
    ======================================================================== */
-async function enterChatRoom(roomId) {
+async function enterChatRoom(roomId, title = null) {
     if (!roomId) return;
-    if (chatState.joined && chatState.roomId === roomId) return; // 이미 참가 중
+    if (chatState.joined && chatState.roomId === roomId) return;
 
     cleanupCurrentRoom();
-
     $chatListPanel.hide();
     $chatPanel.show();
     $backToListBtn.show();
@@ -169,6 +166,8 @@ async function enterChatRoom(roomId) {
     chatState.roomId = roomId;
     chatState.participantCount = 0;
     updateCountDisplay();
+
+    $chatTitle.text(title || `채팅방 #${roomId}`);
 
     const channelName = `channel-${roomId}`;
     setupChannel(channelName, roomId);
@@ -185,8 +184,7 @@ async function enterChatRoom(roomId) {
             $leaveBtn.show();
             $sendBtn.prop("disabled", false);
 
-            const systemMsg = alreadyJoined ? "이미 참가 중입니다." : "채팅방에 참가했습니다.";
-            displayMessage(`<div class="system-message info">${systemMsg}</div>`);
+            displayMessage(`<div class="system-message info">${alreadyJoined ? "이미 참가 중입니다." : "채팅방에 참가했습니다."}</div>`);
         } else {
             chatState.joined = false;
             $joinBtn.show();
@@ -202,9 +200,11 @@ async function enterChatRoom(roomId) {
     }
 }
 
+/* ========================================================================
+   채널 & 메시지 설정
+   ======================================================================== */
 function setupChannel(channelName, roomId) {
     if (!window.ably) return console.error("❌ Ably 미초기화");
-
     if (chatState.channel) {
         chatState.channel.unsubscribe();
         chatState.channel.presence.unsubscribe();
@@ -235,7 +235,7 @@ function setupChannel(channelName, roomId) {
 
         messagesRef.on("child_added", snap => {
             const msg = snap.val();
-            if (!msg || msg.user === userId) return; // 중복 표시 방지
+            if (!msg || msg.user === userId) return;
             displayMessage(`<div class="chat-message-other"><strong>${msg.user}</strong>: ${msg.text}</div>`);
         });
     }
@@ -274,7 +274,6 @@ function setupJoinLeaveButtons() {
 
     $leaveBtn.off("click").on("click", async () => {
         if (!chatState.joined || !chatState.channel) return;
-
         try {
             await $.post(`${CONTEXT}/chat/update`, { postId: chatState.roomId, action: "leave" });
             chatState.channel.presence.leave();
@@ -294,7 +293,6 @@ function setupJoinLeaveButtons() {
 function sendMessage() {
     const text = $chatInput.val().trim();
     if (!text || !chatState.channel || !chatState.joined) return;
-
     chatState.channel.publish("message", { user: userId, text });
     $chatInput.val("").focus();
 }
@@ -312,7 +310,7 @@ function updateCountDisplay() {
 }
 
 /* ========================================================================
-   참가자 수 갱신
+   참가자 수 갱신 (Servlet 연동)
    ======================================================================== */
 async function updateParticipantCount(roomId) {
     const targetPostId = roomId || chatState.roomId;
@@ -323,15 +321,6 @@ async function updateParticipantCount(roomId) {
         chatState.participantCount = res.currentPeople || 0;
         chatState.maxPeople = res.maxPeople || chatState.maxPeople;
         updateCountDisplay();
-
-        const $scheduleBlock = $(`.schedule-block[data-post-id="${targetPostId}"]`);
-        if ($scheduleBlock.length) {
-            $scheduleBlock.find(".currentPeople").text(chatState.participantCount);
-        }
-
-        document.dispatchEvent(new CustomEvent("chatParticipantUpdate", {
-            detail: { postId: targetPostId, currentPeople: chatState.participantCount, maxPeople: chatState.maxPeople }
-        }));
     } catch (err) {
         console.error("❌ 참가자 수 업데이트 실패:", err);
     }
@@ -368,6 +357,7 @@ function cleanupCurrentRoom() {
    ======================================================================== */
 function showChatList() {
     cleanupCurrentRoom();
+    $chatTitle.text("채팅 리스트");
     loadChatList();
 }
 
