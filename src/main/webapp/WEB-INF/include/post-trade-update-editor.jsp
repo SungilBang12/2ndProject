@@ -40,6 +40,16 @@
       overflow: auto;
       cursor: text;
     }
+    
+    .board .schedule-block {
+      user-select: none;
+      cursor: default;
+      pointer-events: auto;
+    }
+    .board .schedule-block * {
+      user-select: none;
+      cursor: default;
+    }
     .board .ProseMirror { min-height: 460px; outline: none; }
 
     /* 폼 공통 */
@@ -57,10 +67,13 @@
     .actions { display: flex; gap: 8px; margin-top: 16px; }
     .btn-primary, .btn-secondary {
       border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer;
+      transition: all 0.2s;
     }
     .btn-primary { background: #1a73e8; color: #fff; }
+    .btn-primary:hover { background: #1557b0; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-secondary { background: #f1f3f4; color: #333; }
+    .btn-secondary:hover { background: #e0e0e0; }
 
     /* 에러 메시지 */
     .error-message {
@@ -81,7 +94,7 @@
 </head>
 <body>
 
-<!-- ★ Front Controller로 제출 -->
+<!-- ✅ update.post로 제출 -->
 <form action="<c:url value='/update.post'/>" method="post" onsubmit="return prepareAndSubmit()">
   <div class="container">
 
@@ -90,8 +103,13 @@
       <div class="error-message">${error_msg}</div>
     </c:if>
 
-    <!-- ★ postId를 hidden 필드로 전송 -->
+    <!-- ✅ Hidden fields -->
     <input type="hidden" name="postId" value="${post.postId}" />
+    <input type="hidden" id="hiddenPostId" value="${post.postId}" />
+    <input type="hidden" id="hiddenListId" value="${param.listId != null ? param.listId : post.listId}" />
+    
+    <!-- ✅ 기존 컨텐츠를 data 속성에 저장 -->
+    <div id="initialContentData" data-content='<c:out value="${post.content}" escapeXml="true" />' style="display:none;"></div>
 
     <!-- 카테고리 선택 -->
     <div class="form-group">
@@ -109,7 +127,7 @@
         <option value="7" ${post.listId == 7 ? 'selected' : ''}>해'쳐 모여</option>
         <option value="8" ${post.listId == 8 ? 'selected' : ''}>장소 추천</option>
       </select>
-      <div class="form-help">게시글을 작성할 카테고리를 선택하세요.</div>
+      <div class="form-help">게시글의 카테고리를 선택하세요.</div>
     </div>
 
     <!-- 제목 입력 -->
@@ -202,7 +220,7 @@
 
     <!-- 액션 버튼 -->
     <div class="actions">
-      <button type="submit" class="btn-primary">저장</button>
+      <button type="submit" class="btn-primary" id="submitBtn">수정 완료</button>
       <button type="button" class="btn-secondary" onclick="cancelPost()">취소</button>
     </div>
 
@@ -212,6 +230,8 @@
 <script type="module">
   import { initEditor } from "${pageContext.request.contextPath}/js/editor-init.js";
   import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
+
+  console.log("=== post-edit.jsp 실행 ===");
 
   // ========================================
   // 카테고리별 사용 가능한 기능 매핑
@@ -231,9 +251,42 @@
   // 전역 상태
   // ========================================
   let editor = null;
-  let currentCategory = '${post.listId}'; // ★ 초기 카테고리 설정
+  let currentCategory = '${post.listId}';
   let hasContentChanged = false;
-  let initialContent = null; // ★ 초기 컨텐츠 저장
+  let initialContent = null;
+  
+  const postId = '${post.postId}';
+  const listIdFromParam = document.getElementById('hiddenListId').value;
+
+  console.log('postId:', postId);
+  console.log('currentCategory:', currentCategory);
+  console.log('listIdFromParam:', listIdFromParam);
+
+  // ========================================
+  // 기존 컨텐츠 로드
+  // ========================================
+  function loadInitialContent() {
+    const contentElement = document.getElementById('initialContentData');
+    if (!contentElement) {
+      console.error('초기 컨텐츠 엘리먼트를 찾을 수 없습니다');
+      return null;
+    }
+
+    const contentStr = contentElement.getAttribute('data-content');
+    if (!contentStr || contentStr.trim() === '') {
+      console.log('초기 컨텐츠가 비어있습니다');
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(contentStr);
+      console.log('초기 컨텐츠 로드 성공');
+      return parsed;
+    } catch (e) {
+      console.error('컨텐츠 파싱 실패:', e);
+      return null;
+    }
+  }
 
   // ========================================
   // 에디터 초기화
@@ -244,24 +297,23 @@
       document.getElementById("toolbar")
     );
 
-    // ★ 기존 컨텐츠 로드
-    try {
-      const contentStr = '${post.content}';
-      if (contentStr && contentStr.trim() !== '') {
-        // JSON 파싱 시도
-        initialContent = JSON.parse(contentStr);
-        editor.commands.setContent(initialContent);
-        console.log('기존 컨텐츠 로드 완료');
-      }
-    } catch (e) {
-      console.error('컨텐츠 로드 실패:', e);
-      // 에러 시 빈 에디터로 시작
+    // ✅ 기존 컨텐츠 로드
+    initialContent = loadInitialContent();
+    if (initialContent) {
+      editor.commands.setContent(initialContent);
+      console.log('에디터에 기존 컨텐츠 설정 완료');
+    } else {
+      console.log('에디터를 빈 상태로 시작');
     }
 
     // 내용 변경 감지
-    editor.on('update', () => { hasContentChanged = true; });
+    editor.on('update', () => { 
+      hasContentChanged = true; 
+    });
+    
     return editor;
   }
+  
   editor = initializeEditor();
 
   // ========================================
@@ -309,9 +361,10 @@
     });
   }
   
-  // ★ 초기 카테고리에 맞는 툴바 표시
+  // ✅ 초기 카테고리에 맞는 툴바 표시
   if (currentCategory) {
     updateToolbarFeatures(currentCategory);
+    console.log('초기 툴바 기능 설정:', currentCategory);
   }
 
   // ========================================
@@ -320,7 +373,6 @@
   function resetEditor() {
     if (editor) {
       editor.commands.setContent('');
-      document.getElementById('title').value = '';
       hasContentChanged = false;
     }
   }
@@ -330,18 +382,23 @@
   // ========================================
   document.getElementById('listId').addEventListener('change', (e) => {
     const newCategory = e.target.value;
-    if (!newCategory) { updateToolbarFeatures(''); return; }
+    if (!newCategory) { 
+      currentCategory = '';
+      updateToolbarFeatures(''); 
+      return; 
+    }
 
     const titleValue = document.getElementById('title').value.trim();
     const hasContent = hasContentChanged || !!titleValue;
 
-    if (currentCategory && hasContent) {
+    if (currentCategory && currentCategory !== newCategory && hasContent) {
       if (!confirm('카테고리를 변경하면 현재까지의 작성 내용이 모두 삭제됩니다. 그래도 진행하시겠습니까?')) {
         e.target.value = currentCategory; // 되돌리기
         return;
       }
       resetEditor();
     }
+    
     currentCategory = newCategory;
     updateToolbarFeatures(newCategory);
   });
@@ -352,24 +409,50 @@
   });
 
   // ========================================
-  // 폼 제출 전에 TipTap JSON 주입 + 유효성 검사
+  // ✅ 폼 제출 전에 TipTap JSON 주입 + 유효성 검사
   // ========================================
   window.prepareAndSubmit = function () {
-    if (!editor) { alert("에디터가 초기화되지 않았습니다."); return false; }
-
-    const title  = document.getElementById('title').value.trim();
-    const listId = document.getElementById('listId').value;
-
-    if (!listId) { alert("카테고리를 선택해주세요."); return false; }
-    if (!title)  { alert("제목을 입력해주세요."); return false; }
-
-    const contentData = editor.getJSON();
-    if (!contentData || !contentData.content || contentData.content.length === 0) {
-      if (!confirm("본문 내용이 비어있습니다. 계속 진행하시겠습니까?")) return false;
+    console.log('=== 폼 제출 시작 ===');
+    
+    if (!editor) { 
+      alert("에디터가 초기화되지 않았습니다."); 
+      return false; 
     }
 
-    // ★ 서버는 문자열 JSON을 기대
-    document.getElementById('content').value = JSON.stringify(contentData);
+    const title = document.getElementById('title').value.trim();
+    const listId = document.getElementById('listId').value;
+
+    console.log('제출 데이터:', { postId, title, listId });
+
+    if (!listId) { 
+      alert("카테고리를 선택해주세요."); 
+      return false; 
+    }
+    
+    if (!title) { 
+      alert("제목을 입력해주세요."); 
+      return false; 
+    }
+
+    const contentData = editor.getJSON();
+    
+    if (!contentData || !contentData.content || contentData.content.length === 0) {
+      if (!confirm("본문 내용이 비어있습니다. 계속 진행하시겠습니까?")) {
+        return false;
+      }
+    }
+
+    // ✅ 서버는 문자열 JSON을 기대
+    const contentStr = JSON.stringify(contentData);
+    document.getElementById('content').value = contentStr;
+    
+    console.log('content 필드에 설정된 값 길이:', contentStr.length);
+    console.log('=== 폼 제출 진행 ===');
+    
+    // 버튼 비활성화 (중복 제출 방지)
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = '저장 중...';
+    
     return true; // 제출 진행
   };
 
@@ -377,25 +460,40 @@
   // 취소
   // ========================================
   window.cancelPost = function () {
-    if (confirm("수정을 취소하시겠습니까? 수정 중인 내용은 저장되지 않습니다.")) {
-      hasContentChanged = false;
-      // ★ 게시글 상세 페이지로 돌아가기
-      window.location.href = "<c:url value='/post-detail.post?postId=${post.postId}'/>";
+    if (hasContentChanged && !confirm("수정을 취소하시겠습니까? 수정 중인 내용은 저장되지 않습니다.")) {
+      return;
     }
+    
+    hasContentChanged = false;
+    
+    // ✅ listId 파라미터와 함께 상세 페이지로 돌아가기
+    let url = '${pageContext.request.contextPath}/post-detail.post?postId=' + postId;
+    if (listIdFromParam && listIdFromParam !== 'null' && listIdFromParam !== '') {
+      url += '&listId=' + listIdFromParam;
+    }
+    
+    console.log('취소 - 이동할 URL:', url);
+    window.location.href = url;
   };
 
   // ========================================
   // 페이지 이탈 경고
   // ========================================
   window.addEventListener('beforeunload', function (e) {
-    if (hasContentChanged) { e.preventDefault(); e.returnValue = ''; return ''; }
+    if (hasContentChanged) { 
+      e.preventDefault(); 
+      e.returnValue = ''; 
+      return ''; 
+    }
   });
 
   // ========================================
   // 에디터 클릭 시 포커스
   // ========================================
   document.getElementById('board').addEventListener('click', function () {
-    if (editor) editor.commands.focus();
+    if (editor) {
+      editor.commands.focus();
+    }
   });
 </script>
 

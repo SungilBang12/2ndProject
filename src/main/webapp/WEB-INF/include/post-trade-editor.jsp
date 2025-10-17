@@ -41,14 +41,14 @@
     }
     
     .board .schedule-block {
-    user-select: none;
-    cursor: default;
-    pointer-events: auto;
-  }
-  .board .schedule-block * {
-    user-select: none;
-    cursor: default; // 커서 이동 방지
-  }
+      user-select: none;
+      cursor: default;
+      pointer-events: auto;
+    }
+    .board .schedule-block * {
+      user-select: none;
+      cursor: default;
+    }
     .board .ProseMirror { min-height: 460px; outline: none; }
 
     /* 폼 공통 */
@@ -89,17 +89,17 @@
       <label for="listId">
         카테고리 선택 <span class="required">*</span>
       </label>
-      <!-- ★ 서버와 일치: name="listId" -->
+      <!-- ★ URL 파라미터로 초기값 설정 -->
       <select id="listId" name="listId" class="form-control" required>
         <option value="">-- 카테고리를 선택하세요 --</option>
-        <option value="1">노을</option>
-        <option value="2">맛집 추천</option>
-        <option value="3">맛집 후기</option>
-        <option value="4">촬영 TIP</option>
-        <option value="5">장비 추천</option>
-        <option value="6">중고 거래</option>
-        <option value="7">'해'쳐 모여</option>
-        <option value="8">장소 추천</option>
+        <option value="1" ${param.listId == '1' ? 'selected' : ''}>노을</option>
+        <option value="2" ${param.listId == '2' ? 'selected' : ''}>맛집 추천</option>
+        <option value="3" ${param.listId == '3' ? 'selected' : ''}>맛집 후기</option>
+        <option value="4" ${param.listId == '4' ? 'selected' : ''}>촬영 TIP</option>
+        <option value="5" ${param.listId == '5' ? 'selected' : ''}>장비 추천</option>
+        <option value="6" ${param.listId == '6' ? 'selected' : ''}>중고 거래</option>
+        <option value="7" ${param.listId == '7' ? 'selected' : ''}>해'쳐 모여</option>
+        <option value="8" ${param.listId == '8' ? 'selected' : ''}>장소 추천</option>
       </select>
       <div class="form-help">게시글을 작성할 카테고리를 선택하세요.</div>
     </div>
@@ -225,6 +225,12 @@
   let currentCategory = '';
   let hasContentChanged = false;
 
+  // ✅ URL 파라미터에서 listId 가져오기
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialListId = urlParams.get('listId') || '${param.listId}' || '';
+  
+  console.log('초기 listId:', initialListId);
+
   // ========================================
   // 에디터 초기화
   // ========================================
@@ -284,8 +290,16 @@
       }
     });
   }
-  // 초기엔 emoji/link만
-  updateToolbarFeatures('');
+
+  // ✅ 초기 카테고리가 있으면 툴바 기능 활성화
+  if (initialListId) {
+    currentCategory = initialListId;
+    updateToolbarFeatures(initialListId);
+    console.log('초기 툴바 기능 활성화:', initialListId);
+  } else {
+    // 초기엔 emoji/link만
+    updateToolbarFeatures('');
+  }
 
   // ========================================
   // 에디터 리셋
@@ -303,18 +317,24 @@
   // ========================================
   document.getElementById('listId').addEventListener('change', (e) => {
     const newCategory = e.target.value;
-    if (!newCategory) { updateToolbarFeatures(''); return; }
+    if (!newCategory) { 
+      currentCategory = '';
+      updateToolbarFeatures(''); 
+      return; 
+    }
 
     const titleValue = document.getElementById('title').value.trim();
     const hasContent = hasContentChanged || !!titleValue;
 
-    if (currentCategory && hasContent) {
+    // ✅ 초기 로드 시(currentCategory가 initialListId와 같을 때)는 확인 안 함
+    if (currentCategory && currentCategory !== newCategory && hasContent) {
       if (!confirm('현재까지의 작성 내용이 모두 삭제됩니다. 그래도 진행하시겠습니까?')) {
         e.target.value = currentCategory; // 되돌리기
         return;
       }
       resetEditor();
     }
+    
     currentCategory = newCategory;
     updateToolbarFeatures(newCategory);
   });
@@ -352,7 +372,13 @@
   window.cancelPost = function () {
     if (confirm("작성을 취소하시겠습니까? 작성 중인 내용은 저장되지 않습니다.")) {
       hasContentChanged = false;
-      window.location.href = "<c:url value='/meeting-gather.jsp'/>";
+      
+      // ✅ listId가 있으면 해당 리스트로 돌아가기
+      if (initialListId) {
+        window.location.href = "<c:url value='/post-list'/>?listId=" + initialListId;
+      } else {
+        window.location.href = "<c:url value='/meeting-gather.jsp'/>";
+      }
     }
   };
 
