@@ -81,33 +81,15 @@
           </div>
         </div>
 
-        <!-- 통계 -->
-        <div class="profile-stats">
-          <div class="stat-item">
-            <div class="stat-number" id="postCount">-</div>
-            <div class="stat-label">작성한 글</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" id="commentCount">-</div>
-            <div class="stat-label">작성한 댓글</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">
-              <%-- 주의: fmt:formatDate는 java.util.Date만 지원. Controller에서 변환하지 않았다면 빈 값일 수 있음 --%>
-              <fmt:formatDate value="${user.createdAt}" pattern="yyyy.MM.dd" />
-            </div>
-            <div class="stat-label">가입일</div>
-          </div>
-        </div>
-
-        <!-- 액션 버튼 -->
-        <div class="profile-actions">
-          <a href="${ctx}/users/myInfoEdit"   class="btn btn-primary">정보 수정</a>
-          <a href="${ctx}/users/myPosts"      class="btn btn-secondary">내 게시글</a>
-          <a href="${ctx}/users/myComments"   class="btn btn-secondary">내 댓글</a>
-          <button type="button" class="btn btn-danger" onclick="confirmDelete()">회원 탈퇴</button>
-        </div>
-      </div>
+        <div class="stat-item">
+		  <div class="stat-number">
+		    <c:if test="${not empty user.createdAt}">
+		      ${user.createdAt.year}.${String.format('%02d', user.createdAt.monthValue)}.${String.format('%02d', user.createdAt.dayOfMonth)}
+		    </c:if>
+		    <c:if test="${empty user.createdAt}">-</c:if>
+		  </div>
+		  <div class="stat-label">가입일</div>
+		</div>
 
       <!-- 최근 작성한 글 -->
       <div class="content-section">
@@ -187,7 +169,7 @@
       });
     }
 
-    // 최근 작성한 글
+ // 최근 작성한 글
     function loadRecentPosts() {
       $.ajax({
         url: CTX + '/users/ajax/recentPosts',
@@ -199,8 +181,12 @@
         if (Array.isArray(data) && data.length > 0) {
           let html = '<ul class="post-list">';
           data.forEach(function(post) {
+            // ✅ URL 형식 변경: /post-detail.post?postId=X&listId=Y
+            const postUrl = CTX + '/post-detail.post?postId=' + post.postId + 
+                            (post.listId ? '&listId=' + post.listId : '');
+            
             html += '<li class="post-item">';
-            html +=   '<a class="post-title" href="' + CTX + '/board/view/' + post.postId + '">';
+            html +=   '<a class="post-title" href="' + postUrl + '">';
             html +=     escapeHtml(post.title || '제목 없음') + '</a>';
             html +=   '<div class="post-meta">조회 ' + (post.hit || 0) + ' · ' + formatDate(post.createdAt) + '</div>';
             html += '</li>';
@@ -213,7 +199,96 @@
       }).fail(function(jqXHR) { handleAjaxError(jqXHR, '#recentPostsContainer'); });
     }
 
-    // 최근 작성한 댓글 (현재 서버는 빈 배열 가능)
+ // ✅ 이중 JSON 구조에서 순수 텍스트 추출
+    function extractTextFromComment(contentRaw) {
+      if (!contentRaw) return '';
+      
+      try {
+        // 1단계: 외부 JSON 파싱 {"text": "...", "edited": false, "deleted": false}
+        let outerJson = contentRaw;
+        if (typeof contentRaw === 'string') {
+          outerJson = JSON.parse(contentRaw);
+        }
+        
+        // text 필드 추출
+        let textField = outerJson.text || outerJson.contentJson || contentRaw;
+        
+        // 2단계: TipTap JSON 파싱
+        let tiptapJson = textField;
+        if (typeof textField === 'string') {
+          tiptapJson = JSON.parse(textField);
+        }
+        
+        // 3단계: TipTap 문서에서 텍스트 추출
+        return extractTextFromTipTap(tiptapJson);
+        
+      } catch (e) {
+        console.error('댓글 파싱 오류:', e, contentRaw);
+        
+        // 파싱 실패 시 문자열에서 직접 추출 시도
+        try {
+          const match = contentRaw.match(/"text":"([^"]+)"/);
+          if (match && match[1]) {
+            // 이스케이프된 문자 복원
+            return match[1]
+              .replace(/\\n/g, ' ')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\');
+          }
+        } catch (e2) {
+          console.error('대체 파싱 실패:', e2);
+        }
+        
+        return '(내용을 불러올 수 없습니다)';
+      }
+    }
+
+    // TipTap JSON에서 순수 텍스트 추출
+    function extractTextFromTipTap(tiptapDoc) {
+      if (!tiptapDoc) return '';
+      
+      let text = '';
+      
+      function extractText(node) {
+        if (!node) return;
+        
+        // 텍스트 노드
+        if (node.type === 'text' && node.text) {
+          text += node.text;
+        }
+        
+        // 이미지 노드
+        if (node.type === 'image') {
+          text += '[이미지] ';
+        }
+        
+        // 링크는 텍스트만 추출
+        if (node.marks && Array.isArray(node.marks)) {
+          const linkMark = node.marks.find(m => m.type === 'link');
+          if (linkMark && node.text) {
+            text += node.text;
+            return; // 링크 텍스트 처리 완료
+          }
+        }
+        
+        // 하위 content 재귀 처리
+        if (node.content && Array.isArray(node.content)) {
+          node.content.forEach(child => {
+            extractText(child);
+          });
+          
+          // paragraph 끝에 공백 추가
+          if (node.type === 'paragraph') {
+            text += ' ';
+          }
+        }
+      }
+      
+      extractText(tiptapDoc);
+      return text.trim();
+    }
+
+    // 최근 작성한 댓글
     function loadRecentComments() {
       $.ajax({
         url: CTX + '/users/ajax/recentComments',
@@ -222,23 +297,43 @@
         cache: false
       }).done(function(data) {
         const $container = $('#recentCommentsContainer');
+        
+        console.log('받은 댓글 데이터:', data); // 디버깅용
+        
         if (Array.isArray(data) && data.length > 0) {
           let html = '<ul class="comment-list">';
+          
           data.forEach(function(comment) {
-            const raw = comment.content || '';
-            const text = raw.length > 100 ? raw.substring(0,100) + '...' : raw;
+            // ✅ 이중 JSON 구조에서 텍스트 추출
+            const raw = comment.contentRaw || comment.content || '';
+            console.log('댓글 원본:', raw); // 디버깅용
+            
+            const plainText = extractTextFromComment(raw);
+            console.log('추출된 텍스트:', plainText); // 디버깅용
+            
+            const displayText = plainText.length > 100 
+              ? plainText.substring(0, 100) + '...' 
+              : plainText;
+            
+            const commentUrl = CTX + '/post-detail.post?postId=' + comment.postId + 
+                              (comment.listId ? '&listId=' + comment.listId : '') +
+                              '#comment-' + comment.commentId;
+            
             html += '<li class="comment-item">';
-            html +=   '<a class="post-title" href="' + CTX + '/board/view/' + comment.postId + '#comment-' + comment.commentId + '">';
-            html +=     escapeHtml(text) + '</a>';
+            html +=   '<a class="post-title" href="' + commentUrl + '">';
+            html +=     escapeHtml(displayText || '(내용 없음)') + '</a>';
             html +=   '<div class="comment-meta">' + formatDate(comment.createdAt) + '</div>';
             html += '</li>';
           });
+          
           html += '</ul>';
           $container.html(html);
         } else {
           $container.html('<p class="empty-message">작성한 댓글이 없습니다.</p>');
         }
-      }).fail(function(jqXHR) { handleAjaxError(jqXHR, '#recentCommentsContainer'); });
+      }).fail(function(jqXHR) { 
+        handleAjaxError(jqXHR, '#recentCommentsContainer'); 
+      });
     }
 
     // 회원 탈퇴

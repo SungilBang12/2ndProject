@@ -10,13 +10,16 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import dto.Users;
+
 public class DeleteCommentAsyncService {
 
     public void handle(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json; charset=UTF-8");
         Map<String,Object> out = new HashMap<>();
         try{
-            String userId = (String)req.getSession().getAttribute("userId");
+            Users user = (Users) req.getAttribute("user"); // ✅ Users 객체로 캐스팅
+            String userId = user.getUserId(); // ✅ userId 추출
             if (userId == null || userId.isBlank()){
                 out.put("ok", false);
                 out.put("error", "로그인이 필요합니다.");

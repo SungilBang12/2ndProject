@@ -14,6 +14,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import dto.Comments;
 import dto.Post;
 import dto.PostSummary;
 import utils.ConnectionPoolHelper;
@@ -924,6 +925,12 @@ public class PostDao {
     private static final String SELECT_POSTS_BY_USER_SQL =
         "SELECT POST_ID, USER_ID, LIST_ID, TITLE, CONTENT, HIT, CREATED_AT, UPDATED_AT " +
         "FROM POST WHERE USER_ID = ? ORDER BY CREATED_AT DESC";
+    
+    private static final String SELECT_COMMENTS_BY_USER_SQL =
+    	    "SELECT COMMENT_ID, POST_ID, USER_ID, CONTENT, CREATED_AT " +
+    	    "FROM COMMENTS " +
+    	    "WHERE USER_ID = ? " +
+    	    "ORDER BY CREATED_AT DESC";
 
     private static final String COUNT_POSTS_BY_USER_SQL =
         "SELECT COUNT(*) FROM POST WHERE USER_ID = ?";
@@ -967,7 +974,37 @@ public class PostDao {
 
         return postList;
     }
+    
+    public List<Comments> selectCommentsByUserId(Connection conn, String userId) throws SQLException {
+        List<Comments> commentList = new ArrayList<>();
 
+        try (PreparedStatement pstmt = conn.prepareStatement(SELECT_COMMENTS_BY_USER_SQL)) {
+            pstmt.setString(1, userId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    // ✅ CREATED_AT만 조회 (UPDATED_AT 제거)
+                    LocalDate createdAt = toLocalDate(rs, "CREATED_AT");
+
+                    Comments comment = Comments.builder()
+                        .commentId(rs.getInt("COMMENT_ID"))
+                        .postId(rs.getInt("POST_ID"))
+                        .userId(rs.getString("USER_ID"))
+                        .contentRaw(rs.getString("CONTENT"))
+                        .createdAt(createdAt)
+                        // ✅ updatedAt 제거 (COMMENTS 테이블에 없음)
+                        .deleted(false)
+                        .edited(false) // TODO: UPDATED_AT 컬럼 추가 시 수정
+                        .build();
+                        
+                    commentList.add(comment);
+                }
+            }
+        }
+
+        return commentList;
+    }
+    
     /** DATE/TIMESTAMP 모두 대응해서 LocalDate로 반환 */
     private static LocalDate toLocalDate(ResultSet rs, String column) throws SQLException {
         java.sql.Date d = rs.getDate(column);

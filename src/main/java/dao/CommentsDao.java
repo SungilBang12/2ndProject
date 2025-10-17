@@ -91,7 +91,6 @@ public class CommentsDao {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Comments c = map(rs);
-                    c.setAuthor(postWriterId != null && postWriterId.equals(c.getUserId()));
                     list.add(c);
                 }
             }

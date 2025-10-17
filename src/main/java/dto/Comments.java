@@ -22,5 +22,4 @@ public class Comments {
     private String  imageUrl;   // 이미지 1개 (선택)
     private boolean edited;     // (수정됨)
     private boolean deleted;    // 삭제 여부
-    private boolean author;     // 글쓴이 배지용 (서버에서 판별해 내려줌)
 }
