@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import dao.CommentsDao;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,9 +18,12 @@ public class DeleteCommentAsyncService {
     public void handle(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json; charset=UTF-8");
         Map<String,Object> out = new HashMap<>();
+        HttpSession session = req.getSession(false);
+
+
         try{
-            Users user = (Users) req.getAttribute("user"); // ✅ Users 객체로 캐스팅
-            String userId = user.getUserId(); // ✅ userId 추출
+            Users user = (Users) session.getAttribute("user");
+            String userId = user.getUserId();
             if (userId == null || userId.isBlank()){
                 out.put("ok", false);
                 out.put("error", "로그인이 필요합니다.");

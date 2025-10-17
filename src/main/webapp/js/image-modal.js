@@ -107,11 +107,28 @@ export function openModal(editor) {
 
     const resizedImages = await Promise.all(files.map(src => resizeImage(src, selectedSize)));
 
-	const chain = editor.chain().focus();
-	resizedImages.forEach(resizedSrc => {
-	  chain.setImage({ src: resizedSrc });
-	});
-	chain.run();
+    // ✅ 현재 커서 위치 저장
+    const { from } = editor.state.selection;
+    const docSize = editor.state.doc.content.size;
+    
+    // 커서 위치가 유효하면 그 위치에, 아니면 문서 끝에 삽입
+    let insertPos = from > 0 && from < docSize ? from : docSize - 1;
+    
+    // 이미지를 순차적으로 삽입
+    resizedImages.forEach(resizedSrc => {
+      editor.chain()
+        .insertContentAt(insertPos, {
+          type: 'image',
+          attrs: { src: resizedSrc }
+        })
+        .run();
+      
+      // 다음 이미지는 현재 이미지 뒤에 삽입
+      insertPos += 1;
+    });
+    
+    // 마지막 이미지 뒤에 포커스
+    editor.chain().focus(insertPos).run();
 	
     modal.remove();
   };

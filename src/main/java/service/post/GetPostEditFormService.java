@@ -4,6 +4,7 @@ import action.Action;
 import action.ActionForward;
 import dao.PostDao;
 import dto.Post;
+import dto.Users;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -26,7 +27,11 @@ public class GetPostEditFormService implements Action {
             String userId = null;
             
             if (session != null) {
-                userId = (String) session.getAttribute("userId");
+                // ✅ 세션에서 user 객체를 가져와서 userId 추출
+                Users user = (Users) session.getAttribute("user");
+                if (user != null) {
+                    userId = user.getUserId();
+                }
                 System.out.println("=== 세션에서 가져온 userId: " + userId + " ===");
             } else {
                 System.out.println("=== 세션이 존재하지 않음 ===");

@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.catalina.Session;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -190,18 +192,19 @@ public class PostAsyncService {
 	        // JSON 응답을 위한 Map
 	        Map<String, Object> responseMap = new HashMap<>();
 
-	        try {
-	            // 1. JSON 데이터 파싱: { "postId": 123 } 형태를 가정
-	            Map<String, Double> map = gson.fromJson(jsonData, Map.class);
-	            int postId = map.get("postId").intValue();
+        try {
+            // 1. JSON 데이터 파싱: { "postId": 123 } 형태를 가정
+            Map<String, Double> map = gson.fromJson(jsonData, Map.class);
+            int postId = map.get("postId").intValue();
 
-	            // [임시] 사용자 ID 설정
-	            // int userId = (Integer) request.getSession().getAttribute("userId");
-	            int userId = 1; 
+            // ✅ 권한 체크가 필요하다면 여기에서 세션의 user 객체를 확인
+            // dto.Users user = (dto.Users) request.getSession().getAttribute("user");
+            // String userId = user != null ? user.getUserId() : null;
+            
 
-	            // 2. 동기 DAO 메서드 호출 (비동기 스레드 내에서 실행)
-	            // PostDao.deletePost는 트랜잭션을 포함한 동기 DB 삭제 로직입니다.
-	            int deletedRows = postDao.deletePost(postId); 
+            // 2. 동기 DAO 메서드 호출 (비동기 스레드 내에서 실행)
+            // PostDao.deletePost는 트랜잭션을 포함한 동기 DB 삭제 로직입니다.
+            int deletedRows = postDao.deletePost(postId);
 
 	            if (deletedRows > 0) {
 	                responseMap.put("status", "success");

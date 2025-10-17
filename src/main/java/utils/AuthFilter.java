@@ -30,7 +30,7 @@ import service.post.UpdatePostService;
  * - urlPatterns는 인코딩 필터와 달리 접근 통제가 필요한 경로만 지정하는 것이 일반적입니다.
  * 현재는 /*로 설정하여 모든 요청을 가로채고 Map을 기반으로 체크합니다.
  */
-@WebFilter(description = "접근 및 권한 확인 필터", urlPatterns = "/*")
+@WebFilter(description = "접근 및 권한 확인 필터", urlPatterns = "/*", asyncSupported = true)
 public class AuthFilter implements Filter {
 
 	// 페이지별 권한 정보를 저장할 Map: URI 패턴 -> 필요 ROLE (쉼표로 구분)
