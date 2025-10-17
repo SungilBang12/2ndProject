@@ -4,9 +4,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>댓글</title>
+<title>댓글 - Sunset Community</title>
 <style>
-/* 기존 CSS 유지 */
+/* ========== Sunset Theme Color Variables ========== */
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f1624;
+    --text-primary: #e8e8f0;
+    --text-secondary: #a8a8b8;
+    --text-tertiary: #7a7a8a;
+    --accent-coral: #ff6b6b;
+    --accent-orange: #ffa45c;
+    --accent-pink: #ff6b9d;
+    --accent-purple: #c44569;
+    --gradient-sunset: linear-gradient(135deg, #ff6b6b 0%, #ffa45c 50%, #ff6b9d 100%);
+    --gradient-dark: linear-gradient(135deg, #16213e 0%, #0f1624 100%);
+    --shadow-soft: 0 8px 32px rgba(255, 107, 107, 0.15);
+    --shadow-hover: 0 12px 48px rgba(255, 107, 107, 0.25);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -14,81 +31,103 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background: var(--bg-tertiary);
+    background-image: 
+        radial-gradient(ellipse at top, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(255, 164, 92, 0.08) 0%, transparent 50%);
+    min-height: 100vh;
     padding: 20px;
+    color: var(--text-primary);
 }
 
 .comment-container { 
-    max-width: 800px;
+    max-width: 900px;
     margin: 40px auto 0;
     padding: 0;
-    background: white; 
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 8px rgba(0, 0, 0, 0.06);
+    background: rgba(22, 33, 62, 0.6);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     overflow: hidden;
+    border: 1px solid rgba(255, 107, 107, 0.1);
 }
 
 .comment-header { 
     display: flex; 
     justify-content: space-between; 
     align-items: center;
-    padding: 20px 24px 16px; 
-    border-bottom: 2px solid #f0f0f0;
+    padding: 24px 28px; 
+    background: var(--gradient-dark);
+    border-bottom: 1px solid rgba(255, 107, 107, 0.15);
 }
 
 .comment-stats {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     align-items: center;
 }
 
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #666;
+    gap: 8px;
+    color: var(--text-secondary);
     font-size: 14px;
+    padding: 8px 16px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 12px;
+}
+
+.stat-item .stat-icon {
+    font-size: 18px;
+}
+
+.stat-item strong {
+    color: var(--accent-coral);
+    font-weight: 700;
 }
 
 #commentList {
     padding: 0;
-    background: white;
+    background: transparent;
 }
 
 .comment-item { 
-    background: white; 
-    padding: 15px 24px;
-    border-bottom: 1px solid #f5f5f5;
-    transition: background 0.2s;
+    background: rgba(26, 26, 46, 0.4);
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(255, 107, 107, 0.08);
+    transition: all 0.3s ease;
     position: relative;
 }
 
 .comment-item:hover {
-    background: #fafafa;
+    background: rgba(255, 107, 107, 0.05);
+    transform: translateX(4px);
 }
 
 .comment-item-header { 
     display: flex; 
     justify-content: space-between; 
     align-items: flex-start;
-    margin-bottom: 10px; 
+    margin-bottom: 12px; 
 }
 
 .comment-author { 
     display: flex; 
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
     flex: 1;
 }
 
 .profile-img {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--accent-coral);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
 .comment-main-content {
@@ -99,18 +138,19 @@ body {
 .author-info {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .author-name { 
     font-weight: 700; 
-    font-size: 14px; 
-    color: #333;
+    font-size: 15px; 
+    color: var(--text-primary);
+    text-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
 .comment-content { 
-    margin: 8px 0;
+    margin: 10px 0;
 }
 
 .comment-content .ProseMirror {
@@ -118,10 +158,10 @@ body {
     padding: 0;
     background: transparent;
     min-height: auto;
-    line-height: 1.6;
+    line-height: 1.7;
     word-break: break-word;
     font-size: 14px;
-    color: #444;
+    color: var(--text-secondary);
 }
 
 .comment-content .ProseMirror p {
@@ -130,38 +170,40 @@ body {
 
 .comment-content .ProseMirror img {
     max-width: 100%;
-    border-radius: 8px;
-    margin: 8px 0;
+    border-radius: 12px;
+    margin: 10px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .comment-time { 
     font-size: 12px; 
-    color: #999; 
-    margin-top: 8px;
+    color: var(--text-tertiary);
+    margin-top: 10px;
     display: inline-block;
 }
 
 .comment-more-menu {
     position: absolute;
-    right: 10px;
-    top: 10px;
+    right: 12px;
+    top: 12px;
 }
 
 .btn-more {
-    background: none;
-    border: none;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
     cursor: pointer;
     padding: 6px 10px;
-    color: #d0d0d0;
+    color: var(--text-secondary);
     font-size: 22px;
     line-height: 1;
-    border-radius: 6px;
-    transition: all 0.2s;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
 .btn-more:hover {
-    color: #666;
-    background: #f0f0f0;
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--accent-coral);
+    transform: scale(1.1);
 }
 
 .dropdown-menu {
@@ -169,19 +211,20 @@ body {
     position: absolute;
     right: 0;
     top: 100%;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    min-width: 120px;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    min-width: 140px;
     z-index: 1000;
-    margin-top: 6px;
+    margin-top: 8px;
     overflow: hidden;
+    backdrop-filter: blur(20px);
 }
 
 .dropdown-menu.show {
     display: block;
-    animation: dropdownFadeIn 0.2s ease;
+    animation: dropdownFadeIn 0.3s ease;
 }
 
 @keyframes dropdownFadeIn {
@@ -196,32 +239,32 @@ body {
 }
 
 .dropdown-item {
-    padding: 12px 18px;
+    padding: 14px 20px;
     cursor: pointer;
     border: none;
-    background: none;
+    background: transparent;
     width: 100%;
     text-align: left;
     font-size: 13px;
-    color: #333;
-    transition: background 0.2s;
-    font-weight: 500;
+    color: var(--text-primary);
+    transition: all 0.2s;
+    font-weight: 600;
 }
 
 .dropdown-item:hover {
-    background: #f8f8f8;
+    background: rgba(255, 107, 107, 0.15);
 }
 
 .dropdown-item.danger {
-    color: #f5576c;
+    color: var(--accent-coral);
 }
 
 .dropdown-item.danger:hover {
-    background: #fff0f2;
+    background: rgba(255, 107, 107, 0.25);
 }
 
 .comment-edit-form {
-    margin-top: 10px;
+    margin-top: 12px;
 }
 
 .comment-edit-toolbar {
@@ -229,141 +272,149 @@ body {
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    padding: 8px 10px;
-    background: white;
-    border: 1px solid #e0e0e0;
+    padding: 10px 12px;
+    background: rgba(26, 26, 46, 0.6);
+    border: 1px solid rgba(255, 107, 107, 0.2);
     border-bottom: none;
-    border-radius: 8px 8px 0 0;
+    border-radius: 12px 12px 0 0;
 }
 
 .comment-edit-toolbar button {
-    padding: 4px 8px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    padding: 6px 10px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-radius: 6px;
     cursor: pointer;
     font-size: 11px;
-    font-weight: 600;
-    color: #666;
-    min-width: 28px;
-    height: 28px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    min-width: 32px;
+    height: 32px;
+    transition: all 0.2s;
 }
 
 .comment-edit-toolbar button:hover {
-    background: #f5f5f5;
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--accent-coral);
 }
 
 .comment-edit-area {
-    border: 1px solid #e0e0e0;
-    border-radius: 0 0 8px 8px;
-    background: white;
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-radius: 0 0 12px 12px;
+    background: rgba(26, 26, 46, 0.4);
     min-height: 100px;
-    padding: 12px;
+    padding: 14px;
 }
 
 .comment-edit-area .ProseMirror {
     min-height: 80px;
     outline: none;
     font-size: 14px;
+    color: var(--text-secondary);
 }
 
 .edit-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .btn-cancel-edit {
-    padding: 8px 16px;
-    background: #868f96;
-    color: white;
-    border: none;
-    border-radius: 6px;
+    padding: 10px 20px;
+    background: rgba(168, 168, 184, 0.2);
+    color: var(--text-primary);
+    border: 1px solid rgba(168, 168, 184, 0.3);
+    border-radius: 10px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    transition: all 0.3s;
 }
 
 .btn-cancel-edit:hover {
-    background: #6c757d;
+    background: rgba(168, 168, 184, 0.3);
 }
 
 .btn-save-edit {
-    padding: 8px 16px;
-    background: #4facfe;
+    padding: 10px 20px;
+    background: var(--gradient-sunset);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+    transition: all 0.3s;
 }
 
 .btn-save-edit:hover {
-    background: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(255, 107, 107, 0.6);
 }
 
 .loading, .empty-state { 
     text-align: center; 
     padding: 80px 20px; 
-    color: #aaa; 
+    color: var(--text-tertiary);
     font-size: 14px;
-    background: white;
+    background: transparent;
 }
 
 .comment-write-form { 
-    padding: 24px;
-    background: #fafbfc;
-    border-top: 2px solid #f0f0f0;
+    padding: 28px;
+    background: var(--gradient-dark);
+    border-top: 1px solid rgba(255, 107, 107, 0.15);
 }
 
 .write-form-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .write-form-header .profile-img {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
 }
 
 .write-form-header .author-name {
     font-weight: 700;
-    font-size: 14px;
-    color: #333;
+    font-size: 15px;
+    color: var(--text-primary);
 }
 
 .toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    padding: 10px 12px;
-    background: white;
-    border: 2px solid #e8e8e8;
-    border-bottom: 1px solid #e8e8e8;
-    border-radius: 10px 10px 0 0;
+    gap: 8px;
+    padding: 12px 14px;
+    background: rgba(26, 26, 46, 0.6);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-bottom: 1px solid rgba(255, 107, 107, 0.15);
+    border-radius: 12px 12px 0 0;
+    backdrop-filter: blur(10px);
 }
 
 .toolbar-group {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     align-items: center;
 }
 
 .toolbar-divider {
     width: 1px;
-    height: 20px;
-    background: #ddd;
-    margin: 0 4px;
+    height: 24px;
+    background: rgba(255, 107, 107, 0.2);
+    margin: 0 6px;
 }
 
 .toolbar-media {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
@@ -372,67 +423,58 @@ body {
 }
 
 .toolbar button {
-    padding: 6px 10px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-radius: 8px;
     cursor: pointer;
     font-size: 12px;
-    font-weight: 600;
-    color: #666;
+    font-weight: 700;
+    color: var(--text-secondary);
     transition: all 0.2s;
-    min-width: 32px;
-    height: 32px;
+    min-width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .toolbar button:hover {
-    background: #f5f5f5;
-    border-color: #ccc;
-    color: #333;
+    background: rgba(255, 107, 107, 0.2);
+    border-color: var(--accent-coral);
+    color: var(--accent-coral);
+    transform: translateY(-2px);
 }
 
 .toolbar button:active,
 .toolbar button.is-active {
-    background: #e8f4ff;
-    border-color: #4facfe;
-    color: #4facfe;
-}
-
-.toolbar button strong {
-    font-weight: 700;
-}
-
-.toolbar button i {
-    font-style: italic;
-}
-
-.toolbar button s {
-    text-decoration: line-through;
+    background: rgba(255, 107, 107, 0.3);
+    border-color: var(--accent-coral);
+    color: var(--accent-coral);
 }
 
 #commentContent { 
-    border: 2px solid #e8e8e8;
+    border: 1px solid rgba(255, 107, 107, 0.2);
     border-top: none;
-    border-radius: 0 0 10px 10px; 
-    background: white;
-    padding: 14px 16px;
-    min-height: 100px;
+    border-radius: 0 0 12px 12px; 
+    background: rgba(26, 26, 46, 0.4);
+    padding: 16px 18px;
+    min-height: 120px;
+    backdrop-filter: blur(10px);
 }
 
 #commentContent .ProseMirror {
-    min-height: 80px;
+    min-height: 90px;
     outline: none;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.7;
+    color: var(--text-secondary);
 }
 
 #commentContent .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
-    color: #adb5bd;
+    color: var(--text-tertiary);
     pointer-events: none;
     height: 0;
 }
@@ -441,29 +483,31 @@ body {
     display: flex; 
     justify-content: flex-end; 
     align-items: center;
-    margin-top: 14px; 
+    margin-top: 16px; 
 }
 
 .btn-submit { 
-    padding: 12px 28px; 
-    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+    padding: 14px 32px; 
+    background: var(--gradient-sunset);
     color: white; 
     border: none; 
-    border-radius: 8px; 
+    border-radius: 12px; 
     cursor: pointer; 
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
-    transition: all 0.3s;
-    box-shadow: 0 4px 10px rgba(86, 171, 47, 0.3);
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .btn-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(86, 171, 47, 0.4);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
 }
 
 .btn-submit:disabled {
-    background: #e0e0e0;
+    background: rgba(168, 168, 184, 0.3);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -471,36 +515,78 @@ body {
 
 .status-badge {
     display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
+    padding: 4px 12px;
+    border-radius: 14px;
     font-size: 11px;
     font-weight: 700;
-    margin-left: 6px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .status-badge.author {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-sunset);
     color: white;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
 .status-badge.edited {
-    background: #FFD89B;
-    color: #333;
+    background: rgba(255, 164, 92, 0.2);
+    color: var(--accent-orange);
+    border: 1px solid rgba(255, 164, 92, 0.3);
+}
+
+/* Login Prompt Styling */
+.login-prompt {
+    text-align: center;
+    padding: 40px;
+    background: var(--gradient-dark);
+}
+
+.login-prompt p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 15px;
+}
+
+.login-prompt a {
+    display: inline-block;
+    padding: 14px 32px;
+    background: var(--gradient-sunset);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login-prompt a:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
 }
 
 @media (max-width: 768px) {
     .toolbar {
         gap: 4px;
-        padding: 8px;
+        padding: 10px;
     }
+    
     .toolbar-group {
-        gap: 2px;
+        gap: 3px;
     }
+    
     .toolbar button {
-        padding: 6px 8px;
+        padding: 6px 10px;
         font-size: 11px;
-        min-width: 28px;
-        height: 28px;
+        min-width: 32px;
+        height: 32px;
+    }
+    
+    .comment-container {
+        border-radius: 16px;
     }
 }
 </style>
@@ -514,7 +600,7 @@ body {
                     <span>댓글 <strong id="commentTotalCount">0</strong></span>
                 </div>
             </div>
-            <div style="font-size: 12px; color: #999;">최신순</div>
+            <div style="font-size: 12px; color: var(--text-tertiary);">최신순</div>
         </div>
         
         <div id="commentList">
@@ -562,10 +648,9 @@ body {
         </c:if>
         
         <c:if test="${empty sessionScope.user}">
-            <div class="comment-write-form" style="text-align: center; padding: 30px;">
-                <p style="color: #999; margin-bottom: 15px;">댓글을 작성하려면 로그인이 필요합니다.</p>
-                <a href="${pageContext.request.contextPath}/login.jsp" 
-                   style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 700;">
+            <div class="comment-write-form login-prompt">
+                <p>댓글을 작성하려면 로그인이 필요합니다.</p>
+                <a href="${pageContext.request.contextPath}/login.jsp">
                     로그인하기
                 </a>
             </div>
@@ -578,7 +663,6 @@ body {
         import { initViewer } from "${pageContext.request.contextPath}/js/editor-view.js";
         import * as EmojiModule from "${pageContext.request.contextPath}/js/emoji.js";
 
-        // ===== 전역 변수 =====
         window.CURRENT_USER_ID = '${sessionScope.user.userId}' || null;
         window.POST_ID = parseInt('${param.postId}') || parseInt('${postId}') || 1;
 
@@ -587,11 +671,8 @@ body {
         const editEditors = new Map();
         const commentDataCache = new Map();
         
-        // ✅ toolbar 템플릿을 HTML 문자열로 저장 (DOM 노드가 아닌 문자열)
         let toolbarTemplateHTML = '';
 
-        // ===== 유틸리티 함수 =====
-        
         function log(msg, data) {
             console.log(`[Comment] ${msg}`, data || '');
         }
@@ -641,7 +722,6 @@ body {
             }
         }
 
-        // ✅ 작성 에디터 초기화 함수
         function initWriteEditor() {
             const commentContent = document.getElementById('commentContent');
             const toolbar = document.getElementById('toolbar');
@@ -652,7 +732,6 @@ body {
             }
 
             try {
-                // 기존 에디터 파괴
                 if (commentEditor) {
                     try {
                         commentEditor.destroy();
@@ -662,10 +741,8 @@ body {
                     }
                 }
 
-                // 새 에디터 생성
                 commentEditor = initEditor(commentContent, toolbar);
                 
-                // 이모지 기능 설정
                 window.openEmojiPicker = EmojiModule.openPicker;
                 EmojiModule.setupEmojiSuggestion(commentEditor);
                 
@@ -677,24 +754,17 @@ body {
             }
         }
 
-        // ===== 초기화 =====
-        
         jQuery(document).ready(function() {
             const toolbar = document.getElementById('toolbar');
             
-            // ✅ toolbar HTML을 문자열로 저장
             if (toolbar) {
                 toolbarTemplateHTML = toolbar.outerHTML;
             }
             
-            // 작성 에디터 초기화
             initWriteEditor();
-            
             loadCommentList();
         });
 
-        // ===== 댓글 목록 =====
-        
         function loadCommentList() {
             jQuery.ajax({
                 url: '${pageContext.request.contextPath}/CommentsList.async',
@@ -712,7 +782,6 @@ body {
                         displayCommentList(response.items || []);
                         jQuery('#commentTotalCount').text(response.total ?? 0);
                         
-                        // ✅ 댓글 목록 로드 후 작성 에디터 상태 확인
                         setTimeout(() => {
                             if (!commentEditor || commentEditor.isDestroyed) {
                                 log('작성 에디터가 손상됨. 재초기화 시도');
@@ -734,7 +803,6 @@ body {
             const commentList = jQuery('#commentList');
             commentList.empty();
             
-            // 기존 뷰어 정리
             commentViewers.forEach(viewer => {
                 try {
                     viewer.destroy();
@@ -744,7 +812,6 @@ body {
             });
             commentViewers.clear();
             
-            // 기존 수정 에디터 정리
             editEditors.forEach((editor, id) => {
                 try {
                     editor.destroy();
@@ -754,14 +821,13 @@ body {
             });
             editEditors.clear();
             
-            // 데이터 캐시 갱신
             commentDataCache.clear();
             comments.forEach(comment => {
                 commentDataCache.set(comment.commentId, comment);
             });
             
             if (!comments || comments.length === 0) {
-                commentList.html('<div class="empty-state">첫 댓글을 작성해보세요! 📝</div>');
+                commentList.html('<div class="empty-state">첫 댓글을 작성해보세요! 🌅</div>');
                 return;
             }
             
@@ -840,8 +906,6 @@ body {
             }
         }
 
-        // ===== 댓글 작성 =====
-        
         window.writeComment = function() {
             if (!commentEditor) {
                 alert('에디터가 초기화되지 않았습니다.');
@@ -880,7 +944,6 @@ body {
                 },
                 success: function(response) {
                     if (response && response.ok) {
-                        // ✅ 에디터 파괴 후 재생성
                         try {
                             commentEditor.destroy();
                         } catch (error) {
@@ -889,7 +952,6 @@ body {
                         
                         loadCommentList();
                         
-                        // ✅ 댓글 목록 로드 후 에디터 재초기화
                         setTimeout(() => {
                             initWriteEditor();
                             alert('댓글이 작성되었습니다.');
@@ -908,8 +970,6 @@ body {
             });
         };
 
-        // ===== 댓글 수정 =====
-        
         window.startEditComment = function(commentId) {
             log('수정 모드 진입', commentId);
             
@@ -929,7 +989,6 @@ body {
             const parsed = parseTipTapContent(comment.contentRaw);
             log('파싱된 내용', parsed);
             
-            // 기존 뷰어 제거
             const viewer = commentViewers.get(commentId);
             if (viewer) {
                 try {
@@ -940,7 +999,6 @@ body {
                 commentViewers.delete(commentId);
             }
             
-            // ✅ HTML 문자열로 수정 폼 생성
             const editFormHTML = 
                 '<div class="comment-edit-form">' +
                 toolbarTemplateHTML.replace('id="toolbar"', 'id="editToolbar' + commentId + '"')
@@ -954,7 +1012,6 @@ body {
             contentDiv.html(editFormHTML);
             jQuery('.dropdown-menu').removeClass('show');
             
-            // 에디터 초기화
             setTimeout(() => {
                 const editArea = document.getElementById('editArea' + commentId);
                 const editToolbar = document.getElementById('editToolbar' + commentId);
@@ -969,7 +1026,6 @@ body {
                     editEditor.commands.setContent(parsed);
                     editEditor.commands.focus();
                     
-                    // 이모지 기능 설정
                     try {
                         EmojiModule.setupEmojiSuggestion(editEditor);
                     } catch (error) {
@@ -1055,7 +1111,6 @@ body {
                         
                         loadCommentList();
                         
-                        // ✅ 작성 에디터 재초기화 확인
                         setTimeout(() => {
                             if (!commentEditor || commentEditor.isDestroyed) {
                                 initWriteEditor();
@@ -1075,8 +1130,6 @@ body {
             });
         };
 
-        // ===== 댓글 삭제 =====
-        
         window.deleteComment = function(commentId) {
             jQuery('.dropdown-menu').removeClass('show');
             
@@ -1109,8 +1162,6 @@ body {
             });
         };
 
-        // ===== 드롭다운 =====
-        
         window.toggleDropdown = function(event, commentId) {
             event.stopPropagation();
             const dropdown = jQuery('#dropdown' + commentId);

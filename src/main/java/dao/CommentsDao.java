@@ -172,14 +172,13 @@ public class CommentsDao {
         json.remove("text");     // 표시용 텍스트 제거
         json.remove("imageUrl"); // 이미지 제거
 
-        final String sql = "UPDATE COMMENTS SET CONTENT = ? WHERE COMMENT_ID = ? AND USER_ID = ?";
+        final String sql = "DELETE COMMENTS WHERE COMMENT_ID = ? AND USER_ID = ?";
         try (Connection conn = ConnectionPoolHelper.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             conn.setAutoCommit(false);
 
-            ps.setString(1, GSON.toJson(json));
-            ps.setInt(2, commentId);
-            ps.setString(3, userId);
+            ps.setInt(1, commentId);
+            ps.setString(2, userId);
             int affected = ps.executeUpdate();
             conn.commit();
             return affected;
