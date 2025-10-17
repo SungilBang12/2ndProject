@@ -220,12 +220,12 @@ public class UsersController extends HttpServlet {
 			throws ServletException, IOException {
 		
 		HttpSession session = request.getSession(false);
-		if (session == null || session.getAttribute("loggedInUser") == null) {
+		if (session == null || session.getAttribute("user") == null) {
 			response.sendRedirect(request.getContextPath() + "/users/login");
 			return;
 		}
 		
-		Users loggedInUser = (Users) session.getAttribute("loggedInUser");
+		Users user = (Users) session.getAttribute("user");
 		
 		String username = request.getParameter("username");
 		String currentPassword = request.getParameter("currentPassword");
@@ -234,19 +234,19 @@ public class UsersController extends HttpServlet {
 		try {
 			// 사용자 정보 업데이트 객체 생성
 			Users updateUser = Users.builder()
-					.userId(loggedInUser.getUserId())
+					.userId(user.getUserId())
 					.userName(username)
-					.email(loggedInUser.getEmail())
+					.email(user.getEmail())
 					.password(newPassword) // 비어있으면 변경하지 않음
 					.build();
 			
 			if (usersService.updateUser(updateUser, currentPassword)) {
 				// 세션 정보 업데이트
-				Optional<Users> updatedUserOpt = usersService.getUserById(loggedInUser.getUserId());
+				Optional<Users> updatedUserOpt = usersService.getUserById(user.getUserId());
 				if (updatedUserOpt.isPresent()) {
 					Users updatedUser = updatedUserOpt.get();
 					updatedUser.setPassword(null); // 비밀번호는 세션에 저장하지 않음
-					session.setAttribute("loggedInUser", updatedUser);
+					session.setAttribute("user", updatedUser);
 				}
 				
 				request.setAttribute("success", "회원 정보가 성공적으로 수정되었습니다.");

@@ -4,7 +4,7 @@
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions"%>
 
 <%-- 로그인 체크: 한글 쿼리를 헤더에 직접 넣지 않도록 ASCII 토큰 사용 --%>
-<c:if test="${empty sessionScope.loggedInUser}">
+<c:if test="${empty sessionScope.user}">
   <c:redirect url="/users/login">
     <c:param name="error" value="login_required"/>
   </c:redirect>
@@ -12,7 +12,7 @@
 
 <%-- 편의용 컨텍스트 경로 변수 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
-<c:set var="user" value="${sessionScope.loggedInUser}" />
+<c:set var="user" value="${sessionScope.user}" />
 
 <!doctype html>
 <html lang="ko">

@@ -139,13 +139,13 @@ public class PostAsyncService {
 			try {
 				// JSON 파싱 및 Post 객체 생성
 				Post postToUpdate = gson.fromJson(jsonData, Post.class);
-				// int loggedInUserId = (Integer) request.getSession().getAttribute("userId");
+				// int userId = (Integer) request.getSession().getAttribute("userId");
 				// // 사용자 ID 확인
-				int loggedInUserId = 1; // 임시 ID
+				int userId = 1; // 임시 ID
 
 				// 서비스 로직 수행
 				int result = postDao.updatePost(postToUpdate); // DAO 직접 호출 대신 service.updatePost(postToUpdate,
-																// loggedInUserId) 권장
+																// userId) 권장
 
 				if (result > 0) {
 					responseMap.put("status", "success");
@@ -196,8 +196,8 @@ public class PostAsyncService {
 	            int postId = map.get("postId").intValue();
 
 	            // [임시] 사용자 ID 설정
-	            // int loggedInUserId = (Integer) request.getSession().getAttribute("userId");
-	            int loggedInUserId = 1; 
+	            // int userId = (Integer) request.getSession().getAttribute("userId");
+	            int userId = 1; 
 
 	            // 2. 동기 DAO 메서드 호출 (비동기 스레드 내에서 실행)
 	            // PostDao.deletePost는 트랜잭션을 포함한 동기 DB 삭제 로직입니다.

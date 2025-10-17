@@ -23,11 +23,11 @@ public class GetPostEditFormService implements Action {
             // 1. 세션 체크 (로그인 확인)
             // ============================================
             HttpSession session = request.getSession(false);
-            String loggedInUserId = null;
+            String userId = null;
             
             if (session != null) {
-                loggedInUserId = (String) session.getAttribute("userId");
-                System.out.println("=== 세션에서 가져온 userId: " + loggedInUserId + " ===");
+                userId = (String) session.getAttribute("userId");
+                System.out.println("=== 세션에서 가져온 userId: " + userId + " ===");
             } else {
                 System.out.println("=== 세션이 존재하지 않음 ===");
             }
@@ -68,12 +68,12 @@ public class GetPostEditFormService implements Action {
             // ============================================
             // 4. 작성자 권한 체크
             // ============================================
-            System.out.println("=== 권한 체크: 게시글 작성자=" + post.getUserId() + ", 로그인 사용자=" + loggedInUserId + " ===");
+            System.out.println("=== 권한 체크: 게시글 작성자=" + post.getUserId() + ", 로그인 사용자=" + userId + " ===");
             
-            if (!post.getUserId().equals(loggedInUserId)) {
+            if (!post.getUserId().equals(userId)) {
                 System.out.println("❌ 권한 없음 - 본인이 작성한 게시글이 아님");
                 System.out.println(post.getUserId());
-                System.out.println(loggedInUserId);
+                System.out.println(userId);
                 request.setAttribute("error_msg", "수정 권한이 없습니다. 본인이 작성한 게시글만 수정할 수 있습니다.");
                 forward.setRedirect(true);
                 forward.setPath(request.getContextPath() + "/post-detail.post?postId=" + postId);

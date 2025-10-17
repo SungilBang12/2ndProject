@@ -76,12 +76,12 @@ public class UsersAjaxController extends HttpServlet {
             throws IOException {
 
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("loggedInUser") == null) {
+        if (session == null || session.getAttribute("user") == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        Users user = (Users) session.getAttribute("loggedInUser");
+        Users user = (Users) session.getAttribute("user");
 
         // ✅ try-with-resources로 자동 반납
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
@@ -111,12 +111,12 @@ public class UsersAjaxController extends HttpServlet {
             throws IOException {
 
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("loggedInUser") == null) {
+        if (session == null || session.getAttribute("user") == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        Users user = (Users) session.getAttribute("loggedInUser");
+        Users user = (Users) session.getAttribute("user");
 
         // ✅ try-with-resources로 자동 반납
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
@@ -157,12 +157,12 @@ public class UsersAjaxController extends HttpServlet {
             throws IOException {
 
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("loggedInUser") == null) {
+        if (session == null || session.getAttribute("user") == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        Users user = (Users) session.getAttribute("loggedInUser");
+        Users user = (Users) session.getAttribute("user");
         String password = request.getParameter("password");
 
         Map<String, Object> result = new HashMap<>();

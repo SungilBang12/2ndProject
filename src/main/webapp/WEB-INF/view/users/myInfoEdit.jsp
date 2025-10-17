@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
 <%-- 로그인 확인 --%>
-<c:if test="${empty loggedInUser}">
+<c:if test="${empty user}">
 	<c:redirect url="/users/login" />
 </c:if>
 
@@ -46,7 +46,7 @@
 					<div class="form-group">
 						<label for="userId" class="form-label">아이디</label>
 						<input type="text" id="userId" name="userId" class="form-input" 
-							value="<c:out value='${loggedInUser.userId}' />" readonly style="background-color: #f0f0f0;">
+							value="<c:out value='${user.userId}' />" readonly style="background-color: #f0f0f0;">
 						<p class="input-message">아이디는 변경할 수 없습니다.</p>
 					</div>
 
@@ -54,7 +54,7 @@
 					<div class="form-group">
 						<label for="username" class="form-label">닉네임</label>
 						<input type="text" id="username" name="username" class="form-input" 
-							value="<c:out value='${loggedInUser.userName}' />" 
+							value="<c:out value='${user.userName}' />" 
 							placeholder="사용하실 닉네임을 입력해 주세요" required maxlength="10">
 						<p class="input-message">다른 사용자에게 보여질 이름입니다.</p>
 					</div>
@@ -63,7 +63,7 @@
 					<div class="form-group">
 						<label for="email" class="form-label">이메일</label>
 						<input type="email" id="email" name="email" class="form-input" 
-							value="<c:out value='${loggedInUser.email}' />" readonly style="background-color: #f0f0f0;">
+							value="<c:out value='${user.email}' />" readonly style="background-color: #f0f0f0;">
 						<p class="input-message">이메일은 변경할 수 없습니다.</p>
 					</div>
 
