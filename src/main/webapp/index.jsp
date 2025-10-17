@@ -80,7 +80,7 @@
   <script>
   (function(){
     const contextPath = "<%= request.getContextPath() %>/";
-    const API_URL     = contextPath + "postList.async";
+    const API_URL     = contextPath + "postList2.async";
     const POST_DETAIL = contextPath + "post-detail.post";
     const LIMIT       = 10;
     const AUTOPLAY_MS = 4500;
