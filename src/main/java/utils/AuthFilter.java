@@ -114,7 +114,7 @@ public class AuthFilter implements Filter {
 		boolean authorized = false;
 
 		if (session != null) {
-			// 로그인 세션 이름은 "user" 대신 "loggedInUser"를 사용한다고 가정합니다. (기존 코드 유지)
+			// 로그인 세션 이름은 "user" 대신 "user"를 사용한다고 가정합니다. (기존 코드 유지)
 			Users user = (Users) session.getAttribute("user"); 
             
 			if (user != null && user.getROLE() != null) {
@@ -135,7 +135,7 @@ public class AuthFilter implements Filter {
 			chain.doFilter(req, res);
 		} else {
 			// 4. 권한이 없으면 에러 메시지 출력 후 리다이렉트 (보안 가이드 준수)
-			
+			System.out.println("log fail");
 			String redirectUrl = httpRequest.getContextPath() + "/users/login"; // 기본적으로 로그인 페이지로 유도
 			String alertMessage = "접근 권한이 없습니다. 로그인이 필요합니다.";
 

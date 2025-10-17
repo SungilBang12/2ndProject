@@ -77,6 +77,8 @@ public class UsersController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/view/users/myPosts.jsp").forward(request, response);
 		} else if ("/myComments".equals(pathInfo)) { // 🚨 내가 단 댓글 보기
 			request.getRequestDispatcher("/WEB-INF/view/users/myComments.jsp").forward(request, response);
+		} else if ("/myInfoEdit".equals(pathInfo)) { // 💡 추가: 정보 수정 페이지
+			request.getRequestDispatcher("/WEB-INF/view/users/myInfoEdit.jsp").forward(request, response);
 		} else if ("/logout".equals(pathInfo)) {
 			handleLogout(request, response);
 		} else {
@@ -93,6 +95,8 @@ public class UsersController extends HttpServlet {
 			handleJoin(request, response);
 		} else if ("/login".equals(pathInfo)) {
 			handleLogin(request, response);
+		} else if ("/updateInfo".equals(pathInfo)) { // 💡 추가: 정보 수정 처리
+			handleUpdateInfo(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
@@ -207,5 +211,52 @@ public class UsersController extends HttpServlet {
 			session.invalidate();
 		}
 		response.sendRedirect(request.getContextPath() + "/index.jsp");
+	}
+	
+	/**
+	 * 💡 4. 정보 수정 처리 (새로 추가)
+	 */
+	private void handleUpdateInfo(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		
+		HttpSession session = request.getSession(false);
+		if (session == null || session.getAttribute("user") == null) {
+			response.sendRedirect(request.getContextPath() + "/users/login");
+			return;
+		}
+		
+		Users user = (Users) session.getAttribute("user");
+		
+		String username = request.getParameter("username");
+		String currentPassword = request.getParameter("currentPassword");
+		String newPassword = request.getParameter("password");
+		
+		try {
+			// 사용자 정보 업데이트 객체 생성
+			Users updateUser = Users.builder()
+					.userId(user.getUserId())
+					.userName(username)
+					.email(user.getEmail())
+					.password(newPassword) // 비어있으면 변경하지 않음
+					.build();
+			
+			if (usersService.updateUser(updateUser, currentPassword)) {
+				// 세션 정보 업데이트
+				Optional<Users> updatedUserOpt = usersService.getUserById(user.getUserId());
+				if (updatedUserOpt.isPresent()) {
+					Users updatedUser = updatedUserOpt.get();
+					updatedUser.setPassword(null); // 비밀번호는 세션에 저장하지 않음
+					session.setAttribute("user", updatedUser);
+				}
+				
+				request.setAttribute("success", "회원 정보가 성공적으로 수정되었습니다.");
+			} else {
+				request.setAttribute("error", "회원 정보 수정에 실패했습니다.");
+			}
+		} catch (ServiceException e) {
+			request.setAttribute("error", e.getMessage());
+		}
+		
+		request.getRequestDispatcher("/WEB-INF/view/users/myInfoEdit.jsp").forward(request, response);
 	}
 }

@@ -42,8 +42,7 @@
           <select id="sort" name="sort" style="padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px;">
             <option value="new" ${param.sort == 'new' || empty param.sort ? 'selected' : ''}>최신순</option>
             <option value="old" ${param.sort == 'old' ? 'selected' : ''}>오래된순</option>
-            <option value="hit" ${param.sort == 'hit' ? 'selected' : ''}>조회순</option>
-            <option value="cmt" ${param.sort == 'cmt' ? 'selected' : ''}>댓글많은순</option>
+            <option value="hit" ${param.sort == 'hit' ? 'selected' : ''}>조회수순</option>
           </select>
         </form>
         <!-- 글쓰기 -->
@@ -68,7 +67,7 @@
   var CATEGORY_ID     = 1;     // 노을(고정)
   var CLIENT_LIMIT    = 12;    // 화면당 카드 수(그리드)
   var SERVER_LIMIT    = 100;   // 서버에서 한 번에 크게 가져오기(호출 최소화)
-  var FALLBACK_IMG    = '<c:url value="/images/favicon.svg"/>';
+  var FALLBACK_IMG    = '<c:url value="/images/missing.jpg"/>';
 
   // ===== DOM =====
   var root    = document.getElementById('album-root');
@@ -237,7 +236,7 @@
         + '<li class="pg-card">'
         + '  <a class="pg-card__link" href="' + link + '">'
         + '    <div class="pg-thumb">'
-        + '      <img class="pg-img" src="' + thumb + '" alt="썸네일" loading="lazy">'
+        + '      <img class="pg-img" src="' + thumb + '" alt="썸네일" loading="lazy" onerror="this.onerror=null; this.src=FALLBACK_IMG">'
         + '    </div>'
         + '    <div class="pg-title">' + title + '</div>'
         + '  </a>'

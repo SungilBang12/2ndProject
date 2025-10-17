@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 
 import dto.Post;
 import jakarta.servlet.http.HttpServletRequest;
+import dto.Users;
 
 public class PostDaoImpl {
     private final DataSource ds;
@@ -32,8 +33,8 @@ public class PostDaoImpl {
         String listId  = req.getParameter("listId");
 
         // 세션 사용자
-        String userId = (String) req.getSession().getAttribute("LOGIN_USER_ID");
-        if (userId == null) {
+        Users user = (Users) req.getAttribute("user"); // ✅ Users 객체로 캐스팅
+        String userId = user.getUserId(); // ✅ userId 추출        if (userId == null) {
             throw new IllegalStateException("로그인이 필요합니다.");
         }
 
