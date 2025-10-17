@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "https://esm.sh/@tiptap/core";
+import { Plugin } from "https://esm.sh/prosemirror-state";
 
 // ✅ 전역 ID 읽기
 const userId = document.getElementById("userId")?.value || `guest-${Math.random().toString(36).substr(2, 6)}`;
@@ -76,6 +77,34 @@ export const ScheduleBlock = Node.create({
     };
   },
 
+  // ✅ 키 입력/삭제 제한
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handleKeyDown(view, event) {
+            const { $from } = view.state.selection;
+            const nodeAfter = $from.nodeAfter;
+            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock"; // 블록 앞만
+
+            if (isBeforeBlock) {
+              if (event.key.startsWith("Arrow") || event.key === "Tab" || event.ctrlKey || event.metaKey)
+                return false;
+              return true; // 나머지 키 차단
+            }
+            return false; // 일반 입력 정상
+          },
+          handleTextInput(view, from, to, text) {
+            const { $from } = view.state.selection;
+            const nodeAfter = $from.nodeAfter;
+            const isBeforeBlock = nodeAfter?.type.name === "scheduleBlock"; // 블록 앞만
+            return isBeforeBlock;
+          },
+        },
+      }),
+    ];
+  },
+
   addNodeView() {
     return ({ node, getPos, editor }) => {
       const dom = document.createElement("div");
@@ -106,6 +135,11 @@ export const ScheduleBlock = Node.create({
         document.dispatchEvent(new CustomEvent("schedulePresenceUpdate", { detail: { postId, currentPeople } }));
         if (!editMode && joinBtn) joinBtn.disabled = currentPeople >= maxPeople;
       };
+
+      // 드래그/드롭/키보드 차단
+      dom.addEventListener("dragstart", e => { e.preventDefault(); e.stopPropagation(); });
+      dom.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); });
+      dom.addEventListener("keydown", e => e.stopPropagation());
 
       // 비동기 Ably 연결 및 Presence 처리
       (async () => {
