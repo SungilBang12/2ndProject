@@ -2,6 +2,7 @@ package service.chat;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 import dao.ChatDao;
@@ -11,110 +12,75 @@ import dto.SchedulePostDto;
 import utils.ConnectionPoolHelper;
 
 public class ChatService {
+
     private final ChatDao dao = new ChatDao();
 
-    /** 🔹 게시글 상세 (참가자, 정원 확인용) */
+    /** 🔹 게시글 상세 조회 */
     public SchedulePostDto getPostDetails(int postId) {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
             return dao.getSchedulePost(conn, postId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("getPostDetails", e);
             return null;
         }
     }
 
     /** 🔹 참가 (join) */
     public ChatJoinResponse joinChat(ChatJoinRequest req) {
-        Connection conn = null;
-        try {
-            conn = ConnectionPoolHelper.getConnection();
-            conn.setAutoCommit(false);
-
+        try (Connection conn = ConnectionPoolHelper.getConnection()) {
             SchedulePostDto post = dao.getSchedulePost(conn, req.getPostId());
-            if (post == null) {
-                conn.rollback();
-                return new ChatJoinResponse(false, "게시글 없음", null, 0, 0);
-            }
+            if (post == null) return createResponse(false, "게시글 없음", req.getPostId(), 0, 0);
 
-            if (dao.isAlreadyJoined(conn, req.getPostId(), req.getUserId())) {
-                conn.rollback();
-                return new ChatJoinResponse(false, "이미 참가중", "channel-" + req.getPostId(),
-                        post.getCurrentPeople(), post.getMaxPeople());
-            }
+            if (post.getCurrentPeople() >= post.getMaxPeople())
+                return createResponse(false, "정원 초과", req.getPostId(), post.getCurrentPeople(), post.getMaxPeople());
 
-            if (post.getCurrentPeople() >= post.getMaxPeople()) {
-                conn.rollback();
-                return new ChatJoinResponse(false, "정원 초과", null,
-                        post.getCurrentPeople(), post.getMaxPeople());
-            }
+            boolean success = dao.joinParticipant(conn, req.getPostId(), req.getUserId());
+            if (!success) return createResponse(false, "이미 참가중", req.getPostId(), post.getCurrentPeople(), post.getMaxPeople());
 
-            dao.insertChatParticipant(conn, req.getPostId(), req.getUserId());
-            dao.updateCurrentPeople(conn, req.getPostId(), post.getCurrentPeople() + 1);
-
-            conn.commit();
-            return new ChatJoinResponse(true, "참가 성공", "channel-" + req.getPostId(),
-                    post.getCurrentPeople() + 1, post.getMaxPeople());
+            // join 성공 시 현재 인원 갱신
+            int updatedPeople = dao.getParticipantCount(conn, req.getPostId());
+            return createResponse(true, "참가 성공", req.getPostId(), updatedPeople, post.getMaxPeople());
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            try { if (conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
-            return new ChatJoinResponse(false, "DB 오류", null, 0, 0);
-        } finally {
-            try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
+            logError("joinChat", e);
+            return createResponse(false, "DB 오류", req.getPostId(), 0, 0);
         }
     }
 
     /** 🔹 퇴장 (leave) */
     public ChatJoinResponse leaveChat(ChatJoinRequest req) {
-        Connection conn = null;
-        try {
-            conn = ConnectionPoolHelper.getConnection();
-            conn.setAutoCommit(false);
-
+        try (Connection conn = ConnectionPoolHelper.getConnection()) {
             SchedulePostDto post = dao.getSchedulePost(conn, req.getPostId());
-            if (post == null) {
-                conn.rollback();
-                return new ChatJoinResponse(false, "게시글 없음", null, 0, 0);
-            }
+            if (post == null) return createResponse(false, "게시글 없음", req.getPostId(), 0, 0);
 
-            if (!dao.isAlreadyJoined(conn, req.getPostId(), req.getUserId())) {
-                conn.rollback();
-                return new ChatJoinResponse(false, "참가자가 아님", null,
-                        post.getCurrentPeople(), post.getMaxPeople());
-            }
+            boolean success = dao.leaveParticipant(conn, req.getPostId(), req.getUserId());
+            if (!success) return createResponse(false, "참가자가 아님", req.getPostId(), post.getCurrentPeople(), post.getMaxPeople());
 
-            dao.deleteChatParticipant(conn, req.getPostId(), req.getUserId());
-            dao.updateCurrentPeople(conn, req.getPostId(), Math.max(0, post.getCurrentPeople() - 1));
-
-            conn.commit();
-            return new ChatJoinResponse(true, "퇴장 성공", null,
-                    Math.max(0, post.getCurrentPeople() - 1), post.getMaxPeople());
+            int updatedPeople = dao.getParticipantCount(conn, req.getPostId());
+            return createResponse(true, "퇴장 성공", req.getPostId(), updatedPeople, post.getMaxPeople());
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            try { if (conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
-            return new ChatJoinResponse(false, "DB 오류", null, 0, 0);
-        } finally {
-            try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
+            logError("leaveChat", e);
+            return createResponse(false, "DB 오류", req.getPostId(), 0, 0);
         }
     }
 
-    /** 🔹 특정 유저가 참여중인 모든 방 리스트 (rooms) */
+    /** 🔹 유저가 참여중인 모든 방 조회 */
     public List<SchedulePostDto> getUserJoinedRooms(String userId) {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
             return dao.getUserJoinedRooms(conn, userId);
         } catch (SQLException e) {
-            e.printStackTrace();
-            return List.of();
+            logError("getUserJoinedRooms", e);
+            return Collections.emptyList();
         }
     }
 
-    /** 🔹 유저가 특정 방에 이미 참여중인지 확인 */
+    /** 🔹 유저가 특정 방에 참여중인지 확인 */
     public boolean isUserInChat(int postId, String userId) {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
             return dao.isAlreadyJoined(conn, postId, userId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("isUserInChat", e);
             return false;
         }
     }
@@ -124,8 +90,21 @@ public class ChatService {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
             return dao.getParticipantCount(conn, postId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("getParticipantCount", e);
             return 0;
         }
+    }
+
+    // ============================================================
+    // 🔹 유틸
+    // ============================================================
+
+    private ChatJoinResponse createResponse(boolean success, String message, int postId, int currentPeople, int maxPeople) {
+        return new ChatJoinResponse(success, message, success ? "channel-" + postId : null, currentPeople, maxPeople);
+    }
+
+    private void logError(String method, Exception e) {
+        System.err.println("[ChatService::" + method + "] 오류 발생: " + e.getMessage());
+        e.printStackTrace();
     }
 }
