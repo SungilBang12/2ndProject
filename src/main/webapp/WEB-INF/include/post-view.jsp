@@ -102,6 +102,14 @@ console.log("=== 전역 함수 등록 완료 ===");
     word-break: break-word;
 }
 
+.ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 8px 0;
+    display: block;
+}
+
 .post-header {
     margin-bottom: 20px;
 }

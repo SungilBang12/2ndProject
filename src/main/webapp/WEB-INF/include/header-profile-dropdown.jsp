@@ -70,9 +70,7 @@
 
           <!-- ✅ 컨트롤러 라우팅에 맞춘 경로 -->
           <a href="<c:url value='/users/myInfo'/>" class="menu-item" role="menuitem">내 정보</a>
-          <a href="<c:url value='/users/myInfoEdit'/>" class="menu-item" role="menuitem">내 정보 수정</a>
-          <a href="<c:url value='/users/myPosts'/>" class="menu-item" role="menuitem">내가 쓴 게시글</a>
-          <a href="<c:url value='/users/myComments'/>" class="menu-item" role="menuitem">내가 쓴 댓글</a>
+          <a href="<c:url value='/users/myActivity'/>" class="menu-item" role="menuitem">내 활동 내역</a>
 
           <div class="divider"></div>
 

@@ -18,6 +18,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import dao.CommentsDao;
 import dao.PostDao;
 import dto.Comments;
 import dto.Post;
@@ -37,6 +38,7 @@ public class UsersAjaxController extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final UsersService usersService = new UsersService();
     private final PostDao postDao = new PostDao();
+    private final CommentsDao commentsDao = new CommentsDao();
     
     // 💡 더 견고한 이메일 정규식 사용
     private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
@@ -104,6 +106,10 @@ public class UsersAjaxController extends HttpServlet {
             handleGetRecentPosts(request, response);
         } else if ("/recentComments".equals(pathInfo)) {
             handleGetRecentComments(request, response);
+        } else if ("/allPosts".equals(pathInfo)) {
+            handleGetAllPosts(request, response);
+        } else if ("/allComments".equals(pathInfo)) {
+            handleGetAllComments(request, response);
         } else {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
@@ -150,8 +156,7 @@ public class UsersAjaxController extends HttpServlet {
         try (Connection conn = ConnectionPoolHelper.getConnection()) {
 
             int postCount = postDao.countPostsByUserId(conn, user.getUserId());
-            // TODO: 댓글 수 조회 (CommentDao 구현 필요)
-            int commentCount = 0;
+            int commentCount = commentsDao.countByUserId(conn, user.getUserId());
 
             Map<String, Integer> stats = new HashMap<>();
             stats.put("postCount", postCount);
@@ -231,6 +236,62 @@ public class UsersAjaxController extends HttpServlet {
              e.printStackTrace();
              response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
          }
+    }
+
+    /**
+     * 전체 작성한 게시글 조회
+     */
+    private void handleGetAllPosts(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        Users user = (Users) session.getAttribute("user");
+
+        try (Connection conn = ConnectionPoolHelper.getConnection()) {
+
+            List<Post> posts = postDao.selectPostsByUserId(conn, user.getUserId());
+
+            PrintWriter out = response.getWriter();
+            out.print(gson.toJson(posts));
+            out.flush();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 전체 작성한 댓글 조회
+     */
+    private void handleGetAllComments(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        Users user = (Users) session.getAttribute("user");
+
+        try (Connection conn = ConnectionPoolHelper.getConnection()) {
+
+            List<Comments> comments = postDao.selectCommentsByUserId(conn, user.getUserId());
+
+            PrintWriter out = response.getWriter();
+            out.print(gson.toJson(comments));
+            out.flush();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
