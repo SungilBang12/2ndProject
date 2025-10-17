@@ -140,3 +140,12 @@ function updateButtonStates(editor, toolbarEl) {
 		}
 	});
 }
+
+export function activateEditMode(editor) {
+  editor.state.doc.descendants((node, pos) => {
+    if (node.type.name === "scheduleBlock") {
+      const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, editMode: true });
+      editor.view.dispatch(tr);
+    }
+  });
+}

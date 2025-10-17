@@ -56,7 +56,6 @@
         </div>
     </div>
 </div>
-
 <!-- Firebase App -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -68,4 +67,4 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <!-- Chat JS -->
-<script src="${pageContext.request.contextPath}/js/chat.js"></script>
+<script type="" src="${pageContext.request.contextPath}/js/chat.js"></script>

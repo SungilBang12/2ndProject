@@ -42,3 +42,12 @@ export function initViewer(boardEl, JSONcontent) {
 	}
 	return editor;
 }
+
+export function deactivateEditMode(editor) {
+  editor.state.doc.descendants((node, pos) => {
+    if (node.type.name === "scheduleBlock") {
+      const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, editMode: false });
+      editor.view.dispatch(tr);
+    }
+  });
+}

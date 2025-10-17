@@ -192,7 +192,7 @@ console.log("=== 전역 함수 등록 완료 ===");
 
 <!-- 스크립트 -->
 <script type="module">
-import { initViewer } from "<c:url value='/js/editor-view.js'/>";
+import { initViewer, deactivateEditMode} from "<c:url value='/js/editor-view.js'/>";
 console.log("=== post-view.jsp 모듈 스크립트 실행 ===");
 
 // ===== 게시글 내용 로드 =====
@@ -214,6 +214,10 @@ try {
 
 // TipTap 뷰어 초기화
 const editor = initViewer(document.getElementById("board"), content);
+// 에디터 비활성화
+deactivateEditMode(editor);
+
+  
 console.log("=== 에디터 초기화 완료 ===");
 
 
