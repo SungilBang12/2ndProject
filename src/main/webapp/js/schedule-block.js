@@ -6,14 +6,15 @@ export const ScheduleBlock = Node.create({
 	group: "block",
 	atom: true,
 	draggable: false,
-
 	addAttributes() {
 		return {
 			title: { default: "" },
 			meetDate: { default: "" },
 			meetTime: { default: "" },
 			currentPeople: { default: 0 },
-			maxPeople: { default: 2 }
+			maxPeople: { default: 2 },
+			// 편집 모드 플래그는 Tiptap에서 필요 시 사용
+			editMode: { default: false }
 		};
 	},
 
@@ -87,6 +88,7 @@ export const ScheduleBlock = Node.create({
 			// 블록이 포커스되면 edit 모드라고 가정
 			const editMode = node.attrs.editMode === true;
 
+			
 			// Ably 구독
 			if (!window.ably) console.warn("Ably 미초기화");
 			const channel = window.ably?.channels.get(`schedule-${blockId}`);
@@ -176,8 +178,8 @@ export const ScheduleBlock = Node.create({
 			e.stopPropagation();
 
 			// 참가자 1명인 상태라면 두 번 확인
-			const reallyDelete = currentPeople <= 1
-				? confirm("참가자가 1명입니다. 정말 삭제하시겠습니까?") && confirm("정말로 삭제하시겠습니까?")
+			const reallyDelete = currentPeople > 1
+				? confirm("참가자가 존재합니다. 정말 삭제하시겠습니까?") && confirm("정말로 삭제하시겠습니까?")
 				: confirm("블록을 삭제하시겠습니까?");
 
 			if (!reallyDelete) return;

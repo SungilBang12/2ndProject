@@ -116,7 +116,7 @@ console.log("=== 전역 함수 등록 완료 ===");
 </div>
 
 <div class="slot-extra">
-<!-- 추가 기능 영역 -->
+<jsp:include page="/WEB-INF/include/chat.jsp"></jsp:include>
 </div>
 </main>
 </body>
