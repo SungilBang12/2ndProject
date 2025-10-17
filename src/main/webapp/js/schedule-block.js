@@ -3,29 +3,6 @@ import { Node, mergeAttributes } from "https://esm.sh/@tiptap/core";
 // ✅ 전역 ID 읽기
 const userId = document.getElementById("userId")?.value || `guest-${Math.random().toString(36).substr(2, 6)}`;
 const postId = document.getElementById("hiddenPostId")?.value || null;
-window.userId = userId;
-window.postId = postId;
-
-// Ably 연결 대기
-async function waitForAblyConnection() {
-  if (!window.ably) throw new Error("Ably 미설정");
-  return new Promise((resolve, reject) => {
-    const check = () => {
-      const state = window.ably.connection?.state;
-      if (state === "connected") resolve(window.ably);
-      else if (state === "failed") reject("Ably 연결 실패");
-      else setTimeout(check, 150);
-    };
-    check();
-  });
-}
-
-// Ably Presence 참가 helper
-async function enterPresence(channel, userId) {
-  return new Promise((resolve) => {
-    channel.presence.enter({ user: userId }, () => resolve());
-  });
-}
 
 // 서버 참가 요청
 async function joinSchedule(postId, userId) {
@@ -34,14 +11,14 @@ async function joinSchedule(postId, userId) {
     return null;
   }
   try {
-    const res = await fetch('/chat/join', {
+    const res = await fetch('/chat/update', {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: new URLSearchParams({ postId: String(postId), userId, action: "join" }),
     });
     if (!res.ok) throw new Error(`서버 응답 오류: ${res.status}`);
     const data = await res.json();
-    if (!data.success) throw new Error(data.message || "참가 실패");
+    if (!data.chatResult?.success) throw new Error(data.chatResult?.message || "참가 실패");
     return data;
   } catch (err) {
     console.error("참가 요청 실패:", err);
@@ -50,12 +27,43 @@ async function joinSchedule(postId, userId) {
   }
 }
 
-// 스케줄 블록 생성
+// 서버에서 Ably 키 가져오기
+async function fetchAblyConfig(postId) {
+  const res = await fetch(`/chat/init?postId=${postId}`);
+  if (!res.ok) throw new Error("초기화 실패");
+  const data = await res.json();
+  if (!data.ablyConfig?.pubKey) throw new Error("Ably 키 미설정");
+  return data.ablyConfig.pubKey;
+}
+
+// Ably 연결 및 Presence 채널 생성
+async function setupAblyChannel(postId, userId) {
+  const pubKey = await fetchAblyConfig(postId);
+  const ably = new Ably.Realtime({ key: pubKey, clientId: userId });
+  const channelName = `channel-${postId}`;
+  const channel = ably.channels.get(channelName);
+
+  await new Promise((resolve, reject) => {
+    const check = () => {
+      if (ably.connection.state === "connected") resolve();
+      else if (ably.connection.state === "failed") reject("Ably 연결 실패");
+      else setTimeout(check, 150);
+    };
+    check();
+  });
+
+  return channel;
+}
+
+// ==============================
+// ScheduleBlock Node
+// ==============================
 export const ScheduleBlock = Node.create({
   name: "scheduleBlock",
   group: "block",
   atom: true,
   draggable: false,
+
   addAttributes() {
     return {
       title: { default: "" },
@@ -101,39 +109,41 @@ export const ScheduleBlock = Node.create({
 
       // 비동기 Ably 연결 및 Presence 처리
       (async () => {
-        try {
-          const ably = await waitForAblyConnection();
-          const channelName = window.chatChannelName || `channel-${postId}`;
-          const channel = ably.channels.get(channelName);
-          window.chatChannelName = channelName;
+        if (!postId) return;
 
-          // 초기 참가자 수 조회
+        try {
+          const channel = await setupAblyChannel(postId, userId);
+
+          // 초기 참가자 수
           channel.presence.get((err, members) => {
             if (!err) updatePresenceCount(members?.length || 0);
           });
 
           // 참가자 변화 구독
           channel.presence.subscribe(["enter", "leave"], (member) => {
-            channel.presence.get((err, members) => { if (!err) updatePresenceCount(members?.length || 0); });
+            channel.presence.get((err, members) => {
+              if (!err) updatePresenceCount(members?.length || 0);
+            });
           });
 
-          // EditMode이면 자동 참가
+          // EditMode면 자동 참가
           if (editMode && !joined) {
-            await enterPresence(channel, userId);
+            await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
             joined = true;
           }
 
-          // 버튼 이벤트
+          // 참가 버튼 이벤트
           joinBtn?.addEventListener("click", async (e) => {
             e.stopPropagation();
             if (joined || currentPeople >= maxPeople) return;
             const result = await joinSchedule(postId, userId);
             if (!result) return;
-            await enterPresence(channel, userId);
+            await new Promise(resolve => channel.presence.enter({ user: userId }, resolve));
             joined = true;
             alert(`${title} 모임에 참가했습니다!`);
           });
 
+          // 취소 버튼 이벤트
           cancelBtn?.addEventListener("click", (e) => {
             e.stopPropagation();
             if (!confirm("이 블록을 삭제하시겠습니까?")) return;
