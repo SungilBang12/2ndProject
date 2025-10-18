@@ -863,7 +863,7 @@
   (function(){
     const ctx = "<%= request.getContextPath() %>/";
     const NOTICE_API = ctx + "postList2.async";      // ★ 기존 API 재활용
-    const USER_COUNT_API = ctx + "users/count.async"; // ★ 아주 작은 새 엔드포인트 1개만 추가
+    const STATS_API = ctx + "stats.async"; // 두 개 숫자를 한번에 받기
     const NOTICE_LIMIT = 6;
 
     // 슬라이더 바로 아래에 마크업 주입
@@ -933,31 +933,18 @@
       }
     }
 
-    // 통계 로드: 게시물 수는 postList2의 total(있으면) 활용, 유저 수는 초미니 API
     async function loadStats(){
-      // 게시물 수 (total/totalCount/count 중 존재하는 값 사용)
-      try{
-        const url = new URL(NOTICE_API, location.origin);
-        url.searchParams.set('limit','1'); url.searchParams.set('page','1');
-        const res = await fetch(url.toString(), { headers:{'X-Requested-With':'fetch'} });
-        const j = await res.json();
-        const postTotal = j.total ?? j.totalCount ?? j.count ?? null;
-        if (postTotal != null) setText('#statPosts', String(postTotal));
-      }catch(_){
-        setText('#statPosts', '—');
-      }
-
-      // 유저 수 (초소형 /users/count.async 사용)
-      try{
-        const res = await fetch(USER_COUNT_API, { headers:{'X-Requested-With':'fetch'} });
-        if (!res.ok) throw 0;
-        const j = await res.json();
-        setText('#statUsers', (j.userCount != null ? String(j.userCount) : '—'));
-      }catch(_){
-        setText('#statUsers', '—');
-      }
+    	try{
+    	const res = await fetch(STATS_API, { headers:{ 'X-Requested-With':'fetch' } });
+    	if (!res.ok) throw 0;
+    	const j = await res.json();
+    	setText('#statPosts', (j.postCount != null ? String(j.postCount) : '—'));
+    	setText('#statUsers', (j.userCount != null ? String(j.userCount) : '—'));
+    	}catch(_){
+    	setText('#statPosts', '—');
+    	setText('#statUsers', '—');
+    	}
     }
-
     // ===== helpers =====
     function esc(s){ return (s==null?'':String(s))
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')

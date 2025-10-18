@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import service.post.PostListAsyncService;
 import service.post.PostListService;
 import service.post.PostSearchService;
+import service.StatsAsyncService;
 
 @WebServlet("*.async")
 public class AjaxController extends HttpServlet {
@@ -56,6 +57,9 @@ public class AjaxController extends HttpServlet {
         	System.out.println("[AjaxController] 요청: " + urlCommand);
         	new PostListAsyncService().handle(request, response);
         	return;
+        } else if (urlCommand.equals("/stats.async")) {
+            new StatsAsyncService().handle(request, response);
+            return;
         }
 
         // 기타 비동기 서비스 (댓글 등)
