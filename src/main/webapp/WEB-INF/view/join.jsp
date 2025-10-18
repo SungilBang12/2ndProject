@@ -167,15 +167,15 @@ body {
 
 					<!-- Hidden: 이메일 인증 상태 서버 전달 -->
 					<input type="hidden" id="isEmailVerifiedHidden" name="isEmailVerified" value="false">
-
+					<div class="action-buttons">
+					<button type="button" id="resetBtn">입력 초기화</button>
 					<button type="submit" id="submitBtn" class="form-button" disabled>회원가입 완료</button>
+					<button type="button" id="cancelJoinBtn">가입 취소</button>
+				</div>
 				</form>
 
 				<!-- 하단 액션 -->
-				<div class="action-buttons">
-					<button type="button" id="resetBtn">입력 초기화</button>
-					<button type="button" id="cancelJoinBtn">가입 취소</button>
-				</div>
+				
 			</div>
 		</div>
 	</main>
