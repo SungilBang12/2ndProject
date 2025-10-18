@@ -46,7 +46,7 @@
           </select>
         </form>
         <!-- 글쓰기 -->
-        <a href="<c:url value='/editor.post'/>" class="pg-write-btn">글쓰기</a>
+        <a href="<c:url value='/editor.post?listId=1'/>" class="pg-write-btn">글쓰기</a>
       </div>
     </div>
 
