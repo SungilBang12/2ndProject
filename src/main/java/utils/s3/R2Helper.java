@@ -10,11 +10,11 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
-
-import javax.net.ssl.SSLContext;
+// 사용되지 않는 import 제거:
+// import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+// import org.apache.http.impl.client.HttpClients;
+// import org.apache.http.ssl.SSLContextBuilder;
+// import javax.net.ssl.SSLContext;
 
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
@@ -27,6 +27,8 @@ public class R2Helper {
     private static String bucket;
     private static String publicUrl;
     private static boolean initialized = false;
+    // 설정 파일 이름 상수화
+    private static final String CONFIG_FILENAME = "r2-config.properties";
 
     // private 생성자 (Singleton 패턴)
     private R2Helper() {}
@@ -43,12 +45,17 @@ public class R2Helper {
 
         try {
             if (configStream == null) {
-                throw new RuntimeException("r2-config.properties 파일을 찾을 수 없습니다.");
+                // 🚨 리팩토링: 파일 로딩 실패 시, AppInitializer의 문제임을 알 수 있도록 메시지 보강
+                throw new RuntimeException(
+                    "R2 설정 파일(" + CONFIG_FILENAME + ")을 찾을 수 없습니다. " + 
+                    "AppInitializer에서 파일 로딩 방식을 확인하세요."
+                );
             }
 
             Properties props = new Properties();
             props.load(configStream);
-
+            
+            // ... (나머지 로직은 그대로 유지)
             // 필수 값 검증
             String accessKey = getRequiredProperty(props, "R2_ACCESS_KEY");
             String secretKey = getRequiredProperty(props, "R2_SECRET_KEY");
@@ -60,6 +67,7 @@ public class R2Helper {
             String endpoint = String.format("https://%s.r2.cloudflarestorage.com", accountId);
 
             // SSL/TLS 설정 강화
+            // AppInitializer에서 이미 설정했으므로 중복이지만, 혹시 모를 상황을 위해 유지
             System.setProperty("https.protocols", "TLSv1.2,TLSv1.3");
             System.setProperty("jdk.tls.client.protocols", "TLSv1.2,TLSv1.3");
 
@@ -87,6 +95,7 @@ public class R2Helper {
         }
     }
 
+    // ... (나머지 메서드는 그대로 유지)
     /**
      * 파일 업로드 (InputStream 버전)
      */

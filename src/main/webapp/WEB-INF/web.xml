@@ -4,6 +4,10 @@
 	xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
 	id="WebApp_ID" version="5.0">
 	<display-name>2nd_Project</display-name>
+	<listener>
+		<listener-class>utils.AppInitializer</listener-class>
+	</listener>
+
 	<welcome-file-list>
 		<welcome-file>index.html</welcome-file>
 		<welcome-file>landing.jsp</welcome-file>
@@ -35,10 +39,17 @@
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 	<jsp-config>
-    <jsp-property-group>
-        <url-pattern>*.jsp</url-pattern>
-        <el-ignored>false</el-ignored>
-    </jsp-property-group>
-</jsp-config>
+		<jsp-property-group>
+			<url-pattern>*.jsp</url-pattern>
+			<el-ignored>false</el-ignored>
+		</jsp-property-group>
+	</jsp-config>
+	<resource-ref>
+		<description>Oracle Database Connection</description>
+		<res-ref-name>jdbc/oracle</res-ref-name>
+		<res-type>javax.sql.DataSource</res-type>
+		<res-auth>Container</res-auth>
+	</resource-ref>
+
 </web-app>
 

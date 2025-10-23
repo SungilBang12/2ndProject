@@ -77,31 +77,30 @@ public class TestController extends HttpServlet {
 	    // 🚨 디버깅: ServletContext 확인
 	    System.out.println("[DEBUG] ServletContext: " + getServletContext());
 	    
-	    Optional<Properties> configOpt = AblyChatConfig.getAblyConfig(getServletContext());
-	    
-	    // 🚨 디버깅: Properties 로드 여부 확인
-	    System.out.println("[DEBUG] ably Config 로드 여부: " + configOpt.isPresent());
+	    try {
+	        // ✅ ConfigLoader.load()는 Optional이 아닌 Properties 직접 반환
+	        Properties props = ConfigLoader.load("ably-chat-config.properties");
 
-	    if (configOpt.isPresent()) {
-	        Properties props = configOpt.get();
-	        
-	        System.out.println(props);
-	        
-	        // 🚨 디버깅: Properties 내용 확인 (apiKey는 일부만)
+	        // 🚨 디버깅: Properties 로드 여부 확인
+	        System.out.println("[DEBUG] ably Config 로드 성공 여부: " + (props != null));
+	        System.out.println("[DEBUG] Properties 내용: " + props);
+
+	        // 🚨 디버깅: pubKey 존재 여부
 	        System.out.println("[DEBUG] pubKey 존재: " + (props.getProperty("ably.pubkey") != null));
-//	        System.out.println("[DEBUG] authDomain: " + props.getProperty("firebase.authDomain"));
-	        
-	        Map<String, String> AblyConfigMap = new HashMap<>();
-	        AblyConfigMap.put("pubKey", props.getProperty("ably.pubkey"));
 
-	        String configJson = new Gson().toJson(AblyConfigMap);
-	        
-	        System.out.println(configJson);
+	        // ✅ JSP에 전달할 JSON 변환
+	        Map<String, String> ablyConfigMap = new HashMap<>();
+	        ablyConfigMap.put("pubKey", props.getProperty("ably.pubkey", ""));
+
+	        String configJson = new Gson().toJson(ablyConfigMap);
 	        request.setAttribute("ablyConfigJson", configJson);
-//	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
-	    } else {
+
+	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
+
+	    } catch (IOException e) {
+	        e.printStackTrace();
 	        request.setAttribute("ablyConfigJson", "{}");
-//	        System.err.println("[ERROR] Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
+	        System.err.println("[ERROR] Ably 설정 로드 실패: JSP에 빈 설정 전달됨.");
 	    }
 	}
 

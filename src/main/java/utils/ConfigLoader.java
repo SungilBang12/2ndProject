@@ -1,27 +1,42 @@
 package utils;
 
-import jakarta.servlet.ServletContext;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
-import java.util.Optional;
 
-/**
- * ServletContext에 저장된 Firebase 설정값을 안전하게 가져오는 유틸리티 클래스입니다.
- */
 public class ConfigLoader {
-    
-    public static final String FIREBASE_CONFIG_ATTRIBUTE = "firebaseConfig";
 
     /**
-     * ServletContext에서 Firebase Properties 객체를 가져옵니다.
+     * 클래스패스 또는 절대경로에서 properties 파일을 읽습니다.
+     * (현재 구조: WEB-INF/classes/ 에 바로 존재)
      */
-    public static Optional<Properties> getFirebaseConfig(ServletContext ctx) {
-        Object config = ctx.getAttribute(FIREBASE_CONFIG_ATTRIBUTE);
-        
-        if (config instanceof Properties) {
-            return Optional.of((Properties) config);
+    public static Properties load(String fileName) throws IOException {
+        Properties props = new Properties();
+        InputStream in = null;
+
+        // ✅ 1️⃣ classpath 기준으로 시도 (WEB-INF/classes)
+        in = ConfigLoader.class.getClassLoader().getResourceAsStream(fileName);
+
+        if (in == null) {
+            // ✅ 2️⃣ fallback: 톰캣 실행 디렉토리 기준으로 수동 탐색
+            String basePath = System.getProperty("catalina.base")
+                    + "/webapps/ROOT/WEB-INF/classes/" + fileName;
+            File f = new File(basePath);
+            if (f.exists()) {
+                in = new FileInputStream(f);
+                System.out.println("[ConfigLoader] External file loaded: " + basePath);
+            } else {
+                throw new IOException("[ConfigLoader] 설정 파일을 찾을 수 없습니다: " + fileName +
+                        "\n경로: " + f.getAbsolutePath());
+            }
+        } else {
+            System.out.println("[ConfigLoader] Loaded from classpath: " + fileName);
         }
-        
-        System.err.println("Firebase 설정(Properties)을 ServletContext에서 찾을 수 없습니다.");
-        return Optional.empty();
+
+        props.load(in);
+        in.close();
+        return props;
     }
 }

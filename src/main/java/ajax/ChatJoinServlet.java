@@ -191,30 +191,43 @@ public class ChatJoinServlet extends HttpServlet {
 	// ==========================================
 	// 🔹 Ably 설정 로딩
 	// ==========================================
+	// ==========================================
+	// 🔹 Ably 설정 로딩
+	// ==========================================
 	private Map<String, String> loadAblyConfig() {
-		Map<String, String> config = new HashMap<>();
-		AblyChatConfig.getAblyConfig(getServletContext()).ifPresent(props -> {
-			String pubKey = props.getProperty("ably.pubkey", "");
-			if (!pubKey.isEmpty())
-				config.put("pubKey", pubKey);
-		});
-		return config;
+	    Map<String, String> config = new HashMap<>();
+	    try {
+	        Properties props = ConfigLoader.load("ably-chat-config.properties");
+	        String pubKey = props.getProperty("ably.pubkey", "");
+	        if (!pubKey.isEmpty()) {
+	            config.put("pubKey", pubKey);
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+	    return config;
 	}
 
 	// ==========================================
 	// 🔹 Firebase 설정 로딩
 	// ==========================================
 	private Map<String, String> loadFirebaseConfig() {
-		Map<String, String> config = new HashMap<>();
-		ConfigLoader.getFirebaseConfig(getServletContext()).ifPresent(props -> {
-			List<String> keys = Arrays.asList("apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId",
-					"appId", "measurementId", "databaseURL");
-			for (String key : keys) {
-				config.put(key, props.getProperty("firebase." + key, ""));
-			}
-		});
-		return config;
+	    Map<String, String> config = new HashMap<>();
+	    try {
+	        Properties props = ConfigLoader.load("firebase-config.properties");
+	        List<String> keys = Arrays.asList(
+	                "apiKey", "authDomain", "projectId", "storageBucket",
+	                "messagingSenderId", "appId", "measurementId", "databaseURL"
+	        );
+	        for (String key : keys) {
+	            config.put(key, props.getProperty("firebase." + key, ""));
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+	    return config;
 	}
+
 
 	// ==========================================
 	// 🔹 에러 응답 유틸

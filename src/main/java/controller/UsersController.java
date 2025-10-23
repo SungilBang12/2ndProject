@@ -30,35 +30,39 @@ public class UsersController extends HttpServlet {
 	private void setFirebaseConfigToRequest(HttpServletRequest request) {
 	    // 🚨 디버깅: ServletContext 확인
 	    System.out.println("[DEBUG] ServletContext: " + getServletContext());
-	    
-	    Optional<Properties> configOpt = ConfigLoader.getFirebaseConfig(getServletContext());
-	    
-	    // 🚨 디버깅: Properties 로드 여부 확인
-	    System.out.println("[DEBUG] Firebase Config 로드 여부: " + configOpt.isPresent());
 
-	    if (configOpt.isPresent()) {
-	        Properties props = configOpt.get();
-	        
-	        // 🚨 디버깅: Properties 내용 확인 (apiKey는 일부만)
+	    try {
+	        // ✅ ConfigLoader.load()는 Optional이 아니라 Properties를 직접 반환
+	        Properties props = ConfigLoader.load("firebase-config.properties");
+
+	        // 🚨 디버깅: Properties 로드 여부 확인
+	        System.out.println("[DEBUG] Firebase Config 로드 성공 여부: " + (props != null));
+	        System.out.println("[DEBUG] Properties 내용: " + props);
+
+	        // 🚨 디버깅: apiKey 존재 여부
 	        System.out.println("[DEBUG] apiKey 존재: " + (props.getProperty("firebase.apiKey") != null));
-//	        System.out.println("[DEBUG] authDomain: " + props.getProperty("firebase.authDomain"));
-	        
+
+	        // ✅ JSP에 전달할 JSON 변환
 	        Map<String, String> firebaseConfigMap = new HashMap<>();
-	        firebaseConfigMap.put("apiKey", props.getProperty("firebase.apiKey"));
-	        firebaseConfigMap.put("authDomain", props.getProperty("firebase.authDomain"));
-	        firebaseConfigMap.put("projectId", props.getProperty("firebase.projectId"));
-	        firebaseConfigMap.put("storageBucket", props.getProperty("firebase.storageBucket"));
-	        firebaseConfigMap.put("messagingSenderId", props.getProperty("firebase.messagingSenderId"));
-	        firebaseConfigMap.put("appId", props.getProperty("firebase.appId"));
+	        firebaseConfigMap.put("apiKey", props.getProperty("firebase.apiKey", ""));
+	        firebaseConfigMap.put("authDomain", props.getProperty("firebase.authDomain", ""));
+	        firebaseConfigMap.put("projectId", props.getProperty("firebase.projectId", ""));
+	        firebaseConfigMap.put("storageBucket", props.getProperty("firebase.storageBucket", ""));
+	        firebaseConfigMap.put("messagingSenderId", props.getProperty("firebase.messagingSenderId", ""));
+	        firebaseConfigMap.put("appId", props.getProperty("firebase.appId", ""));
 
 	        String configJson = new Gson().toJson(firebaseConfigMap);
 	        request.setAttribute("firebaseConfigJson", configJson);
-//	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
-	    } else {
+
+	        System.out.println("[DEBUG] JSP로 전달된 JSON: " + configJson);
+
+	    } catch (IOException e) {
+	        e.printStackTrace();
 	        request.setAttribute("firebaseConfigJson", "{}");
-//	        System.err.println("[ERROR] Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
+	        System.err.println("[ERROR] Firebase 설정 로드 실패: JSP에 빈 설정 전달됨.");
 	    }
 	}
+
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
